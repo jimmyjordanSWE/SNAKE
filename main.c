@@ -43,8 +43,6 @@ int main(void) {
 
         if (input_state.p1_dir_set && game.players[0].active) { game.players[0].queued_dir = input_state.p1_dir; }
 
-        if (input_state.p2_dir_set && game.players[1].active) { game.players[1].queued_dir = input_state.p2_dir; }
-
         if (input_state.pause_toggle) { game.status = (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED; }
 
         if (input_state.restart) { game_reset(&game); }
@@ -53,7 +51,7 @@ int main(void) {
         game_tick(&game);
 
         /* Save scores when a player dies (before score reset) */
-        for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
+        for (int i = 0; i < game.num_players; i++) {
             if (game.players[i].died_this_tick && game.players[i].score_at_death > 0) {
                 char player_name[32];
                 snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
@@ -71,9 +69,8 @@ int main(void) {
     }
 
 done:
-    /* Save high scores if either player scored */
-    if (game.players[0].score > 0) { persist_append_score(".snake_scores", "Player1", game.players[0].score); }
-    if (game.players[1].score > 0) { persist_append_score(".snake_scores", "Player2", game.players[1].score); }
+    /* Save high scores if the player scored */
+    if (game.num_players > 0 && game.players[0].score > 0) { persist_append_score(".snake_scores", "Player1", game.players[0].score); }
 
     /* Save updated config */
     persist_write_config(".snake_config", &config);

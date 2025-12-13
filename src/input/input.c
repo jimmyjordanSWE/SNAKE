@@ -132,28 +132,6 @@ void input_poll(InputState* out) {
             out->p1_dir_set = true;
             break;
 
-        // Player 2 (IJKL).
-        case 'i':
-        case 'I':
-            out->p2_dir = SNAKE_DIR_UP;
-            out->p2_dir_set = true;
-            break;
-        case 'k':
-        case 'K':
-            out->p2_dir = SNAKE_DIR_DOWN;
-            out->p2_dir_set = true;
-            break;
-        case 'j':
-        case 'J':
-            out->p2_dir = SNAKE_DIR_LEFT;
-            out->p2_dir_set = true;
-            break;
-        case 'l':
-        case 'L':
-            out->p2_dir = SNAKE_DIR_RIGHT;
-            out->p2_dir_set = true;
-            break;
-
         // Global commands.
         case 'q':
         case 'Q':

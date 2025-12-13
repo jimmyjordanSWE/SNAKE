@@ -11,9 +11,6 @@ typedef struct {
 
     SnakeDir p1_dir;
     bool p1_dir_set;
-
-    SnakeDir p2_dir;
-    bool p2_dir_set;
 } InputState;
 
 bool input_init(void);

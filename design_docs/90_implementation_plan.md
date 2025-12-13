@@ -107,11 +107,11 @@ This file is meant to be the single “source of truth” for implementation pro
    - Follow [design_docs/11_collision_rules.md](11_collision_rules.md).
    - Verify: force the snake into wall/self via debug input and observe immediate reset.
 
-12. [ ] Implement snake-vs-snake collision (local multiplayer)
+12. [ ] Implement snake-vs-snake collision (multiplayer; deferred)
    - Implement deterministic evaluation:
      - compute next heads first
      - resolve collisions using documented ordering
-   - Verify: scripted scenario where P1 runs into P2 body; only P1 resets.
+   - Verify: scripted scenarios cover snake-vs-snake interactions when multiplayer is enabled.
 
 13. [ ] Implement head-to-head rule explicitly
    - Choose one rule and document it (likely “both reset”).
@@ -142,8 +142,8 @@ This file is meant to be the single “source of truth” for implementation pro
      - `input_poll(InputState *out)`
    - Verify: `./snake` prints key codes without blocking.
 
-17. [ ] Implement per-player key mapping → direction intents
-   - P1: arrows or WASD; P2: IJKL (example).
+17. [ ] Implement key mapping → direction intents
+   - Singleplayer: arrows or WASD.
    - Verify: direction intent changes only at next tick.
 
 18. [ ] Add “restart” and “pause” intents
@@ -178,8 +178,8 @@ This file is meant to be the single “source of truth” for implementation pro
 23. [ ] Wire together input → core tick → render
    - Verify: local singleplayer fully playable.
 
-24. [ ] Enable local multiplayer (2 players)
-   - Verify: collisions between snakes behave as specified.
+24. [ ] Enable multiplayer (N players)
+   - Deferred: future multiplayer implementation should support N players.
 
 ---
 

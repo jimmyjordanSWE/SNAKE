@@ -113,7 +113,7 @@ void game_init(GameState* game, int width, int height, uint32_t seed) {
     game->status = GAME_STATUS_RUNNING;
     game->food_present = false;
 
-    game->num_players = SNAKE_MAX_PLAYERS;
+    game->num_players = 1;
 
     for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
         game->players[i].score = 0;

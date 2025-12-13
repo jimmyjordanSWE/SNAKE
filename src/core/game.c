@@ -62,6 +62,21 @@ static void player_move(PlayerState* player, SnakePoint next_head, bool grow) {
     if (actual_grow) { player->length++; }
 }
 
+static SnakeDir opposite_dir(SnakeDir dir) {
+    switch (dir) {
+    case SNAKE_DIR_UP:
+        return SNAKE_DIR_DOWN;
+    case SNAKE_DIR_DOWN:
+        return SNAKE_DIR_UP;
+    case SNAKE_DIR_LEFT:
+        return SNAKE_DIR_RIGHT;
+    case SNAKE_DIR_RIGHT:
+        return SNAKE_DIR_LEFT;
+    default:
+        return SNAKE_DIR_UP;
+    }
+}
+
 static bool spawn_player(GameState* game, int player_index) {
     if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
 
@@ -77,10 +92,15 @@ static bool spawn_player(GameState* game, int player_index) {
 
     for (int attempt = 0; attempt < 1000; attempt++) {
         SnakePoint head = (SnakePoint){
-            .x = snake_rng_range(&game->rng_state, 1, game->width - 1),
+            .x = snake_rng_range(&game->rng_state, 0, game->width - 1),
             .y = snake_rng_range(&game->rng_state, 0, game->height - 1),
         };
-        SnakePoint tail = collision_next_head(head, random_dir);
+
+        /* Tail must be behind head; otherwise the first move collides with self. */
+        SnakePoint tail = collision_next_head(head, opposite_dir(random_dir));
+
+        /* Ensure both segments are inside the board. */
+        if (collision_is_wall(tail, game->width, game->height)) { continue; }
 
         bool overlaps = false;
         for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {

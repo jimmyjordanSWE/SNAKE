@@ -169,8 +169,8 @@ bool persist_load_config(const char* filename, GameConfig* config) {
     config->board_width = PERSIST_CONFIG_DEFAULT_WIDTH;
     config->board_height = PERSIST_CONFIG_DEFAULT_HEIGHT;
     config->tick_rate_ms = PERSIST_CONFIG_DEFAULT_TICK_MS;
-    config->min_screen_width = PERSIST_CONFIG_DEFAULT_MIN_SCREEN_WIDTH;
-    config->min_screen_height = PERSIST_CONFIG_DEFAULT_MIN_SCREEN_HEIGHT;
+    config->screen_width = PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
+    config->screen_height = PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
 
     if (filename == NULL) { return false; }
 
@@ -213,10 +213,10 @@ bool persist_load_config(const char* filename, GameConfig* config) {
             config->board_height = clamp_int((int)parsed_value, 10, 50);
         } else if (strcmp(key, "tick_rate_ms") == 0) {
             config->tick_rate_ms = clamp_int((int)parsed_value, 10, 1000);
-        } else if (strcmp(key, "min_screen_width") == 0) {
-            config->min_screen_width = clamp_int((int)parsed_value, 20, 400);
-        } else if (strcmp(key, "min_screen_height") == 0) {
-            config->min_screen_height = clamp_int((int)parsed_value, 10, 200);
+        } else if (strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0) {
+            config->screen_width = clamp_int((int)parsed_value, 20, 400);
+        } else if (strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0) {
+            config->screen_height = clamp_int((int)parsed_value, 10, 200);
         }
     }
 
@@ -239,8 +239,8 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     if (fprintf(fp, "board_width=%d\n", config->board_width) < 0) { goto write_fail; }
     if (fprintf(fp, "board_height=%d\n", config->board_height) < 0) { goto write_fail; }
     if (fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) { goto write_fail; }
-    if (fprintf(fp, "min_screen_width=%d\n", config->min_screen_width) < 0) { goto write_fail; }
-    if (fprintf(fp, "min_screen_height=%d\n", config->min_screen_height) < 0) { goto write_fail; }
+    if (fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) { goto write_fail; }
+    if (fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) { goto write_fail; }
 
     if (fflush(fp) != 0) {
         fclose(fp);

@@ -142,6 +142,33 @@ static void draw_string(int x, int y, const char* str, uint16_t fg_color) {
     for (int i = 0; str[i] && x + i < tty_width && y >= 0 && y < tty_height; i++) { tty_put_pixel(g_tty, x + i, y, PIXEL_MAKE(str[i], fg_color, COLOR_BLACK)); }
 }
 
+static void draw_centered_string(int y, const char* str, uint16_t fg_color) {
+    if (!g_tty || !str) { return; }
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+    if (y < 0 || y >= tty_height) { return; }
+
+    int len = (int)strlen(str);
+    if (len < 0) { len = 0; }
+
+    int x = 0;
+    if (len < tty_width) { x = (tty_width - len) / 2; }
+    draw_string(x, y, str, fg_color);
+}
+
+static void draw_top_bar(void) {
+    if (!g_tty) { return; }
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+    if (tty_width <= 0 || tty_height <= 0) { return; }
+
+    /* A simple top bar: a horizontal line with the title centered. */
+    for (int x = 0; x < tty_width; x++) { tty_put_pixel(g_tty, x, 0, PIXEL_MAKE(PIXEL_BOX_H, COLOR_CYAN, COLOR_BLACK)); }
+    draw_centered_string(0, " SNAKE ", COLOR_BRIGHT_WHITE);
+}
+
 static void invalidate_front_buffer(tty_context* ctx) {
     if (!ctx || !ctx->front) { return; }
     memset(ctx->front, 0, (size_t)ctx->width * (size_t)ctx->height * sizeof(*ctx->front));
@@ -156,11 +183,16 @@ void render_draw(const GameState* game) {
     int tty_width = 0, tty_height = 0;
     tty_get_size(g_tty, &tty_width, &tty_height);
 
-    /* Draw playfield box */
-    int field_x = 1;
-    int field_y = 2;
+    /* Draw playfield box centered on screen */
     int field_width = game->width + 2;
     int field_height = game->height + 2;
+
+    /* Center horizontally and vertically, leaving room for HUD on the right and top bar */
+    int field_x = (tty_width - field_width) / 2;
+    if (field_x < 1) { field_x = 1; }
+
+    int field_y = (tty_height - field_height) / 2;
+    if (field_y < 2) { field_y = 2; }
 
     draw_box(field_x, field_y, field_width, field_height, COLOR_CYAN);
 
@@ -180,23 +212,8 @@ void render_draw(const GameState* game) {
         }
     }
 
-    /* Draw HUD */
-    char status_str[64];
-    const char* status_name = "UNKNOWN";
-    switch (game->status) {
-    case GAME_STATUS_RUNNING:
-        status_name = "RUNNING";
-        break;
-    case GAME_STATUS_PAUSED:
-        status_name = "PAUSED";
-        break;
-    case GAME_STATUS_GAME_OVER:
-        status_name = "GAME OVER";
-        break;
-    }
-
-    snprintf(status_str, sizeof(status_str), "Status: %s", status_name);
-    draw_string(1, 0, status_str, COLOR_WHITE);
+    /* Top bar */
+    draw_top_bar();
 
     /* Draw player scores */
     for (int p = 0; p < game->num_players; p++) {
@@ -278,6 +295,27 @@ void render_draw(const GameState* game) {
     tty_flip(g_tty);
 }
 
+void render_draw_welcome_screen(void) {
+    if (!g_tty) { return; }
+
+    tty_clear_back(g_tty);
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+
+    draw_top_bar();
+
+    int mid_y = tty_height / 2;
+    if (mid_y < 3) { mid_y = 3; }
+
+    draw_centered_string(mid_y - 2, "Welcome to SNAKE!", COLOR_BRIGHT_GREEN);
+    draw_centered_string(mid_y - 1, "Grab food, grow longer, beat your high score.", COLOR_WHITE);
+    draw_centered_string(mid_y + 1, "Press any key to start", COLOR_BRIGHT_YELLOW);
+    draw_centered_string(mid_y + 2, "(Press Q to quit)", COLOR_CYAN);
+
+    tty_flip(g_tty);
+}
+
 static void fill_rect(int x, int y, int width, int height, uint16_t fg_color, uint16_t bg_color, uint16_t ch) {
     if (!g_tty) { return; }
     if (width <= 0 || height <= 0) { return; }
@@ -306,23 +344,28 @@ void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_
     tty_get_size(g_tty, &tty_width, &tty_height);
 
     /* Centered overlay box */
-    int box_w = 30;
-    int box_h = 7;
+    int box_w = 34;
+    int box_h = 8;
     int box_x = (tty_width - box_w) / 2;
     int box_y = (tty_height - box_h) / 2;
+
+    /* Clamp to ensure box is always visible */
+    if (box_x < 0) { box_x = 0; }
+    if (box_y < 0) { box_y = 0; }
 
     uint16_t border = COLOR_BRIGHT_RED;
     uint16_t title = COLOR_BRIGHT_WHITE;
 
-    /* Slightly dim the background behind the box */
-    fill_rect(box_x - 2, box_y - 1, box_w + 4, box_h + 2, COLOR_BRIGHT_BLACK, COLOR_BLACK, PIXEL_SHADE_L);
-
+    /* Draw the dialog box on top of the existing UI */
     draw_box(box_x, box_y, box_w, box_h, border);
     fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' ');
 
-    draw_string(box_x + 10, box_y + 2, "YOU DIED", title);
+    draw_string(box_x + 12, box_y + 2, "YOU DIED", title);
 
-    if (show_prompt) { draw_string(box_x + 6, box_y + 4, "Press any key...", COLOR_BRIGHT_GREEN); }
+    if (show_prompt) {
+        draw_string(box_x + 3, box_y + 4, "Press any key to restart", COLOR_BRIGHT_GREEN);
+        draw_string(box_x + 10, box_y + 5, "or Q to quit", COLOR_BRIGHT_GREEN);
+    }
 
     tty_flip(g_tty);
 }

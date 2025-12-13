@@ -8,6 +8,9 @@ bool render_init(int min_width, int min_height);
 void render_shutdown(void);
 void render_draw(const GameState* game);
 
+/* Draws an upbeat startup welcome screen and waits-for-input prompt (caller handles input). */
+void render_draw_welcome_screen(void);
+
 /* Marks a score as having been achieved in the current run (used to highlight highscores). */
 void render_note_session_score(const char* name, int score);
 

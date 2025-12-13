@@ -209,12 +209,9 @@ void tty_flip(tty_context* ctx) {
     int current_fg = -1, current_bg = -1;
 
     for (int y = 0; y < ctx->height; y++) {
-        int x = 0;
-        while (x < ctx->width) {
-            if (*(uint32_t*)&ctx->front[y * ctx->width + x] == *(uint32_t*)&ctx->back[y * ctx->width + x]) {
-                x++;
-                continue;
-            }
+        for (int x = 0; x < ctx->width; x++) {
+            /* Always check each rendered pixel, not just game board pixels */
+            if (*(uint32_t*)&ctx->front[y * ctx->width + x] == *(uint32_t*)&ctx->back[y * ctx->width + x]) { continue; }
 
             /* Found a change, find a span of changed pixels with the same color */
             int span_start = x;

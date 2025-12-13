@@ -7,8 +7,8 @@
 #define PERSIST_CONFIG_DEFAULT_WIDTH 40
 #define PERSIST_CONFIG_DEFAULT_HEIGHT 20
 #define PERSIST_CONFIG_DEFAULT_TICK_MS 100
-#define PERSIST_CONFIG_DEFAULT_MIN_SCREEN_WIDTH 60
-#define PERSIST_CONFIG_DEFAULT_MIN_SCREEN_HEIGHT 24
+#define PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH 60
+#define PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT 24
 
 typedef struct {
     char name[PERSIST_NAME_MAX];
@@ -20,9 +20,9 @@ typedef struct {
     int board_height;
     int tick_rate_ms;
 
-    /* Minimum terminal size required to run the current layout. */
-    int min_screen_width;
-    int min_screen_height;
+    /* Expected terminal size (used as a startup requirement). */
+    int screen_width;
+    int screen_height;
 } GameConfig;
 
 /* Read high scores from file. Returns number of scores read (0 if file doesn't exist or is invalid). */

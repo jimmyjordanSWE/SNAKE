@@ -12,7 +12,8 @@
       },
       "presentation": {
         "reveal": "always",
-        "panel": "shared"
+        "panel": "shared",
+        "close": true
       },
       "problemMatcher": [
         "$gcc"
@@ -25,14 +26,18 @@
       "args": ["clean"],
       "presentation": {
         "reveal": "always",
-        "panel": "shared"
+        "panel": "shared",
+        "close": true
       }
     },
     {
       "label": "Make: debug (build + gdb)",
       "type": "shell",
       "command": "make",
-      "args": ["gdb"]
+      "args": ["gdb"],
+      "presentation": {
+        "close": true
+      }
     }
   ]
 }

@@ -59,7 +59,13 @@ bool render_init(int min_width, int min_height) {
 
     g_tty = tty_open(NULL, min_width, min_height);
     g_session_score_count = 0;
-    return g_tty != NULL && tty_size_valid(g_tty);
+    if (g_tty == NULL) { return false; }
+    if (!tty_size_valid(g_tty)) {
+        tty_close(g_tty);
+        g_tty = NULL;
+        return false;
+    }
+    return true;
 }
 
 void render_shutdown(void) {

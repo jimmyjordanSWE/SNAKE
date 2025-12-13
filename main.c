@@ -8,14 +8,70 @@
 #include "snake/platform.h"
 #include "snake/render.h"
 
+static void compute_required_terminal_size(const GameConfig* config, int* out_width, int* out_height) {
+    if (!out_width || !out_height) { return; }
+
+    int board_w = (config) ? config->board_width : PERSIST_CONFIG_DEFAULT_WIDTH;
+    int board_h = (config) ? config->board_height : PERSIST_CONFIG_DEFAULT_HEIGHT;
+
+    /* Keep in sync with layout in src/render/render.c */
+    const int field_x = 1;
+    const int field_y = 2;
+    const int field_width = board_w + 2;
+    const int field_height = board_h + 2;
+
+    int min_w = field_x + field_width;  /* rightmost index + 1 */
+    int min_h = field_y + field_height; /* bottommost index + 1 */
+
+    /* Side panel starts at x = field_x + field_width + 2 */
+    const int side_panel_x = field_x + field_width + 2;
+    const int side_panel_text_min = 14; /* enough for "High Scores:" and short values */
+    if (side_panel_x + side_panel_text_min > min_w) { min_w = side_panel_x + side_panel_text_min; }
+
+    /* High-score header starts at y = field_y + 5 */
+    const int hiscore_header_y = field_y + 5;
+    if (hiscore_header_y + 1 > min_h) { min_h = hiscore_header_y + 1; }
+
+    if (min_w < 20) { min_w = 20; }
+    if (min_h < 10) { min_h = 10; }
+
+    *out_width = min_w;
+    *out_height = min_h;
+}
+
+static void validate_and_fix_config(GameConfig* config) {
+    if (!config) { return; }
+
+    /* Ensure values are sane even if config came from somewhere else. */
+    if (config->board_width < 20) { config->board_width = 20; }
+    if (config->board_width > 100) { config->board_width = 100; }
+    if (config->board_height < 10) { config->board_height = 10; }
+    if (config->board_height > 50) { config->board_height = 50; }
+
+    if (config->tick_rate_ms < 10) { config->tick_rate_ms = 10; }
+    if (config->tick_rate_ms > 1000) { config->tick_rate_ms = 1000; }
+
+    if (config->min_screen_width < 20) { config->min_screen_width = 20; }
+    if (config->min_screen_height < 10) { config->min_screen_height = 10; }
+
+    /* Don't allow a board/layout that cannot fit inside the configured minimum screen size. */
+    int required_w = 0, required_h = 0;
+    compute_required_terminal_size(config, &required_w, &required_h);
+
+    if (config->min_screen_width < required_w) { config->min_screen_width = required_w; }
+    if (config->min_screen_height < required_h) { config->min_screen_height = required_h; }
+}
+
 int main(void) {
     /* Load configuration */
     GameConfig config;
     persist_load_config(".snake_config", &config);
 
-    /* Initialize rendering with minimum 30x12 terminal */
-    if (!render_init(60, 24)) {
-        fprintf(stderr, "Failed to initialize rendering\n");
+    validate_and_fix_config(&config);
+
+    /* Initialize rendering using config-driven minimum terminal size */
+    if (!render_init(config.min_screen_width, config.min_screen_height)) {
+        fprintf(stderr, "Failed to initialize rendering (need at least %dx%d)\n", config.min_screen_width, config.min_screen_height);
         return 1;
     }
 

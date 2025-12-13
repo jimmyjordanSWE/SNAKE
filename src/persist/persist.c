@@ -12,6 +12,12 @@
 #define PERSIST_CONFIG_BUFFER 256
 #define PERSIST_TEMP_FILENAME_MAX 512
 
+static int clamp_int(int v, int lo, int hi) {
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+}
+
 /* ========== High Score Functions ========== */
 
 int persist_read_scores(const char* filename, HighScore* scores, int max_count) {
@@ -163,6 +169,8 @@ bool persist_load_config(const char* filename, GameConfig* config) {
     config->board_width = PERSIST_CONFIG_DEFAULT_WIDTH;
     config->board_height = PERSIST_CONFIG_DEFAULT_HEIGHT;
     config->tick_rate_ms = PERSIST_CONFIG_DEFAULT_TICK_MS;
+    config->min_screen_width = PERSIST_CONFIG_DEFAULT_MIN_SCREEN_WIDTH;
+    config->min_screen_height = PERSIST_CONFIG_DEFAULT_MIN_SCREEN_HEIGHT;
 
     if (filename == NULL) { return false; }
 
@@ -196,14 +204,19 @@ bool persist_load_config(const char* filename, GameConfig* config) {
         long parsed_value = strtol(value, &endptr, 10);
 
         if (errno != 0 || endptr == value) { continue; }
+        if (parsed_value < (long)INT_MIN || parsed_value > (long)INT_MAX) { continue; }
 
-        /* Validate and apply config values */
+        /* Validate and apply config values (clamped) */
         if (strcmp(key, "board_width") == 0) {
-            if (parsed_value >= 20 && parsed_value <= 100) { config->board_width = (int)parsed_value; }
+            config->board_width = clamp_int((int)parsed_value, 20, 100);
         } else if (strcmp(key, "board_height") == 0) {
-            if (parsed_value >= 10 && parsed_value <= 50) { config->board_height = (int)parsed_value; }
+            config->board_height = clamp_int((int)parsed_value, 10, 50);
         } else if (strcmp(key, "tick_rate_ms") == 0) {
-            if (parsed_value >= 10 && parsed_value <= 1000) { config->tick_rate_ms = (int)parsed_value; }
+            config->tick_rate_ms = clamp_int((int)parsed_value, 10, 1000);
+        } else if (strcmp(key, "min_screen_width") == 0) {
+            config->min_screen_width = clamp_int((int)parsed_value, 20, 400);
+        } else if (strcmp(key, "min_screen_height") == 0) {
+            config->min_screen_height = clamp_int((int)parsed_value, 10, 200);
         }
     }
 
@@ -222,12 +235,12 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     FILE* fp = fopen(temp_filename, "w");
     if (fp == NULL) { return false; }
 
-    if (fprintf(fp, "# Snake Game Configuration\n") < 0 || fprintf(fp, "board_width=%d\n", config->board_width) < 0 ||
-        fprintf(fp, "board_height=%d\n", config->board_height) < 0 || fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) {
-        fclose(fp);
-        (void)unlink(temp_filename);
-        return false;
-    }
+    if (fprintf(fp, "# Snake Game Configuration\n") < 0) { goto write_fail; }
+    if (fprintf(fp, "board_width=%d\n", config->board_width) < 0) { goto write_fail; }
+    if (fprintf(fp, "board_height=%d\n", config->board_height) < 0) { goto write_fail; }
+    if (fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) { goto write_fail; }
+    if (fprintf(fp, "min_screen_width=%d\n", config->min_screen_width) < 0) { goto write_fail; }
+    if (fprintf(fp, "min_screen_height=%d\n", config->min_screen_height) < 0) { goto write_fail; }
 
     if (fflush(fp) != 0) {
         fclose(fp);
@@ -247,4 +260,9 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     }
 
     return true;
+
+write_fail:
+    fclose(fp);
+    (void)unlink(temp_filename);
+    return false;
 }

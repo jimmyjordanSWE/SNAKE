@@ -2,3 +2,5 @@
 board_width=40
 board_height=20
 tick_rate_ms=100
+min_screen_width=60
+min_screen_height=24

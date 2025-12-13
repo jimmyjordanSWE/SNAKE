@@ -1,5 +1,11 @@
+/* Feature test macro: required on some libc/tooling setups for clock_gettime/nanosleep. */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "snake/platform.h"
 
+#include <errno.h>
 #include <time.h>
 
 uint64_t platform_now_ms(void) {
@@ -12,5 +18,5 @@ void platform_sleep_ms(uint64_t ms) {
     struct timespec req;
     req.tv_sec = (time_t)(ms / 1000u);
     req.tv_nsec = (long)((ms % 1000u) * 1000000u);
-    nanosleep(&req, NULL);
+    while (nanosleep(&req, &req) == -1 && errno == EINTR) {}
 }

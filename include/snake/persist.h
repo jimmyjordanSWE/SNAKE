@@ -20,6 +20,10 @@ typedef struct {
     int board_height;
     int tick_rate_ms;
 
+    /* Rendering character set for snake drawing.
+       0 = UTF-8/Unicode (box drawing for body), 1 = ASCII (legacy '@'/'o'). */
+    int render_glyphs;
+
     /* Expected terminal size (used as a startup requirement). */
     int screen_width;
     int screen_height;

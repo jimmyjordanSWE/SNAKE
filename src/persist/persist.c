@@ -12,6 +12,15 @@
 #define PERSIST_CONFIG_BUFFER 256
 #define PERSIST_TEMP_FILENAME_MAX 512
 
+static char* trim_in_place(char* s) {
+    if (s == NULL) { return NULL; }
+    while (*s && isspace((unsigned char)*s)) { s++; }
+    char* end = s + strlen(s);
+    while (end > s && isspace((unsigned char)end[-1])) { end--; }
+    *end = '\0';
+    return s;
+}
+
 static int clamp_int(int v, int lo, int hi) {
     if (v < lo) { return lo; }
     if (v > hi) { return hi; }
@@ -169,6 +178,7 @@ bool persist_load_config(const char* filename, GameConfig* config) {
     config->board_width = PERSIST_CONFIG_DEFAULT_WIDTH;
     config->board_height = PERSIST_CONFIG_DEFAULT_HEIGHT;
     config->tick_rate_ms = PERSIST_CONFIG_DEFAULT_TICK_MS;
+    config->render_glyphs = 0;
     config->screen_width = PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
     config->screen_height = PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
 
@@ -196,9 +206,32 @@ bool persist_load_config(const char* filename, GameConfig* config) {
         if (eq_pos == NULL) { continue; }
 
         *eq_pos = '\0';
-        const char* key = buffer;
-        const char* value = eq_pos + 1;
+        char* key = trim_in_place(buffer);
+        char* value = trim_in_place(eq_pos + 1);
 
+        if (key == NULL || value == NULL || *key == '\0' || *value == '\0') { continue; }
+
+        /* String-valued settings */
+        if (strcmp(key, "render_glyphs") == 0 || strcmp(key, "glyphs") == 0 || strcmp(key, "charset") == 0) {
+            /* Accept: utf8|unicode|ascii (case-insensitive) or 0/1 */
+            if (isdigit((unsigned char)value[0])) {
+                char* endptr2 = NULL;
+                errno = 0;
+                long v = strtol(value, &endptr2, 10);
+                if (errno != 0 || endptr2 == value) { continue; }
+                config->render_glyphs = clamp_int((int)v, 0, 1);
+            } else {
+                for (char* p = value; *p; p++) { *p = (char)tolower((unsigned char)*p); }
+                if (strcmp(value, "utf8") == 0 || strcmp(value, "unicode") == 0 || strcmp(value, "box") == 0) {
+                    config->render_glyphs = 0;
+                } else if (strcmp(value, "ascii") == 0 || strcmp(value, "legacy") == 0) {
+                    config->render_glyphs = 1;
+                }
+            }
+            continue;
+        }
+
+        /* Integer-valued settings */
         char* endptr = NULL;
         errno = 0;
         long parsed_value = strtol(value, &endptr, 10);
@@ -239,6 +272,7 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     if (fprintf(fp, "board_width=%d\n", config->board_width) < 0) { goto write_fail; }
     if (fprintf(fp, "board_height=%d\n", config->board_height) < 0) { goto write_fail; }
     if (fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) { goto write_fail; }
+    if (fprintf(fp, "render_glyphs=%s\n", (config->render_glyphs == 1) ? "ascii" : "utf8") < 0) { goto write_fail; }
     if (fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) { goto write_fail; }
     if (fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) { goto write_fail; }
 

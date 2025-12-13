@@ -2,5 +2,6 @@
 board_width=40
 board_height=20
 tick_rate_ms=100
+render_glyphs=utf8
 screen_width=60
 screen_height=24

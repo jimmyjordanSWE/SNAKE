@@ -3,6 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Fixed board dimensions - board will always be this size and centered on terminal */
+#define FIXED_BOARD_WIDTH 40
+#define FIXED_BOARD_HEIGHT 20
+
 typedef struct {
     int x;
     int y;

@@ -4,6 +4,15 @@
 
 #include "snake/game.h"
 
+typedef enum {
+
+    RENDER_GLYPHS_UTF8 = 0,
+    RENDER_GLYPHS_ASCII = 1,
+} RenderGlyphs;
+
+/* Select glyph set for snake drawing. Default is UTF-8 (box drawing). */
+void render_set_glyphs(RenderGlyphs glyphs);
+
 bool render_init(int min_width, int min_height);
 void render_shutdown(void);
 void render_draw(const GameState* game);

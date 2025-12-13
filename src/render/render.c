@@ -2,17 +2,24 @@
 #include "snake/persist.h"
 #include "snake/tty.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static tty_context* g_tty = NULL;
+static RenderGlyphs g_glyphs = RENDER_GLYPHS_UTF8;
 static int last_score_count = -1;
 static HighScore last_scores[PERSIST_MAX_SCORES];
 
 #define SESSION_MAX_SCORES 32
 static HighScore g_session_scores[SESSION_MAX_SCORES];
 static int g_session_score_count = 0;
+
+void render_set_glyphs(RenderGlyphs glyphs) {
+    if (glyphs != RENDER_GLYPHS_ASCII) { glyphs = RENDER_GLYPHS_UTF8; }
+    g_glyphs = glyphs;
+}
 
 static bool is_session_score(const HighScore* s) {
     if (!s) { return false; }
@@ -175,10 +182,135 @@ static void invalidate_front_buffer(tty_context* ctx) {
     ctx->dirty = true;
 }
 
+static void fill_background(void) {
+    if (!g_tty) { return; }
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+
+    /* Fill entire background with pure black color */
+    struct ascii_pixel bg_pixel = PIXEL_MAKE(' ', COLOR_BLACK, COLOR_BLACK);
+    for (int y = 0; y < tty_height; y++) {
+        for (int x = 0; x < tty_width; x++) { tty_put_pixel(g_tty, x, y, bg_pixel); }
+    }
+}
+
+typedef struct {
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+} SegmentLinks;
+
+static SegmentLinks links_to_neighbor(SnakePoint from, SnakePoint neighbor) {
+    SegmentLinks links = {0};
+    int dx = neighbor.x - from.x;
+    int dy = neighbor.y - from.y;
+
+    if (dx == 1 && dy == 0) {
+        links.right = true;
+    } else if (dx == -1 && dy == 0) {
+        links.left = true;
+    } else if (dx == 0 && dy == 1) {
+        links.down = true;
+    } else if (dx == 0 && dy == -1) {
+        links.up = true;
+    }
+
+    return links;
+}
+
+static uint16_t glyph_for_segment_utf8(const SnakePoint* body, int length, int idx) {
+    if (!body || length <= 0 || idx < 0 || idx >= length) { return (uint16_t)'o'; }
+
+    /* Head is a simple circle; tail should be drawn like other body segments (box drawing). */
+    if (idx == 0) { return 0x25CF; /* ● */ }
+
+    SnakePoint cur = body[idx];
+    SegmentLinks a = {0};
+    SegmentLinks b = {0};
+    if (idx > 0) { a = links_to_neighbor(cur, body[idx - 1]); }
+    if (idx + 1 < length) { b = links_to_neighbor(cur, body[idx + 1]); }
+
+    // For the tail, simulate a "next" segment in the opposite direction to make it a line
+    if (idx + 1 == length) {
+        if (a.left)
+            b.right = true;
+        else if (a.right)
+            b.left = true;
+        else if (a.up)
+            b.down = true;
+        else if (a.down)
+            b.up = true;
+    }
+
+    SegmentLinks links = {
+        .up = a.up || b.up,
+        .down = a.down || b.down,
+        .left = a.left || b.left,
+        .right = a.right || b.right,
+    };
+
+    if (links.left && links.right && !links.up && !links.down) { return PIXEL_BOX_H; /* ─ */ }
+    if (links.up && links.down && !links.left && !links.right) { return PIXEL_BOX_V; /* │ */ }
+
+    /* Corners (y grows downward). */
+    if (links.up && links.right) { return PIXEL_BOX_BL; /* └ */ }
+    if (links.up && links.left) { return PIXEL_BOX_BR; /* ┘ */ }
+    if (links.down && links.right) { return PIXEL_BOX_TL; /* ┌ */ }
+    if (links.down && links.left) { return PIXEL_BOX_TR; /* ┐ */ }
+
+    /* Fallback for unexpected shapes. */
+    return (uint16_t)'o';
+}
+
+static uint16_t glyph_for_segment_ascii(const SnakePoint* body, int length, int idx) {
+    if (!body || length <= 0 || idx < 0 || idx >= length) { return (uint16_t)'o'; }
+
+    if (idx == 0) { return (uint16_t)'@'; }
+
+    SnakePoint cur = body[idx];
+    SegmentLinks a = {0};
+    SegmentLinks b = {0};
+    if (idx > 0) { a = links_to_neighbor(cur, body[idx - 1]); }
+    if (idx + 1 < length) { b = links_to_neighbor(cur, body[idx + 1]); }
+
+    // For the tail, simulate a "next" segment in the opposite direction to make it a line
+    if (idx + 1 == length) {
+        if (a.left)
+            b.right = true;
+        else if (a.right)
+            b.left = true;
+        else if (a.up)
+            b.down = true;
+        else if (a.down)
+            b.up = true;
+    }
+
+    SegmentLinks links = {
+        .up = a.up || b.up,
+        .down = a.down || b.down,
+        .left = a.left || b.left,
+        .right = a.right || b.right,
+    };
+
+    if (links.left && links.right && !links.up && !links.down) { return (uint16_t)'-'; }
+    if (links.up && links.down && !links.left && !links.right) { return (uint16_t)'|'; }
+    if ((links.up && links.right) || (links.up && links.left) || (links.down && links.right) || (links.down && links.left)) { return (uint16_t)'+'; }
+
+    return (uint16_t)'o';
+}
+
+static uint16_t glyph_for_segment(const SnakePoint* body, int length, int idx) {
+    if (g_glyphs == RENDER_GLYPHS_ASCII) { return glyph_for_segment_ascii(body, length, idx); }
+    return glyph_for_segment_utf8(body, length, idx);
+}
+
 void render_draw(const GameState* game) {
     if (!g_tty || !game) { return; }
 
     tty_clear_back(g_tty);
+    fill_background();
 
     int tty_width = 0, tty_height = 0;
     tty_get_size(g_tty, &tty_width, &tty_height);
@@ -207,7 +339,7 @@ void render_draw(const GameState* game) {
         uint16_t snake_color = (p == 0) ? COLOR_BRIGHT_YELLOW : COLOR_BRIGHT_RED;
 
         for (int i = 0; i < player->length; i++) {
-            char ch = (i == 0) ? '@' : 'o';
+            uint16_t ch = glyph_for_segment(player->body, player->length, i);
             tty_put_pixel(g_tty, field_x + 1 + player->body[i].x, field_y + 1 + player->body[i].y, PIXEL_MAKE(ch, snake_color, COLOR_BLACK));
         }
     }
@@ -362,26 +494,20 @@ void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_
         if (field_y < 2) { field_y = 2; }
 
         fill_rect(field_x, field_y, field_width, field_height, COLOR_BLACK, COLOR_BLACK, ' ');
-        tty_flip(g_tty);
     }
 
     uint16_t border = COLOR_BRIGHT_RED;
     uint16_t title = COLOR_BRIGHT_WHITE;
 
     /* Draw the dialog box on top of the existing UI */
-    draw_box(box_x, box_y, box_w, box_h, border); // DEBUG: the box IS being drawn correctly
-    tty_flip(g_tty);
-    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' '); // still correct box here
-    tty_flip(g_tty);
+    draw_box(box_x, box_y, box_w, box_h, border);
+    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' ');
 
     draw_string(box_x + 12, box_y + 2, "YOU DIED", title);
-    tty_flip(g_tty);
 
     if (show_prompt) {
         draw_string(box_x + 3, box_y + 4, "Press any key to restart", COLOR_BRIGHT_GREEN);
-        tty_flip(g_tty);
         draw_string(box_x + 10, box_y + 5, "or Q to quit", COLOR_BRIGHT_GREEN);
-        tty_flip(g_tty);
     }
 
     tty_flip(g_tty);

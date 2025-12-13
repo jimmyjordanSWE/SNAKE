@@ -86,18 +86,40 @@ static bool spawn_player(GameState* game, int player_index) {
     player->active = true;
     player->needs_reset = false;
     player->length = 2;
-    SnakeDir random_dir = (SnakeDir)snake_rng_range(&game->rng_state, 0, 3);
-    player->current_dir = random_dir;
-    player->queued_dir = random_dir;
 
     for (int attempt = 0; attempt < 1000; attempt++) {
         SnakePoint head = (SnakePoint){
-            .x = snake_rng_range(&game->rng_state, 0, game->width - 1),
-            .y = snake_rng_range(&game->rng_state, 0, game->height - 1),
+            .x = snake_rng_range(&game->rng_state, 2, game->width - 3),
+            .y = snake_rng_range(&game->rng_state, 2, game->height - 3),
         };
 
-        /* Tail must be behind head; otherwise the first move collides with self. */
-        SnakePoint tail = collision_next_head(head, opposite_dir(random_dir));
+        /* Calculate direction towards furthest wall */
+        int dist_left = head.x;
+        int dist_right = game->width - 1 - head.x;
+        int dist_up = head.y;
+        int dist_down = game->height - 1 - head.y;
+
+        int max_dist = dist_left;
+        SnakeDir best_dir = SNAKE_DIR_LEFT;
+
+        if (dist_right > max_dist) {
+            max_dist = dist_right;
+            best_dir = SNAKE_DIR_RIGHT;
+        }
+        if (dist_up > max_dist) {
+            max_dist = dist_up;
+            best_dir = SNAKE_DIR_UP;
+        }
+        if (dist_down > max_dist) {
+            max_dist = dist_down;
+            best_dir = SNAKE_DIR_DOWN;
+        }
+
+        player->current_dir = best_dir;
+        player->queued_dir = best_dir;
+
+        /* Tail must be behind head (in opposite direction of movement) */
+        SnakePoint tail = collision_next_head(head, opposite_dir(best_dir));
 
         /* Ensure both segments are inside the board. */
         if (collision_is_wall(tail, game->width, game->height)) { continue; }

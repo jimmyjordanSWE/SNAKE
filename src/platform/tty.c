@@ -35,6 +35,10 @@ static int utf16_to_utf8(uint16_t utf16, char* utf8_out) {
     }
 }
 
+static inline bool ascii_pixel_equal(struct ascii_pixel a, struct ascii_pixel b) {
+    return a.pixel == b.pixel && a.color == b.color;
+}
+
 /* Get terminal size */
 static bool get_terminal_size(int fd, int* width, int* height) {
     struct winsize ws;
@@ -147,10 +151,17 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
 void tty_close(tty_context* ctx) {
     if (!ctx) { return; }
 
+    /* Reset color to default before clearing */
+    dprintf(ctx->tty_fd, "\x1b[0m"); /* Reset all attributes */
+
     /* Show cursor */
     dprintf(ctx->tty_fd, "\x1b[?25h");
+
     /* Clear screen */
     dprintf(ctx->tty_fd, "\x1b[2J");
+
+    /* Move cursor to home position */
+    dprintf(ctx->tty_fd, "\x1b[H");
 
     /* Restore original termios */
     tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
@@ -211,13 +222,13 @@ void tty_flip(tty_context* ctx) {
     for (int y = 0; y < ctx->height; y++) {
         for (int x = 0; x < ctx->width; x++) {
             /* Always check each rendered pixel, not just game board pixels */
-            if (*(uint32_t*)&ctx->front[y * ctx->width + x] == *(uint32_t*)&ctx->back[y * ctx->width + x]) { continue; }
+            if (ascii_pixel_equal(ctx->front[y * ctx->width + x], ctx->back[y * ctx->width + x])) { continue; }
 
             /* Found a change, find a span of changed pixels with the same color */
             int span_start = x;
             uint16_t span_color = ctx->back[y * ctx->width + x].color;
 
-            while (x < ctx->width && *(uint32_t*)&ctx->front[y * ctx->width + x] != *(uint32_t*)&ctx->back[y * ctx->width + x] &&
+            while (x < ctx->width && !ascii_pixel_equal(ctx->front[y * ctx->width + x], ctx->back[y * ctx->width + x]) &&
                    ctx->back[y * ctx->width + x].color == span_color) {
                 x++;
             }
@@ -269,6 +280,12 @@ void tty_flip(tty_context* ctx) {
 
             /* Update front buffer */
             for (int i = span_start; i < span_end; i++) { ctx->front[y * ctx->width + i] = ctx->back[y * ctx->width + i]; }
+
+            /* We advanced x to span_end; compensate for the for-loop's x++ so we don't skip
+             * processing the first pixel after the span (which may also have changed, but with
+             * a different color).
+             */
+            x = span_end - 1;
         }
     }
 

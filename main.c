@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,53 +11,9 @@
 #include "snake/persist.h"
 #include "snake/platform.h"
 #include "snake/render.h"
+#include "snake/types.h"
 
-static void compute_required_terminal_size(const GameConfig* config, int* out_width, int* out_height) {
-    if (!out_width || !out_height) { return; }
-
-    int board_w = (config) ? config->board_width : PERSIST_CONFIG_DEFAULT_WIDTH;
-    int board_h = (config) ? config->board_height : PERSIST_CONFIG_DEFAULT_HEIGHT;
-
-    /* Keep in sync with layout in src/render/render.c */
-    const int field_x = 1;
-    const int field_y = 2;
-    const int field_width = board_w + 2;
-    const int field_height = board_h + 2;
-
-    int min_w = field_x + field_width;  /* rightmost index + 1 */
-    int min_h = field_y + field_height; /* bottommost index + 1 */
-
-    /* Side panel starts at x = field_x + field_width + 2 */
-    const int side_panel_x = field_x + field_width + 2;
-    const int side_panel_text_min = 14; /* enough for "High Scores:" and short values */
-    if (side_panel_x + side_panel_text_min > min_w) { min_w = side_panel_x + side_panel_text_min; }
-
-    /* High-score header starts at y = field_y + 5 */
-    const int hiscore_header_y = field_y + 5;
-    if (hiscore_header_y + 1 > min_h) { min_h = hiscore_header_y + 1; }
-
-    if (min_w < 20) { min_w = 20; }
-    if (min_h < 10) { min_h = 10; }
-
-    *out_width = min_w;
-    *out_height = min_h;
-}
-
-static void clamp_config(GameConfig* config) {
-    if (!config) { return; }
-
-    /* Ensure values are sane even if config came from somewhere else. */
-    if (config->board_width < 20) { config->board_width = 20; }
-    if (config->board_width > 100) { config->board_width = 100; }
-    if (config->board_height < 10) { config->board_height = 10; }
-    if (config->board_height > 50) { config->board_height = 50; }
-
-    if (config->tick_rate_ms < 10) { config->tick_rate_ms = 10; }
-    if (config->tick_rate_ms > 1000) { config->tick_rate_ms = 1000; }
-
-    if (config->screen_width < 20) { config->screen_width = 20; }
-    if (config->screen_height < 10) { config->screen_height = 10; }
-}
+/* Fixed board dimensions are now defined in types.h as FIXED_BOARD_WIDTH and FIXED_BOARD_HEIGHT */
 
 static bool get_stdout_terminal_size(int* out_width, int* out_height) {
     if (!out_width || !out_height) { return false; }
@@ -70,112 +27,94 @@ static bool get_stdout_terminal_size(int* out_width, int* out_height) {
     return true;
 }
 
-static bool compute_max_board_size_for_terminal(int term_width, int term_height, int* out_board_w, int* out_board_h) {
-    if (!out_board_w || !out_board_h) { return false; }
+static bool terminal_size_sufficient(int term_width, int term_height) {
+    /* Minimum terminal size needed to fit the fixed board and UI
+       Board is fixed at FIXED_BOARD_WIDTH x FIXED_BOARD_HEIGHT
+       Centered with at least 1 char on sides and 1 char on top
+    */
+    const int field_width = FIXED_BOARD_WIDTH + 2;   /* +2 for borders */
+    const int field_height = FIXED_BOARD_HEIGHT + 2; /* +2 for borders */
 
-    /* Keep in sync with layout in compute_required_terminal_size() / src/render/render.c.
-       Width requirement is dominated by the side panel: required_w = board_w + 19.
-       Height requirement is dominated by the field box: required_h = board_h + 4.
-     */
-    const int side_panel_text_min = 14;
-    const int field_x = 1;
-    const int field_y = 2;
-    const int field_border_w = 2;
-    const int field_border_h = 2;
-    const int gap_after_field = 2;
+    /* Need space for: top bar (1) + centered field + some margin */
+    int min_h = field_height + 2; /* 2 for top bar and some padding */
+    int min_w = field_width + 2;  /* at least borders + 1 char margin on each side */
 
-    const int board_w_overhead = field_x + field_border_w + gap_after_field + side_panel_text_min; /* == 1 + 2 + 2 + 14 = 19 */
-    const int board_h_overhead = field_y + field_border_h;                                         /* == 2 + 2 = 4 */
+    return term_width >= min_w && term_height >= min_h;
+}
 
-    int max_w = term_width - board_w_overhead;
-    int max_h = term_height - board_h_overhead;
+static volatile sig_atomic_t terminal_resized = 0;
 
-    /* Also need room for the high-score header at y = field_y + 5 (line index 7). */
-    const int hiscore_header_y = field_y + 5;
-    if (term_height < hiscore_header_y + 1) { max_h = 0; }
-
-    if (max_w < 0) { max_w = 0; }
-    if (max_h < 0) { max_h = 0; }
-
-    *out_board_w = max_w;
-    *out_board_h = max_h;
-    return true;
+static void handle_sigwinch(int sig) {
+    (void)sig;
+    terminal_resized = 1;
 }
 
 int main(void) {
-    /* Load configuration */
+    /* Load configuration for tick rate only; board size is now fixed */
     GameConfig config;
     persist_load_config(".snake_config", &config);
 
-    clamp_config(&config);
+    /* Clamp tick rate */
+    if (config.tick_rate_ms < 10) { config.tick_rate_ms = 10; }
+    if (config.tick_rate_ms > 1000) { config.tick_rate_ms = 1000; }
+
+    /* Select renderer glyph set (0=utf8 box drawing, 1=legacy ascii). */
+    render_set_glyphs((config.render_glyphs == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
+
+    /* Set up signal handler for terminal resize */
+    signal(SIGWINCH, handle_sigwinch);
 
     int term_w = 0;
     int term_h = 0;
-    bool have_term_size = get_stdout_terminal_size(&term_w, &term_h);
 
-    /* Use a runtime config so we can auto-fit without overwriting .snake_config. */
-    GameConfig run_config = config;
-
-    if (have_term_size) {
-        int max_board_w = 0;
-        int max_board_h = 0;
-        (void)compute_max_board_size_for_terminal(term_w, term_h, &max_board_w, &max_board_h);
-
-        /* Keep within game limits, but allow shrinking below the usual config minimums if needed. */
-        if (max_board_w > 100) { max_board_w = 100; }
-        if (max_board_h > 50) { max_board_h = 50; }
-
-        if (max_board_w < 5 || max_board_h < 5) {
-            fprintf(stderr, "TERMINAL TOO SMALL for Snake: terminal is %dx%d; need at least 39x14 to render the minimum board\n", term_w, term_h);
-            fprintf(stderr, "Fix: enlarge your terminal window\n");
+    /* Startup: wait for terminal to be large enough */
+    while (1) {
+        if (!get_stdout_terminal_size(&term_w, &term_h)) {
+            fprintf(stderr, "Failed to get terminal size\n");
             return 1;
         }
 
-        if (run_config.board_width > max_board_w || run_config.board_height > max_board_h) {
-            int requested_w = run_config.board_width;
-            int requested_h = run_config.board_height;
+        if (terminal_size_sufficient(term_w, term_h)) { break; /* Terminal is big enough */ }
 
-            if (run_config.board_width > max_board_w) { run_config.board_width = max_board_w; }
-            if (run_config.board_height > max_board_h) { run_config.board_height = max_board_h; }
+        /* Terminal too small: show message and wait for resize or Ctrl+C */
+        fprintf(stderr, "\n");
+        fprintf(stderr, "╔════════════════════════════════════════╗\n");
+        fprintf(stderr, "║  TERMINAL TOO SMALL FOR SNAKE GAME    ║\n");
+        fprintf(stderr, "║                                        ║\n");
+        fprintf(stderr, "║  Current size: %d x %d                  ║\n", term_w, term_h);
+        fprintf(stderr, "║  Minimum size: %d x %d                 ║\n", FIXED_BOARD_WIDTH + 4, FIXED_BOARD_HEIGHT + 4);
+        fprintf(stderr, "║                                        ║\n");
+        fprintf(stderr, "║  Please resize your terminal window    ║\n");
+        fprintf(stderr, "║  or press Ctrl+C to exit               ║\n");
+        fprintf(stderr, "╚════════════════════════════════════════╝\n");
+        fprintf(stderr, "\n");
 
-            fprintf(stderr, "TERMINAL TOO SMALL for requested board %dx%d; rendering %dx%d instead\n", requested_w, requested_h, run_config.board_width,
-                    run_config.board_height);
-        }
+        /* Wait a bit and check again */
+        platform_sleep_ms(500);
+        terminal_resized = 0;
     }
 
-    int required_w = 0;
-    int required_h = 0;
-    compute_required_terminal_size(&run_config, &required_w, &required_h);
+    fprintf(stderr, "Terminal size OK (%dx%d). Starting game...\n", term_w, term_h);
 
-    /* Initialize rendering based on what the board/UI layout actually needs.
-       Note: screen_width/screen_height in .snake_config do not resize the terminal;
-       the current terminal window must be at least the required size. */
-    if (!render_init(required_w, required_h)) {
-        int actual_w = 0;
-        int actual_h = 0;
-        if (get_stdout_terminal_size(&actual_w, &actual_h)) {
-            fprintf(stderr, "Failed to initialize rendering: terminal is %dx%d but need at least %dx%d for board %dx%d\n", actual_w, actual_h, required_w,
-                    required_h, run_config.board_width, run_config.board_height);
-        } else {
-            fprintf(stderr, "Failed to initialize rendering (need at least %dx%d for board %dx%d)\n", required_w, required_h, run_config.board_width,
-                    run_config.board_height);
-        }
-        fprintf(stderr, "Fix: enlarge your terminal window (or reduce board_height/board_width in .snake_config)\n");
-        return 1;
+    /* Initialize rendering with a generous minimum to allow centering */
+    int min_render_w = FIXED_BOARD_WIDTH + 10;
+    int min_render_h = FIXED_BOARD_HEIGHT + 5;
+    if (!render_init(min_render_w, min_render_h)) {
+        fprintf(stderr, "Failed to initialize rendering\n");
+        goto done;
     }
 
-    /* Initialize game with configured dimensions */
+    /* Initialize game with FIXED board dimensions */
     GameState game = {0};
-    game_init(&game, run_config.board_width, run_config.board_height, 42);
+    game_init(&game, FIXED_BOARD_WIDTH, FIXED_BOARD_HEIGHT, 42);
 
     /* Initialize input */
     if (!input_init()) {
         fprintf(stderr, "Failed to initialize input\n");
-        render_shutdown();
-        return 1;
+        goto done;
     }
 
-    /* Startup: upbeat welcome screen before the game begins. */
+    /* Startup: upbeat welcome screen before the game begins */
     render_draw_welcome_screen();
     while (1) {
         InputState in = (InputState){0};
@@ -187,11 +126,46 @@ int main(void) {
 
     /* Render loop */
     int tick = 0;
-    const int TICKS_MAX = 500;
 
-    while (tick < TICKS_MAX && game.status != GAME_STATUS_GAME_OVER) {
+    while (game.status != GAME_STATUS_GAME_OVER) {
+        /* Check for terminal resize and handle it */
+        if (terminal_resized) {
+            terminal_resized = 0;
+            if (!get_stdout_terminal_size(&term_w, &term_h) || !terminal_size_sufficient(term_w, term_h)) {
+                /* Terminal became too small: show prompt and pause game */
+                render_draw(&game);
+
+                fprintf(stderr, "\n");
+                fprintf(stderr, "╔════════════════════════════════════════╗\n");
+                fprintf(stderr, "║  TERMINAL TOO SMALL - GAME PAUSED      ║\n");
+                fprintf(stderr, "║                                        ║\n");
+                fprintf(stderr, "║  Current size: %d x %d                 ║\n", term_w, term_h);
+                fprintf(stderr, "║  Required: %d x %d                     ║\n", FIXED_BOARD_WIDTH + 4, FIXED_BOARD_HEIGHT + 4);
+                fprintf(stderr, "║                                        ║\n");
+                fprintf(stderr, "║  Resize your terminal to continue      ║\n");
+                fprintf(stderr, "║  or press Ctrl+C to exit               ║\n");
+                fprintf(stderr, "╚════════════════════════════════════════╝\n");
+                fprintf(stderr, "\n");
+
+                /* Wait for terminal to be resized back to acceptable size */
+                while (1) {
+                    InputState in = (InputState){0};
+                    input_poll(&in);
+                    if (in.quit) { goto done; }
+
+                    if (get_stdout_terminal_size(&term_w, &term_h) && terminal_size_sufficient(term_w, term_h)) {
+                        fprintf(stderr, "Terminal resized to %dx%d. Resuming game...\n", term_w, term_h);
+                        break;
+                    }
+
+                    platform_sleep_ms(250);
+                    terminal_resized = 0;
+                }
+            }
+        }
+
         /* Poll input continuously throughout the frame */
-        InputState input_state = {0};
+        InputState input_state = (InputState){0};
         input_poll(&input_state);
 
         if (input_state.quit) { goto done; }
@@ -215,12 +189,12 @@ int main(void) {
             }
         }
 
-        /* If the player died, show a small animation and wait for acknowledgement. */
+        /* If the player died, show a small animation and wait for acknowledgement */
         if (game.num_players > 0 && game.players[0].died_this_tick) {
             render_draw(&game);
             render_draw_death_overlay(&game, 0, true);
 
-            /* Pause rendering and wait: any key restarts, Q quits. */
+            /* Pause rendering and wait: any key restarts, Q quits */
             while (1) {
                 InputState in = (InputState){0};
                 input_poll(&in);

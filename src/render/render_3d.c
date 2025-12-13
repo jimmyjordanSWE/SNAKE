@@ -12,8 +12,6 @@
 
 typedef enum { RENDER_MODE_2D = 0, RENDER_MODE_3D, RENDER_MODE_COUNT } RenderMode;
 
-extern void render_set_mode(RenderMode mode);
-
 typedef struct {
     const GameState* game_state;
     Camera3D camera;
@@ -167,9 +165,8 @@ void render_3d_draw(const GameState* game_state, const char* player_name, const 
 
     /* Present frame */
     if (!render_3d_sdl_present(&g_render_3d.display)) {
-        /* Window was closed or ESC pressed, switch back to 2D mode */
-        extern void render_set_mode(RenderMode mode);
-        render_set_mode(RENDER_MODE_2D);
+        /* Window was closed or ESC pressed - just note it, but keep terminal running */
+        /* In the future, we could communicate this to main loop if needed */
     }
 }
 

@@ -51,6 +51,7 @@ bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
     /* Set clear color to black */
     SDL_SetRenderDrawColor(g_sdl_state.renderer, 0, 0, 0, 255);
     SDL_RenderClear(g_sdl_state.renderer);
+    SDL_RenderPresent(g_sdl_state.renderer);
 
     /* Create texture for pixel data (ARGB8888) */
     g_sdl_state.texture = SDL_CreateTexture(g_sdl_state.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -63,6 +64,10 @@ bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
 
     g_sdl_state.width = width;
     g_sdl_state.height = height;
+
+    /* Raise window again after all initialization */
+    SDL_RaiseWindow(g_sdl_state.window);
+    SDL_PumpEvents();
 
     /* Allocate pixel buffer */
     uint32_t* pixels = (uint32_t*)malloc((size_t)width * (size_t)height * sizeof(uint32_t));

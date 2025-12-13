@@ -79,10 +79,9 @@ BIN := snake
 BIN_3D := snake_3d
 LOG_DIR := $(BUILD_ROOT)/logs
 
-# Exclude 3D rendering files from the 2D build
+# Include all source files including 3D rendering
 SRC_ALL := $(shell find src -name '*.c' -print)
-SRC_3D_ONLY := src/render/render_3d.c src/render/render_3d_sdl.c src/render/camera.c src/render/projection.c src/render/raycast.c src/render/sprite.c src/render/texture.c src/render/display_3d.c
-SRC := $(filter-out $(SRC_3D_ONLY),$(SRC_ALL)) main.c
+SRC := $(SRC_ALL) main.c
 SRC_3D := $(shell find src -name '*.c' -print) main_3d.c
 HDR := $(shell find include -name '*.h' -print)
 FORMAT_FILES := $(SRC) $(HDR) main_3d.c

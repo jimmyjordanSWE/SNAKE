@@ -13,6 +13,7 @@
 #include "snake/persist.h"
 #include "snake/platform.h"
 #include "snake/render.h"
+#include "snake/render_3d.h"
 #include "snake/types.h"
 
 /* Fixed board dimensions are now defined in types.h as FIXED_BOARD_WIDTH and FIXED_BOARD_HEIGHT */
@@ -113,6 +114,17 @@ int main(void) {
     /* Initialize game with FIXED board dimensions */
     GameState game = {0};
     game_init(&game, FIXED_BOARD_WIDTH, FIXED_BOARD_HEIGHT, 42);
+
+    /* Initialize 3D rendering (SDL window alongside terminal) */
+    Render3DConfig config_3d =
+        {.active_player = 0, .fov_degrees = 90.0f, .show_minimap = false, .show_stats = false, .screen_width = 800, .screen_height = 600};
+    bool has_3d = render_3d_init(&game, &config_3d);
+    if (!has_3d) {
+        fprintf(stderr, "Warning: 3D rendering initialization failed, continuing with 2D only\n");
+    } else {
+        /* Draw initial 3D frame to make window visible */
+        render_3d_draw(&game, player_name, NULL, 0);
+    }
 
     /* Initialize input */
     if (!input_init()) {
@@ -239,6 +251,9 @@ int main(void) {
 
         render_draw(&game, player_name, highscores, highscore_count);
 
+        /* Also update 3D view if available */
+        if (has_3d) { render_3d_draw(&game, player_name, highscores, highscore_count); }
+
         /* Sleep to control frame rate */
         platform_sleep_ms((uint64_t)config.tick_rate_ms);
 
@@ -257,6 +272,9 @@ done:
 
     input_shutdown();
     render_shutdown();
+
+    /* Shutdown 3D rendering */
+    if (has_3d) { render_3d_shutdown(); }
 
     printf("Game ran for %d ticks\n", tick);
     return 0;

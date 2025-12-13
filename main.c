@@ -1,7 +1,9 @@
+#include <ctype.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -14,6 +16,9 @@
 #include "snake/types.h"
 
 /* Fixed board dimensions are now defined in types.h as FIXED_BOARD_WIDTH and FIXED_BOARD_HEIGHT */
+
+/* Global player name */
+static char player_name[32] = "Player";
 
 static bool get_stdout_terminal_size(int* out_width, int* out_height) {
     if (!out_width || !out_height) { return false; }
@@ -114,15 +119,8 @@ int main(void) {
         goto done;
     }
 
-    /* Startup: upbeat welcome screen before the game begins */
-    render_draw_welcome_screen();
-    while (1) {
-        InputState in = (InputState){0};
-        input_poll(&in);
-        if (in.quit) { goto done; }
-        if (in.any_key) { break; }
-        platform_sleep_ms(20);
-    }
+    /* Startup: unified welcome, name input, and help screen */
+    render_draw_startup_screen(player_name, (int)sizeof(player_name));
 
     /* Render loop */
     int tick = 0;
@@ -135,7 +133,7 @@ int main(void) {
             terminal_resized = 0;
             if (!get_stdout_terminal_size(&term_w, &term_h) || !terminal_size_sufficient(term_w, term_h)) {
                 /* Terminal became too small: show prompt and pause game */
-                render_draw(&game, highscores, highscore_count);
+                render_draw(&game, player_name, highscores, highscore_count);
 
                 fprintf(stderr, "\n");
                 fprintf(stderr, "╔════════════════════════════════════════╗\n");
@@ -196,8 +194,6 @@ int main(void) {
             if (game_player_died_this_tick(&game, i)) {
                 int death_score = game_player_score_at_death(&game, i);
                 if (death_score > 0) {
-                    char player_name[32];
-                    snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
                     persist_append_score(".snake_scores", player_name, death_score);
                     render_note_session_score(player_name, death_score);
                     /* Reload scores after appending */
@@ -208,7 +204,7 @@ int main(void) {
 
         /* If the player died, show a small animation and wait for acknowledgement */
         if (game_player_died_this_tick(&game, 0)) {
-            render_draw(&game, highscores, highscore_count);
+            render_draw(&game, player_name, highscores, highscore_count);
             render_draw_death_overlay(&game, 0, true);
 
             /* Pause rendering and wait: any key restarts, Q quits */
@@ -224,8 +220,7 @@ int main(void) {
             }
         }
 
-        /* Render frame */
-        render_draw(&game, highscores, highscore_count);
+        render_draw(&game, player_name, highscores, highscore_count);
 
         /* Sleep to control frame rate */
         platform_sleep_ms((uint64_t)config.tick_rate_ms);
@@ -236,8 +231,8 @@ int main(void) {
 done:
     /* Save high scores if the player scored */
     if (game_player_is_active(&game, 0) && game_player_current_score(&game, 0) > 0) {
-        persist_append_score(".snake_scores", "Player1", game_player_current_score(&game, 0));
-        render_note_session_score("Player1", game_player_current_score(&game, 0));
+        persist_append_score(".snake_scores", player_name, game_player_current_score(&game, 0));
+        render_note_session_score(player_name, game_player_current_score(&game, 0));
     }
 
     /* Save updated config */

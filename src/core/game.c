@@ -32,22 +32,34 @@ static bool point_in_any_snake(const GameState* game, SnakePoint p) {
     return false;
 }
 
+static bool point_is_food(const GameState* game, SnakePoint p) {
+    if (game == NULL) { return false; }
+    for (int i = 0; i < game->food_count; i++) {
+        if (game->food[i].x == p.x && game->food[i].y == p.y) { return true; }
+    }
+    return false;
+}
+
 static void food_respawn(GameState* game) {
     if (game == NULL) { return; }
+
+    /* Spawn 1-3 food items */
+    int num_to_spawn = snake_rng_range(&game->rng_state, 1, 3);
+    game->food_count = 0;
 
     int max_attempts = game->width * game->height * 2;
     if (max_attempts < 32) { max_attempts = 32; }
 
-    for (int attempt = 0; attempt < max_attempts; attempt++) {
-        SnakePoint p = random_point(game);
-        if (!point_in_any_snake(game, p)) {
-            game->food = p;
-            game->food_present = true;
-            return;
+    for (int i = 0; i < num_to_spawn && game->food_count < SNAKE_MAX_FOOD; i++) {
+        for (int attempt = 0; attempt < max_attempts; attempt++) {
+            SnakePoint p = random_point(game);
+            if (!point_in_any_snake(game, p) && !point_is_food(game, p)) {
+                game->food[game->food_count] = p;
+                game->food_count++;
+                break;
+            }
         }
     }
-
-    game->food_present = false;
 }
 
 static void player_move(PlayerState* player, SnakePoint next_head, bool grow) {
@@ -153,7 +165,7 @@ void game_init(GameState* game, int width, int height, uint32_t seed) {
     snake_rng_seed(&game->rng_state, seed);
 
     game->status = GAME_STATUS_RUNNING;
-    game->food_present = false;
+    game->food_count = 0;
 
     game->num_players = 1;
 
@@ -242,19 +254,24 @@ void game_tick(GameState* game) {
         SnakePoint next_head = collision_next_head(current_head, player->current_dir);
 
         bool eat = false;
-        if (game->food_present && next_head.x == game->food.x && next_head.y == game->food.y) { eat = true; }
+        /* Check if next head collides with any food */
+        for (int f = 0; f < game->food_count; f++) {
+            if (next_head.x == game->food[f].x && next_head.y == game->food[f].y) {
+                eat = true;
+                /* Remove this food by shifting array */
+                for (int j = f; j < game->food_count - 1; j++) { game->food[j] = game->food[j + 1]; }
+                game->food_count--;
+                food_consumed = true;
+                break;
+            }
+        }
 
         player_move(player, next_head, eat);
-        if (eat) {
-            player->score++;
-            food_consumed = true;
-        }
+        if (eat) { player->score++; }
     }
 
-    if (food_consumed) {
-        game->food_present = false;
-        food_respawn(game);
-    }
+    /* Only respawn food when all food has been consumed */
+    if (food_consumed && game->food_count == 0) { food_respawn(game); }
 }
 
 /* Query functions for encapsulated state access */

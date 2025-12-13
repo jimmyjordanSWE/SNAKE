@@ -21,13 +21,14 @@ void render_shutdown(void);
  * Draw the game state and high scores to the display.
  *
  * @param game        Current game state
+ * @param player_name Player name to display in HUD
  * @param scores      Array of high scores to display (can be NULL)
  * @param score_count Number of scores in the array
  */
-void render_draw(const GameState* game, const HighScore* scores, int score_count);
+void render_draw(const GameState* game, const char* player_name, const HighScore* scores, int score_count);
 
-/* Draws an upbeat startup welcome screen and waits-for-input prompt (caller handles input). */
-void render_draw_welcome_screen(void);
+/* Draws an upbeat startup welcome screen with name input and key bindings, then reads player name. */
+void render_draw_startup_screen(char* player_name_out, int max_len);
 
 /* Marks a score as having been achieved in the current run (used to highlight highscores). */
 void render_note_session_score(const char* name, int score);

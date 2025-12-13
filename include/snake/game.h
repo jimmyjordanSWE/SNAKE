@@ -8,6 +8,7 @@
 #define SNAKE_MAX_PLAYERS 2
 
 #define SNAKE_MAX_LENGTH 1024
+#define SNAKE_MAX_FOOD 3
 
 typedef struct {
     SnakeDir current_dir;
@@ -32,8 +33,8 @@ typedef struct {
 
     int num_players;
 
-    SnakePoint food;
-    bool food_present;
+    SnakePoint food[SNAKE_MAX_FOOD];
+    int food_count;
 
     PlayerState players[SNAKE_MAX_PLAYERS];
 } GameState;

@@ -140,11 +140,6 @@ bool persist_append_score(const char* filename, const char* name, int score) {
     HighScore scores[PERSIST_MAX_SCORES];
     int count = persist_read_scores(filename, scores, PERSIST_MAX_SCORES);
 
-    /* Check if this score value already exists (prevent duplicates) */
-    for (int i = 0; i < count; i++) {
-        if (scores[i].score == score) { return true; /* Already have this score, don't add */ }
-    }
-
     /* Add new score if under limit */
     if (count < PERSIST_MAX_SCORES) {
         snprintf(scores[count].name, PERSIST_NAME_MAX, "%s", name);

@@ -1,11 +1,14 @@
 #include "snake/render.h"
 #include "snake/display.h"
+#include "snake/input.h"
 #include "snake/persist.h"
+#include "snake/platform.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static DisplayContext* g_display = NULL;
 static RenderGlyphs g_glyphs = RENDER_GLYPHS_UTF8;
@@ -32,23 +35,21 @@ static bool is_session_score(const HighScore* s) {
 }
 
 static uint16_t gradient_color_for_rank(int rank, int total) {
-    /* A simple bright-to-dark gradient using ANSI 16-color palette. */
+    (void)total; /* Unused - each rank has unique color */
+    /* Smooth warm-to-cool gradient for highscore ranks. */
     static const uint16_t palette[] = {
-        DISPLAY_COLOR_BRIGHT_CYAN,
-        DISPLAY_COLOR_CYAN,
-        DISPLAY_COLOR_BLUE,
-        DISPLAY_COLOR_BRIGHT_BLACK,
+        DISPLAY_COLOR_BRIGHT_YELLOW,  /* 1st - Warmest (Golden Yellow) */
+        DISPLAY_COLOR_YELLOW,         /* 2nd - Yellow */
+        DISPLAY_COLOR_BRIGHT_RED,     /* 3rd - Transition bridge (Red/Orange) */
+        DISPLAY_COLOR_BRIGHT_MAGENTA, /* 4th - Purple/Pink Transition */
+        DISPLAY_COLOR_BRIGHT_CYAN,    /* 5th - Coolest (Bright Teal/Cyan) */
     };
 
     int palette_len = (int)(sizeof(palette) / sizeof(palette[0]));
     if (rank < 0) { rank = 0; }
-    if (total <= 1) { return palette[0]; }
-    if (total < 0) { total = 0; }
+    if (rank >= palette_len) { rank = palette_len - 1; }
 
-    int idx = (rank * (palette_len - 1)) / (total - 1);
-    if (idx < 0) { idx = 0; }
-    if (idx >= palette_len) { idx = palette_len - 1; }
-    return palette[idx];
+    return palette[rank];
 }
 
 static int compare_highscores_desc(const void* a, const void* b) {
@@ -302,7 +303,7 @@ static uint16_t glyph_for_segment(const SnakePoint* body, int length, int idx) {
     return glyph_for_segment_utf8(body, length, idx);
 }
 
-void render_draw(const GameState* game, const HighScore* scores, int score_count) {
+void render_draw(const GameState* game, const char* player_name, const HighScore* scores, int score_count) {
     if (!g_display || !game) { return; }
 
     display_clear(g_display);
@@ -325,8 +326,8 @@ void render_draw(const GameState* game, const HighScore* scores, int score_count
     draw_box(field_x, field_y, field_width, field_height, DISPLAY_COLOR_CYAN);
 
     /* Draw food */
-    if (game->food_present) {
-        display_put_char(g_display, field_x + 1 + game->food.x, field_y + 1 + game->food.y, '*', DISPLAY_COLOR_GREEN, DISPLAY_COLOR_BLACK);
+    for (int i = 0; i < game->food_count; i++) {
+        display_put_char(g_display, field_x + 1 + game->food[i].x, field_y + 1 + game->food[i].y, '*', DISPLAY_COLOR_GREEN, DISPLAY_COLOR_BLACK);
     }
 
     /* Draw snakes */
@@ -345,11 +346,15 @@ void render_draw(const GameState* game, const HighScore* scores, int score_count
     /* Top bar */
     draw_top_bar();
 
-    /* Draw player scores */
+    /* Draw player scores with player name for player 0 */
     for (int p = 0; p < game->num_players; p++) {
         if (game->players[p].active) {
             char score_str[32];
-            snprintf(score_str, sizeof(score_str), "P%d: %d", p + 1, game->players[p].score);
+            if (p == 0 && player_name != NULL) {
+                snprintf(score_str, sizeof(score_str), "%s: %d", player_name, game->players[p].score);
+            } else {
+                snprintf(score_str, sizeof(score_str), "P%d: %d", p + 1, game->players[p].score);
+            }
 
             uint16_t color = (p == 0) ? DISPLAY_COLOR_BRIGHT_YELLOW : DISPLAY_COLOR_BRIGHT_RED;
             draw_string(field_x + field_width + 2, field_y + p * 2, score_str, color);
@@ -374,7 +379,11 @@ void render_draw(const GameState* game, const HighScore* scores, int score_count
         if (game->players[p].score <= 0) { continue; }
 
         HighScore live = {0};
-        snprintf(live.name, sizeof(live.name), "P%d (live)", p + 1);
+        if (p == 0 && player_name != NULL) {
+            snprintf(live.name, sizeof(live.name), "%s (live)", player_name);
+        } else {
+            snprintf(live.name, sizeof(live.name), "P%d (live)", p + 1);
+        }
         live.score = game->players[p].score;
         display_scores[display_count++] = live;
     }
@@ -426,25 +435,117 @@ void render_draw(const GameState* game, const HighScore* scores, int score_count
     display_present(g_display);
 }
 
-void render_draw_welcome_screen(void) {
-    if (!g_display) { return; }
-
-    display_clear(g_display);
+void render_draw_startup_screen(char* player_name_out, int max_len) {
+    if (!g_display || !player_name_out || max_len <= 0) { return; }
 
     int display_width = 0, display_height = 0;
     display_get_size(g_display, &display_width, &display_height);
 
-    draw_top_bar();
+    char name_input[32] = {0};
+    int input_pos = 0;
+    bool name_confirmed = false;
 
-    int mid_y = display_height / 2;
-    if (mid_y < 3) { mid_y = 3; }
+    /* Read input character by character using low-level read() */
+    while (!name_confirmed) {
+        display_clear(g_display);
 
-    draw_centered_string(mid_y - 2, "Welcome to SNAKE!", DISPLAY_COLOR_BRIGHT_GREEN);
-    draw_centered_string(mid_y - 1, "Grab food, grow longer, beat your high score.", DISPLAY_COLOR_WHITE);
-    draw_centered_string(mid_y + 1, "Press any key to start", DISPLAY_COLOR_BRIGHT_YELLOW);
-    draw_centered_string(mid_y + 2, "(Press Q to quit)", DISPLAY_COLOR_CYAN);
+        int y = 1;
 
-    display_present(g_display);
+        /* Title Section */
+        draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "   S N A K E", DISPLAY_COLOR_BRIGHT_GREEN);
+        draw_centered_string(y++, "      THE LEGEND", DISPLAY_COLOR_BRIGHT_GREEN);
+        draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+
+        /* Tagline */
+        draw_centered_string(y++, "A Game of Hunger & Growth", DISPLAY_COLOR_CYAN);
+        draw_centered_string(y++, "Navigate. Consume. Dominate.", DISPLAY_COLOR_CYAN);
+        y++;
+
+        /* Name Input Section */
+        draw_centered_string(y++, "ENTER YOUR LEGEND'S NAME", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_centered_string(y++, "(max 31 characters)", DISPLAY_COLOR_CYAN);
+        y++;
+
+        int box_width = 35;
+        int box_x = (display_width - box_width) / 2;
+        if (box_x < 1) { box_x = 1; }
+
+        draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        for (int i = 0; i < box_width - 2; i++) { display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK); }
+        draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+
+        draw_string(box_x, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_string(box_x + 2, y, name_input, DISPLAY_COLOR_BRIGHT_GREEN);
+        if (input_pos < 30) { draw_string(box_x + 2 + input_pos, y, "_", DISPLAY_COLOR_BRIGHT_YELLOW); }
+        draw_string(box_x + box_width - 1, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+
+        draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        for (int i = 0; i < box_width - 2; i++) { display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK); }
+        draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y += 2;
+
+        /* Controls Section */
+        draw_centered_string(y++, "MASTER THE CONTROLS", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "  ^  Arrow Keys = Navigate", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "< v >", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+        draw_centered_string(y++, "P = Pause   R = Restart   Q = Quit", DISPLAY_COLOR_WHITE);
+
+        y++;
+        draw_centered_string(y++, "Type name above, press ENTER to start", DISPLAY_COLOR_CYAN);
+
+        display_present(g_display);
+
+        /* Read input using low-level read() to work with raw terminal mode */
+        platform_sleep_ms(20);
+        unsigned char buf[32];
+        ssize_t nread = read(STDIN_FILENO, buf, sizeof(buf));
+
+        if (nread > 0) {
+            for (ssize_t i = 0; i < nread; i++) {
+                unsigned char c = buf[i];
+
+                if (c == '\n' || c == '\r') {
+                    name_confirmed = true;
+                    break;
+                } else if (c == 8 || c == 127) {
+                    /* Backspace */
+                    if (input_pos > 0) {
+                        input_pos--;
+                        name_input[input_pos] = '\0';
+                    }
+                } else if (c >= 32 && c < 127) {
+                    /* Regular character */
+                    if (input_pos < 30) {
+                        name_input[input_pos] = (char)c;
+                        input_pos++;
+                        name_input[input_pos] = '\0';
+                    }
+                }
+            }
+        }
+    }
+
+    /* Trim whitespace */
+    char* start = name_input;
+    while (*start && isspace((unsigned char)*start)) { start++; }
+    char* end = start + strlen(start);
+    while (end > start && isspace((unsigned char)end[-1])) { end--; }
+    *end = '\0';
+
+    /* Use input if valid, else default */
+    if (strlen(start) > 0 && strlen(start) < (size_t)max_len - 1) {
+        snprintf(player_name_out, (size_t)max_len, "%s", start);
+    } else {
+        snprintf(player_name_out, (size_t)max_len, "Player");
+    }
 }
 
 static void fill_rect(int x, int y, int width, int height, uint16_t fg_color, uint16_t bg_color, uint16_t ch) {

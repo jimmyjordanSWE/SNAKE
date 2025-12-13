@@ -5,3 +5,4 @@ tick_rate_ms=100
 render_glyphs=utf8
 screen_width=60
 screen_height=24
+render_mode=3d

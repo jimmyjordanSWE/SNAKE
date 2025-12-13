@@ -143,6 +143,10 @@ void input_poll(InputState* out) {
         case 'P':
             out->pause_toggle = true;
             break;
+        case 'v':
+        case 'V':
+            out->view_toggle = true;
+            break;
 
         // Ignore unknown keys.
         default:

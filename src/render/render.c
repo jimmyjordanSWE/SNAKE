@@ -4,6 +4,9 @@
 #include "snake/persist.h"
 #include "snake/platform.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

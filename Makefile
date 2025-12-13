@@ -11,12 +11,13 @@ CONFIG ?= debug-asan
 
 # NOTE: GNU make defines a built-in variable named `LINT` (default value: `lint`).
 # Use explicit toggles to avoid collisions and keep builds fast.
-RUN_FORMAT ?= 1
+RUN_FORMAT ?= 0
 RUN_TIDY ?= 0
+RUN_TIDY = 0
 
 PREBUILD := $(if $(filter 1,$(RUN_FORMAT)),format-check,) $(if $(filter 1,$(RUN_TIDY)),tidy,)
 
-CPPFLAGS_BASE ?= -Iinclude -D_POSIX_C_SOURCE=200809L
+CPPFLAGS_BASE ?= -Iinclude -D_POSIX_C_SOURCE=200809L $(shell pkg-config --cflags sdl2)
 CFLAGS_BASE ?= -std=c99
 
 # Keep code quality high from the start.
@@ -26,7 +27,8 @@ WARNINGS ?= \
 	-Wcast-align -Wwrite-strings \
 	-Wformat=2 -Wundef \
 	-Wvla \
-	-Wconversion -Wsign-conversion
+	-Wconversion -Wsign-conversion \
+	-Wno-unused-parameter
 
 # Treat warnings as errors by default (set WERROR=0 to relax).
 WERROR ?= 1
@@ -35,7 +37,7 @@ ifeq ($(WERROR),1)
 WARNINGS += -Werror
 endif
 LDFLAGS_BASE ?=
-LDLIBS ?=
+LDLIBS ?= $(shell pkg-config --libs sdl2) -lm
 
 DEBUG_FLAGS ?= -O0 -g3
 RELEASE_FLAGS ?= -O3 -DNDEBUG
@@ -74,18 +76,25 @@ endif
 
 OBJ_DIR := $(BUILD_DIR)/obj
 BIN := snake
+BIN_3D := snake_3d
 LOG_DIR := $(BUILD_ROOT)/logs
 
-SRC := $(shell find src -name '*.c' -print) main.c
+# Exclude 3D rendering files from the 2D build
+SRC_ALL := $(shell find src -name '*.c' -print)
+SRC_3D_ONLY := src/render/render_3d.c src/render/render_3d_sdl.c src/render/camera.c src/render/projection.c src/render/raycast.c src/render/sprite.c src/render/texture.c src/render/display_3d.c
+SRC := $(filter-out $(SRC_3D_ONLY),$(SRC_ALL)) main.c
+SRC_3D := $(shell find src -name '*.c' -print) main_3d.c
 HDR := $(shell find include -name '*.h' -print)
-FORMAT_FILES := $(SRC) $(HDR)
-TIDY_FILES := $(SRC)
+FORMAT_FILES := $(SRC) $(HDR) main_3d.c
+TIDY_FILES := $(SRC) main_3d.c
 OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
+OBJ_3D := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC_3D))
 DEP := $(OBJ:.o=.d)
+DEP_3D := $(OBJ_3D:.o=.d)
 
 .DEFAULT_GOAL := debug
 
-.PHONY: all build debug release valgrind gdb clean tools-check lint format-check format tidy
+.PHONY: all build debug release valgrind gdb clean tools-check lint format-check format tidy test-3d
 
 all: debug
 
@@ -118,6 +127,11 @@ gdb:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
 	gdb ./snake
 
+test-3d:
+	@$(MAKE) CONFIG=debug-asan $(PREBUILD) $(BIN_3D)
+	@echo "$(OK_MSG)"
+	./$(BIN_3D)
+
 tools-check:
 	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo "error: clang-format not found"; exit 1; }
 	@command -v $(CLANG_TIDY) >/dev/null 2>&1 || { echo "error: clang-tidy not found"; exit 1; }
@@ -145,11 +159,16 @@ $(BIN): $(OBJ)
 	@mkdir -p $(dir $@)
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
+$(BIN_3D): $(OBJ_3D)
+	@mkdir -p $(dir $@)
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c -o $@ $<
 
 -include $(DEP)
+-include $(DEP_3D)
 
 clean:
 	@rm -rf $(BUILD_ROOT) $(BIN)

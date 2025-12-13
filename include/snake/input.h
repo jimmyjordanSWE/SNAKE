@@ -15,6 +15,7 @@ typedef struct {
     bool quit;
     bool restart;
     bool pause_toggle;
+    bool view_toggle; // Toggle between 2D/3D view modes
 
     /* Generic flag for any keypress */
     bool any_key;

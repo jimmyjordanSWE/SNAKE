@@ -176,6 +176,7 @@ bool persist_load_config(const char* filename, GameConfig* config) {
     config->render_glyphs = 0;
     config->screen_width = PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
     config->screen_height = PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
+    config->render_mode = 1; /* Default to 3D mode */
 
     if (filename == NULL) { return false; }
 
@@ -226,6 +227,17 @@ bool persist_load_config(const char* filename, GameConfig* config) {
             continue;
         }
 
+        /* Render mode setting (2d or 3d) */
+        if (strcmp(key, "render_mode") == 0) {
+            for (char* p = value; *p; p++) { *p = (char)tolower((unsigned char)*p); }
+            if (strcmp(value, "2d") == 0 || strcmp(value, "console") == 0) {
+                config->render_mode = 0;
+            } else if (strcmp(value, "3d") == 0 || strcmp(value, "sdl") == 0) {
+                config->render_mode = 1;
+            }
+            continue;
+        }
+
         /* Integer-valued settings */
         char* endptr = NULL;
         errno = 0;
@@ -270,6 +282,7 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     if (fprintf(fp, "render_glyphs=%s\n", (config->render_glyphs == 1) ? "ascii" : "utf8") < 0) { goto write_fail; }
     if (fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) { goto write_fail; }
     if (fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) { goto write_fail; }
+    if (fprintf(fp, "render_mode=%s\n", (config->render_mode == 1) ? "3d" : "2d") < 0) { goto write_fail; }
 
     if (fflush(fp) != 0) {
         fclose(fp);

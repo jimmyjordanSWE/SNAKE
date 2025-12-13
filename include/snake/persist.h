@@ -27,6 +27,9 @@ typedef struct {
     /* Expected terminal size (used as a startup requirement). */
     int screen_width;
     int screen_height;
+
+    /* Render mode: 0 = 2D (console), 1 = 3D (SDL window) */
+    int render_mode;
 } GameConfig;
 
 /* Read high scores from file. Returns number of scores read (0 if file doesn't exist or is invalid). */

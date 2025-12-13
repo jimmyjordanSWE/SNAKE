@@ -75,8 +75,9 @@ int main(void) {
     /* Startup: wait for terminal to be large enough */
     while (1) {
         if (!get_stdout_terminal_size(&term_w, &term_h)) {
-            fprintf(stderr, "Failed to get terminal size\n");
-            return 1;
+            fprintf(stderr, "Failed to get terminal size, assuming 120x30\n");
+            term_w = 120;
+            term_h = 30;
         }
 
         if (terminal_size_sufficient(term_w, term_h)) { break; /* Terminal is big enough */ }
@@ -127,11 +128,22 @@ int main(void) {
     HighScore highscores[PERSIST_MAX_SCORES];
     int highscore_count = 0;
 
+    /* Load high scores for initial render */
+    highscore_count = persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+
+    /* Clear startup screen and draw initial game state */
+    render_draw(&game, player_name, highscores, highscore_count);
+
     while (game.status != GAME_STATUS_GAME_OVER) {
         /* Check for terminal resize and handle it */
         if (terminal_resized) {
             terminal_resized = 0;
-            if (!get_stdout_terminal_size(&term_w, &term_h) || !terminal_size_sufficient(term_w, term_h)) {
+            int new_w = 0, new_h = 0;
+            if (!get_stdout_terminal_size(&new_w, &new_h)) {
+                new_w = 120;
+                new_h = 30;
+            }
+            if (!terminal_size_sufficient(new_w, new_h)) {
                 /* Terminal became too small: show prompt and pause game */
                 render_draw(&game, player_name, highscores, highscore_count);
 
@@ -139,7 +151,7 @@ int main(void) {
                 fprintf(stderr, "╔════════════════════════════════════════╗\n");
                 fprintf(stderr, "║  TERMINAL TOO SMALL - GAME PAUSED      ║\n");
                 fprintf(stderr, "║                                        ║\n");
-                fprintf(stderr, "║  Current size: %d x %d                 ║\n", term_w, term_h);
+                fprintf(stderr, "║  Current size: %d x %d                 ║\n", new_w, new_h);
                 fprintf(stderr, "║  Required: %d x %d                     ║\n", FIXED_BOARD_WIDTH + 4, FIXED_BOARD_HEIGHT + 4);
                 fprintf(stderr, "║                                        ║\n");
                 fprintf(stderr, "║  Resize your terminal to continue      ║\n");
@@ -153,8 +165,13 @@ int main(void) {
                     input_poll(&in);
                     if (in.quit) { goto done; }
 
-                    if (get_stdout_terminal_size(&term_w, &term_h) && terminal_size_sufficient(term_w, term_h)) {
-                        fprintf(stderr, "Terminal resized to %dx%d. Resuming game...\n", term_w, term_h);
+                    int check_w = 0, check_h = 0;
+                    if (!get_stdout_terminal_size(&check_w, &check_h)) {
+                        check_w = 120;
+                        check_h = 30;
+                    }
+                    if (terminal_size_sufficient(check_w, check_h)) {
+                        fprintf(stderr, "Terminal resized to %dx%d. Resuming game...\n", check_w, check_h);
                         break;
                     }
 

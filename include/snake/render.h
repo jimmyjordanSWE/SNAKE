@@ -6,7 +6,6 @@
 #include "snake/persist.h"
 
 typedef enum {
-
     RENDER_GLYPHS_UTF8 = 0,
     RENDER_GLYPHS_ASCII = 1,
 } RenderGlyphs;

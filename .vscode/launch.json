@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch executable (gdb)",
+      "name": "Debug Snake (gdb)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/think_like_a_programmer",
+      "program": "${workspaceFolder}/snake",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

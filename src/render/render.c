@@ -336,7 +336,6 @@ static void fill_rect(int x, int y, int width, int height, uint16_t fg_color, ui
 }
 
 void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt) {
-    (void)game;
     (void)anim_frame;
     if (!g_tty) { return; }
 
@@ -349,22 +348,40 @@ void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_
     int box_x = (tty_width - box_w) / 2;
     int box_y = (tty_height - box_h) / 2;
 
-    /* Clamp to ensure box is always visible */
-    if (box_x < 0) { box_x = 0; }
-    if (box_y < 0) { box_y = 0; }
+    /* Ensure box is always visible with at least 1 column margin */
+    if (box_x < 1) { box_x = 1; }
+    if (box_y < 1) { box_y = 1; }
+
+    /* Clear the playfield area to hide the next spawn location */
+    if (game) {
+        int field_width = game->width + 2;
+        int field_height = game->height + 2;
+        int field_x = (tty_width - field_width) / 2;
+        int field_y = (tty_height - field_height) / 2;
+        if (field_x < 1) { field_x = 1; }
+        if (field_y < 2) { field_y = 2; }
+
+        fill_rect(field_x, field_y, field_width, field_height, COLOR_BLACK, COLOR_BLACK, ' ');
+        tty_flip(g_tty);
+    }
 
     uint16_t border = COLOR_BRIGHT_RED;
     uint16_t title = COLOR_BRIGHT_WHITE;
 
     /* Draw the dialog box on top of the existing UI */
-    draw_box(box_x, box_y, box_w, box_h, border);
-    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' ');
+    draw_box(box_x, box_y, box_w, box_h, border); // DEBUG: the box IS being drawn correctly
+    tty_flip(g_tty);
+    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' '); // still correct box here
+    tty_flip(g_tty);
 
     draw_string(box_x + 12, box_y + 2, "YOU DIED", title);
+    tty_flip(g_tty);
 
     if (show_prompt) {
         draw_string(box_x + 3, box_y + 4, "Press any key to restart", COLOR_BRIGHT_GREEN);
+        tty_flip(g_tty);
         draw_string(box_x + 10, box_y + 5, "or Q to quit", COLOR_BRIGHT_GREEN);
+        tty_flip(g_tty);
     }
 
     tty_flip(g_tty);

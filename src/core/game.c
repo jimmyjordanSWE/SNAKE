@@ -186,7 +186,8 @@ void game_tick(GameState* game) {
         PlayerState* player = &game->players[i];
         if (!player->active || player->length <= 0) { continue; }
 
-        player->current_dir = player->queued_dir;
+        /* Prevent 180-degree turns (opposite direction) */
+        if (player->queued_dir != opposite_dir(player->current_dir)) { player->current_dir = player->queued_dir; }
     }
 
     collision_detect_and_resolve(game);

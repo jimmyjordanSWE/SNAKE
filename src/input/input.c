@@ -86,6 +86,8 @@ void input_poll(InputState* out) {
 
     if (nread <= 0) { return; }
 
+    out->any_key = true;
+
     // Process each byte.
     for (ssize_t i = 0; i < nread; i++) {
         unsigned char c = buf[i];

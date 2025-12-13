@@ -9,6 +9,8 @@ typedef struct {
     bool restart;
     bool pause_toggle;
 
+    bool any_key;
+
     SnakeDir p1_dir;
     bool p1_dir_set;
 } InputState;

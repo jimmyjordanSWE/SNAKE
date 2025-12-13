@@ -10,6 +10,40 @@ static tty_context* g_tty = NULL;
 static int last_score_count = -1;
 static HighScore last_scores[PERSIST_MAX_SCORES];
 
+#define SESSION_MAX_SCORES 32
+static HighScore g_session_scores[SESSION_MAX_SCORES];
+static int g_session_score_count = 0;
+
+static bool is_session_score(const HighScore* s) {
+    if (!s) { return false; }
+
+    for (int i = 0; i < g_session_score_count; i++) {
+        if (g_session_scores[i].score == s->score && strcmp(g_session_scores[i].name, s->name) == 0) { return true; }
+    }
+
+    return false;
+}
+
+static uint16_t gradient_color_for_rank(int rank, int total) {
+    /* A simple bright-to-dark gradient using ANSI 16-color palette. */
+    static const uint16_t palette[] = {
+        COLOR_BRIGHT_CYAN,
+        COLOR_CYAN,
+        COLOR_BLUE,
+        COLOR_BRIGHT_BLACK,
+    };
+
+    int palette_len = (int)(sizeof(palette) / sizeof(palette[0]));
+    if (rank < 0) { rank = 0; }
+    if (total <= 1) { return palette[0]; }
+    if (total < 0) { total = 0; }
+
+    int idx = (rank * (palette_len - 1)) / (total - 1);
+    if (idx < 0) { idx = 0; }
+    if (idx >= palette_len) { idx = palette_len - 1; }
+    return palette[idx];
+}
+
 static int compare_highscores_desc(const void* a, const void* b) {
     const HighScore* sa = (const HighScore*)a;
     const HighScore* sb = (const HighScore*)b;
@@ -24,6 +58,7 @@ bool render_init(int min_width, int min_height) {
     if (min_height < 10) { min_height = 10; }
 
     g_tty = tty_open(NULL, min_width, min_height);
+    g_session_score_count = 0;
     return g_tty != NULL && tty_size_valid(g_tty);
 }
 
@@ -32,6 +67,21 @@ void render_shutdown(void) {
         tty_close(g_tty);
         g_tty = NULL;
     }
+
+    g_session_score_count = 0;
+}
+
+void render_note_session_score(const char* name, int score) {
+    if (!name || score <= 0) { return; }
+
+    for (int i = 0; i < g_session_score_count; i++) {
+        if (g_session_scores[i].score == score && strcmp(g_session_scores[i].name, name) == 0) { return; }
+    }
+
+    if (g_session_score_count >= SESSION_MAX_SCORES) { return; }
+    snprintf(g_session_scores[g_session_score_count].name, sizeof(g_session_scores[g_session_score_count].name), "%s", name);
+    g_session_scores[g_session_score_count].score = score;
+    g_session_score_count++;
 }
 
 static void draw_box(int x, int y, int width, int height, uint16_t fg_color) {
@@ -84,6 +134,12 @@ static void draw_string(int x, int y, const char* str, uint16_t fg_color) {
     tty_get_size(g_tty, &tty_width, &tty_height);
 
     for (int i = 0; str[i] && x + i < tty_width && y >= 0 && y < tty_height; i++) { tty_put_pixel(g_tty, x + i, y, PIXEL_MAKE(str[i], fg_color, COLOR_BLACK)); }
+}
+
+static void invalidate_front_buffer(tty_context* ctx) {
+    if (!ctx || !ctx->front) { return; }
+    memset(ctx->front, 0, (size_t)ctx->width * (size_t)ctx->height * sizeof(*ctx->front));
+    ctx->dirty = true;
 }
 
 void render_draw(const GameState* game) {
@@ -188,7 +244,7 @@ void render_draw(const GameState* game) {
         /* Cache current scores and force redraw */
         last_score_count = score_count;
         for (int i = 0; i < score_count; i++) { last_scores[i] = highscores[i]; }
-        tty_force_redraw(g_tty);
+        invalidate_front_buffer(g_tty);
     }
 
     int hiscore_y = field_y + 5;
@@ -202,7 +258,9 @@ void render_draw(const GameState* game) {
             if (written > 0 && written < (int)sizeof(hiscore_str)) {
                 snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
             }
-            draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, COLOR_CYAN);
+            uint16_t fg = gradient_color_for_rank(i, max_display);
+            if (is_session_score(&display_scores[i]) || strstr(display_scores[i].name, "(live)") != NULL) { fg = COLOR_BRIGHT_GREEN; }
+            draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, fg);
         }
     } else {
         draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", COLOR_CYAN);
@@ -210,6 +268,55 @@ void render_draw(const GameState* game) {
 
     /* Draw help text at bottom */
     if (tty_height > field_y + field_height + 1) { draw_string(1, field_y + field_height + 1, "Q: Quit", COLOR_WHITE); }
+
+    tty_flip(g_tty);
+}
+
+static void fill_rect(int x, int y, int width, int height, uint16_t fg_color, uint16_t bg_color, uint16_t ch) {
+    if (!g_tty) { return; }
+    if (width <= 0 || height <= 0) { return; }
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+
+    for (int yy = 0; yy < height; yy++) {
+        int py = y + yy;
+        if (py < 0 || py >= tty_height) { continue; }
+
+        for (int xx = 0; xx < width; xx++) {
+            int px = x + xx;
+            if (px < 0 || px >= tty_width) { continue; }
+            tty_put_pixel(g_tty, px, py, PIXEL_MAKE(ch, fg_color, bg_color));
+        }
+    }
+}
+
+void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt) {
+    (void)game;
+    (void)anim_frame;
+    if (!g_tty) { return; }
+
+    int tty_width = 0, tty_height = 0;
+    tty_get_size(g_tty, &tty_width, &tty_height);
+
+    /* Centered overlay box */
+    int box_w = 30;
+    int box_h = 7;
+    int box_x = (tty_width - box_w) / 2;
+    int box_y = (tty_height - box_h) / 2;
+
+    uint16_t border = COLOR_BRIGHT_RED;
+    uint16_t title = COLOR_BRIGHT_WHITE;
+
+    /* Slightly dim the background behind the box */
+    fill_rect(box_x - 2, box_y - 1, box_w + 4, box_h + 2, COLOR_BRIGHT_BLACK, COLOR_BLACK, PIXEL_SHADE_L);
+
+    draw_box(box_x, box_y, box_w, box_h, border);
+    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, COLOR_WHITE, COLOR_BLACK, ' ');
+
+    draw_string(box_x + 10, box_y + 2, "YOU DIED", title);
+
+    if (show_prompt) { draw_string(box_x + 6, box_y + 4, "Press any key...", COLOR_BRIGHT_GREEN); }
 
     tty_flip(g_tty);
 }

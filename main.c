@@ -56,6 +56,22 @@ int main(void) {
                 char player_name[32];
                 snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
                 persist_append_score(".snake_scores", player_name, game.players[i].score_at_death);
+                render_note_session_score(player_name, game.players[i].score_at_death);
+            }
+        }
+
+        /* If the player died, show a small animation and wait for acknowledgement. */
+        if (game.num_players > 0 && game.players[0].died_this_tick) {
+            render_draw(&game);
+            render_draw_death_overlay(&game, 0, true);
+
+            /* Pause rendering and wait for any keypress (still allow quit). */
+            while (1) {
+                InputState in = (InputState){0};
+                input_poll(&in);
+                if (in.quit) { goto done; }
+                if (in.any_key) { break; }
+                platform_sleep_ms(20);
             }
         }
 
@@ -70,7 +86,10 @@ int main(void) {
 
 done:
     /* Save high scores if the player scored */
-    if (game.num_players > 0 && game.players[0].score > 0) { persist_append_score(".snake_scores", "Player1", game.players[0].score); }
+    if (game.num_players > 0 && game.players[0].score > 0) {
+        persist_append_score(".snake_scores", "Player1", game.players[0].score);
+        render_note_session_score("Player1", game.players[0].score);
+    }
 
     /* Save updated config */
     persist_write_config(".snake_config", &config);

@@ -1,10 +1,22 @@
 #include "snake/render.h"
+#include "snake/persist.h"
 #include "snake/tty.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static tty_context* g_tty = NULL;
+static int last_score_count = -1;
+static HighScore last_scores[PERSIST_MAX_SCORES];
+
+static int compare_highscores_desc(const void* a, const void* b) {
+    const HighScore* sa = (const HighScore*)a;
+    const HighScore* sb = (const HighScore*)b;
+    if (sa->score > sb->score) { return -1; }
+    if (sa->score < sb->score) { return 1; }
+    return strcmp(sa->name, sb->name);
+}
 
 bool render_init(int min_width, int min_height) {
     /* Ensure minimum size is reasonable */
@@ -133,6 +145,67 @@ void render_draw(const GameState* game) {
             uint16_t color = (p == 0) ? COLOR_BRIGHT_YELLOW : COLOR_BRIGHT_RED;
             draw_string(field_x + field_width + 2, field_y + p * 2, score_str, color);
         }
+    }
+
+    /* Draw high scores (top 5 only) */
+    HighScore highscores[PERSIST_MAX_SCORES];
+    int score_count = persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+
+    /* Merge persisted highscores with live player scores (preview while playing) */
+    HighScore display_scores[PERSIST_MAX_SCORES + SNAKE_MAX_PLAYERS];
+    int display_count = 0;
+
+    for (int i = 0; i < score_count && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); i++) {
+        display_scores[display_count++] = highscores[i];
+    }
+
+    for (int p = 0; p < game->num_players && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); p++) {
+        if (!game->players[p].active) { continue; }
+        if (game->players[p].score <= 0) { continue; }
+
+        HighScore live = {0};
+        snprintf(live.name, sizeof(live.name), "P%d (live)", p + 1);
+        live.score = game->players[p].score;
+        display_scores[display_count++] = live;
+    }
+
+    if (display_count > 1) { qsort(display_scores, (size_t)display_count, sizeof(HighScore), compare_highscores_desc); }
+
+    int max_display = (display_count > 5) ? 5 : display_count;
+
+    /* Check if scores changed, force redraw if so */
+    bool scores_changed = (score_count != last_score_count);
+    if (!scores_changed && score_count > 0) {
+        for (int i = 0; i < score_count; i++) {
+            if (last_scores[i].score != highscores[i].score || strcmp(last_scores[i].name, highscores[i].name) != 0) {
+                scores_changed = true;
+                break;
+            }
+        }
+    }
+
+    if (scores_changed) {
+        /* Cache current scores and force redraw */
+        last_score_count = score_count;
+        for (int i = 0; i < score_count; i++) { last_scores[i] = highscores[i]; }
+        tty_force_redraw(g_tty);
+    }
+
+    int hiscore_y = field_y + 5;
+    draw_string(field_x + field_width + 2, hiscore_y, "High Scores:", COLOR_WHITE);
+
+    if (max_display > 0) {
+        for (int i = 0; i < max_display && hiscore_y + i + 1 < tty_height; i++) {
+            char hiscore_str[80];
+            /* Safely format with truncation */
+            int written = snprintf(hiscore_str, sizeof(hiscore_str), "%d. ", i + 1);
+            if (written > 0 && written < (int)sizeof(hiscore_str)) {
+                snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
+            }
+            draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, COLOR_CYAN);
+        }
+    } else {
+        draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", COLOR_CYAN);
     }
 
     /* Draw help text at bottom */

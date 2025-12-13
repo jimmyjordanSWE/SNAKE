@@ -185,11 +185,11 @@ This file is meant to be the single “source of truth” for implementation pro
 
 ## Step 8 — Persistence (M5)
 
-25. [ ] Implement highscore read/write (`src/persist/`)
+25. [x] Implement highscore read/write (`src/persist/`)
    - Strict parsing and atomic writes.
    - Verify: scores persist across runs and corrupted file fails safely.
 
-26. [ ] Implement config file (optional)
+26. [x] Implement config file (optional)
    - Validate ranges.
    - Verify: bad config doesn’t crash; defaults apply.
 

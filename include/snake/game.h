@@ -14,6 +14,10 @@ typedef struct {
     SnakeDir queued_dir;
     int score;
 
+    /* Per-tick event bookkeeping (cleared at start of each tick) */
+    bool died_this_tick;
+    int score_at_death;
+
     SnakePoint body[SNAKE_MAX_LENGTH];
     int length;
     bool active;

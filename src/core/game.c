@@ -117,6 +117,8 @@ void game_init(GameState* game, int width, int height, uint32_t seed) {
 
     for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
         game->players[i].score = 0;
+        game->players[i].died_this_tick = false;
+        game->players[i].score_at_death = 0;
         game->players[i].active = false;
         game->players[i].needs_reset = false;
         game->players[i].length = 0;
@@ -132,6 +134,8 @@ void game_reset(GameState* game) {
 
     for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
         game->players[i].score = 0;
+        game->players[i].died_this_tick = false;
+        game->players[i].score_at_death = 0;
         game->players[i].active = false;
         game->players[i].needs_reset = false;
         game->players[i].length = 0;
@@ -152,7 +156,11 @@ void game_tick(GameState* game) {
     if (num_players < 0) { num_players = 0; }
     if (num_players > SNAKE_MAX_PLAYERS) { num_players = SNAKE_MAX_PLAYERS; }
 
-    for (int i = 0; i < num_players; i++) { game->players[i].needs_reset = false; }
+    for (int i = 0; i < num_players; i++) {
+        game->players[i].needs_reset = false;
+        game->players[i].died_this_tick = false;
+        game->players[i].score_at_death = 0;
+    }
 
     for (int i = 0; i < num_players; i++) {
         PlayerState* player = &game->players[i];
@@ -162,6 +170,17 @@ void game_tick(GameState* game) {
     }
 
     collision_detect_and_resolve(game);
+
+    /* Apply death effects (capture score, reset score) before respawn */
+    for (int i = 0; i < num_players; i++) {
+        PlayerState* player = &game->players[i];
+        if (!player->active) { continue; }
+        if (!player->needs_reset) { continue; }
+
+        player->died_this_tick = true;
+        player->score_at_death = player->score;
+        player->score = 0;
+    }
 
     for (int i = 0; i < num_players; i++) {
         PlayerState* player = &game->players[i];

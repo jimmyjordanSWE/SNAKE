@@ -1,0 +1,4 @@
+# Snake Game Configuration
+board_width=40
+board_height=20
+tick_rate_ms=100

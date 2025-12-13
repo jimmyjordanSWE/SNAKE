@@ -1,21 +1,27 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "snake/game.h"
 #include "snake/input.h"
+#include "snake/persist.h"
 #include "snake/platform.h"
 #include "snake/render.h"
 
 int main(void) {
+    /* Load configuration */
+    GameConfig config;
+    persist_load_config(".snake_config", &config);
+
     /* Initialize rendering with minimum 30x12 terminal */
     if (!render_init(60, 24)) {
         fprintf(stderr, "Failed to initialize rendering\n");
         return 1;
     }
 
-    /* Initialize game with 20x10 playfield */
+    /* Initialize game with configured dimensions */
     GameState game = {0};
-    game_init(&game, 40, 20, 42);
+    game_init(&game, config.board_width, config.board_height, 42);
 
     /* Initialize input */
     if (!input_init()) {
@@ -46,16 +52,32 @@ int main(void) {
         /* Update game state with latest input applied */
         game_tick(&game);
 
+        /* Save scores when a player dies (before score reset) */
+        for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
+            if (game.players[i].died_this_tick && game.players[i].score_at_death > 0) {
+                char player_name[32];
+                snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
+                persist_append_score(".snake_scores", player_name, game.players[i].score_at_death);
+            }
+        }
+
         /* Render frame */
         render_draw(&game);
 
         /* Sleep to control frame rate */
-        platform_sleep_ms(100);
+        platform_sleep_ms((uint64_t)config.tick_rate_ms);
 
         tick++;
     }
 
 done:
+    /* Save high scores if either player scored */
+    if (game.players[0].score > 0) { persist_append_score(".snake_scores", "Player1", game.players[0].score); }
+    if (game.players[1].score > 0) { persist_append_score(".snake_scores", "Player2", game.players[1].score); }
+
+    /* Save updated config */
+    persist_write_config(".snake_config", &config);
+
     input_shutdown();
     render_shutdown();
 

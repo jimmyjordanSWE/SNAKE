@@ -216,16 +216,19 @@ void tty_flip(tty_context* ctx) {
                 continue;
             }
 
-            /* Found a change, find span */
+            /* Found a change, find a span of changed pixels with the same color */
             int span_start = x;
             uint16_t span_color = ctx->back[y * ctx->width + x].color;
 
-            while (x < ctx->width && *(uint32_t*)&ctx->front[y * ctx->width + x] != *(uint32_t*)&ctx->back[y * ctx->width + x]) { x++; }
+            while (x < ctx->width && *(uint32_t*)&ctx->front[y * ctx->width + x] != *(uint32_t*)&ctx->back[y * ctx->width + x] &&
+                   ctx->back[y * ctx->width + x].color == span_color) {
+                x++;
+            }
             int span_end = x;
 
             /* Cursor positioning */
-            int n = snprintf(buf + pos, remaining - pos, "\x1b[%d;%dH", y + 1, span_start + 1);
-            if (n < 0 || (size_t)n >= remaining - pos) { return; }
+            int n = snprintf(buf + pos, remaining, "\x1b[%d;%dH", y + 1, span_start + 1);
+            if (n < 0 || (size_t)n >= remaining) { return; }
             pos += (size_t)n;
             remaining -= (size_t)n;
 
@@ -238,20 +241,20 @@ void tty_flip(tty_context* ctx) {
                 current_bg = (int)bg;
 
                 if (fg < 8) {
-                    n = snprintf(buf + pos, remaining - pos, "\x1b[3%um", (unsigned int)fg);
+                    n = snprintf(buf + pos, remaining, "\x1b[3%um", (unsigned int)fg);
                 } else {
-                    n = snprintf(buf + pos, remaining - pos, "\x1b[9%um", (unsigned int)(fg - 8));
+                    n = snprintf(buf + pos, remaining, "\x1b[9%um", (unsigned int)(fg - 8));
                 }
-                if (n < 0 || (size_t)n >= remaining - pos) { return; }
+                if (n < 0 || (size_t)n >= remaining) { return; }
                 pos += (size_t)n;
                 remaining -= (size_t)n;
 
                 if (bg < 8) {
-                    n = snprintf(buf + pos, remaining - pos, "\x1b[4%um", (unsigned int)bg);
+                    n = snprintf(buf + pos, remaining, "\x1b[4%um", (unsigned int)bg);
                 } else {
-                    n = snprintf(buf + pos, remaining - pos, "\x1b[10%um", (unsigned int)(bg - 8));
+                    n = snprintf(buf + pos, remaining, "\x1b[10%um", (unsigned int)(bg - 8));
                 }
-                if (n < 0 || (size_t)n >= remaining - pos) { return; }
+                if (n < 0 || (size_t)n >= remaining) { return; }
                 pos += (size_t)n;
                 remaining -= (size_t)n;
             }
@@ -261,9 +264,10 @@ void tty_flip(tty_context* ctx) {
                 uint16_t ch = ctx->back[y * ctx->width + i].pixel;
                 char utf8[4];
                 int utf8_len = utf16_to_utf8(ch, utf8);
-                if (pos + (size_t)utf8_len > remaining) { return; }
+                if ((size_t)utf8_len > remaining) { return; }
                 memcpy(buf + pos, utf8, (size_t)utf8_len);
                 pos += (size_t)utf8_len;
+                remaining -= (size_t)utf8_len;
             }
 
             /* Update front buffer */
@@ -281,7 +285,8 @@ void tty_flip(tty_context* ctx) {
 /* Force redraw */
 void tty_force_redraw(tty_context* ctx) {
     if (!ctx) { return; }
-    memcpy(ctx->front, ctx->back, (size_t)ctx->width * (size_t)ctx->height * sizeof(struct ascii_pixel));
+    /* Ensure every cell is treated as changed by making front differ from back. */
+    memset(ctx->front, 0, (size_t)ctx->width * (size_t)ctx->height * sizeof(struct ascii_pixel));
     ctx->dirty = true;
     tty_flip(ctx);
 }
@@ -312,9 +317,13 @@ bool tty_check_resize(tty_context* ctx) {
     struct ascii_pixel* new_front = malloc(new_size);
     struct ascii_pixel* new_back = malloc(new_size);
 
-    if (!new_front || !new_back) {
+    size_t new_write_buffer_size = (size_t)new_width * (size_t)new_height * 32;
+    char* new_write_buffer = malloc(new_write_buffer_size);
+
+    if (!new_front || !new_back || !new_write_buffer) {
         free(new_front);
         free(new_back);
+        free(new_write_buffer);
         return false;
     }
 
@@ -339,12 +348,16 @@ bool tty_check_resize(tty_context* ctx) {
     /* Free old buffers */
     free(ctx->front);
     free(ctx->back);
+    free(ctx->write_buffer);
 
     /* Update context */
     ctx->front = new_front;
     ctx->back = new_back;
     ctx->width = new_width;
     ctx->height = new_height;
+
+    ctx->write_buffer = new_write_buffer;
+    ctx->write_buffer_size = new_write_buffer_size;
 
     /* Check size validity */
     bool old_size_valid = ctx->size_valid;
@@ -362,6 +375,7 @@ bool tty_check_resize(tty_context* ctx) {
         ctx->on_size_invalid(ctx, new_width, new_height, ctx->min_width, ctx->min_height, ctx->callback_userdata);
     }
 
+    ctx->dirty = true;
     return true;
 }
 

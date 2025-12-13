@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "snake/game.h"
+#include "snake/persist.h"
 
 typedef enum {
 
@@ -15,7 +16,15 @@ void render_set_glyphs(RenderGlyphs glyphs);
 
 bool render_init(int min_width, int min_height);
 void render_shutdown(void);
-void render_draw(const GameState* game);
+
+/*
+ * Draw the game state and high scores to the display.
+ *
+ * @param game        Current game state
+ * @param scores      Array of high scores to display (can be NULL)
+ * @param score_count Number of scores in the array
+ */
+void render_draw(const GameState* game, const HighScore* scores, int score_count);
 
 /* Draws an upbeat startup welcome screen and waits-for-input prompt (caller handles input). */
 void render_draw_welcome_screen(void);

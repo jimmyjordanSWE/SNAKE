@@ -58,17 +58,17 @@ void input_shutdown(void) {
 }
 
 // Helper to parse ANSI escape sequence for arrow keys.
-// Returns SNAKE_DIR_UP/DOWN/LEFT/RIGHT if valid, or -1 if not.
+// Returns 0=up, 1=down, 2=right, 3=left if valid, or -1 if not.
 static int parse_arrow_key(int code) {
     switch (code) {
     case 'A':
-        return SNAKE_DIR_UP;
+        return 0; // up
     case 'B':
-        return SNAKE_DIR_DOWN;
+        return 1; // down
     case 'C':
-        return SNAKE_DIR_RIGHT;
+        return 2; // right
     case 'D':
-        return SNAKE_DIR_LEFT;
+        return 3; // left
     default:
         return -1;
     }
@@ -96,14 +96,14 @@ void input_poll(InputState* out) {
         if (c == '\x1b' && i + 2 < nread && buf[i + 1] == '[') {
             int code = (int)buf[i + 2];
             int dir = parse_arrow_key(code);
-            if (dir >= 0) {
-                if (dir == SNAKE_DIR_UP || dir == SNAKE_DIR_DOWN) {
-                    out->p1_dir = (SnakeDir)dir;
-                    out->p1_dir_set = true;
-                } else if (dir == SNAKE_DIR_LEFT || dir == SNAKE_DIR_RIGHT) {
-                    out->p1_dir = (SnakeDir)dir;
-                    out->p1_dir_set = true;
-                }
+            if (dir == 0) {
+                out->move_up = true;
+            } else if (dir == 1) {
+                out->move_down = true;
+            } else if (dir == 2) {
+                out->move_right = true;
+            } else if (dir == 3) {
+                out->move_left = true;
             }
             // Skip the escape sequence.
             i += 2;
@@ -115,23 +115,19 @@ void input_poll(InputState* out) {
         // Player 1 (WASD + arrows).
         case 'w':
         case 'W':
-            out->p1_dir = SNAKE_DIR_UP;
-            out->p1_dir_set = true;
+            out->move_up = true;
             break;
         case 's':
         case 'S':
-            out->p1_dir = SNAKE_DIR_DOWN;
-            out->p1_dir_set = true;
+            out->move_down = true;
             break;
         case 'a':
         case 'A':
-            out->p1_dir = SNAKE_DIR_LEFT;
-            out->p1_dir_set = true;
+            out->move_left = true;
             break;
         case 'd':
         case 'D':
-            out->p1_dir = SNAKE_DIR_RIGHT;
-            out->p1_dir_set = true;
+            out->move_right = true;
             break;
 
         // Global commands.

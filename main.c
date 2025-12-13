@@ -126,6 +126,8 @@ int main(void) {
 
     /* Render loop */
     int tick = 0;
+    HighScore highscores[PERSIST_MAX_SCORES];
+    int highscore_count = 0;
 
     while (game.status != GAME_STATUS_GAME_OVER) {
         /* Check for terminal resize and handle it */
@@ -133,7 +135,7 @@ int main(void) {
             terminal_resized = 0;
             if (!get_stdout_terminal_size(&term_w, &term_h) || !terminal_size_sufficient(term_w, term_h)) {
                 /* Terminal became too small: show prompt and pause game */
-                render_draw(&game);
+                render_draw(&game, highscores, highscore_count);
 
                 fprintf(stderr, "\n");
                 fprintf(stderr, "╔════════════════════════════════════════╗\n");
@@ -170,7 +172,13 @@ int main(void) {
 
         if (input_state.quit) { goto done; }
 
-        if (input_state.p1_dir_set && game.players[0].active) { game.players[0].queued_dir = input_state.p1_dir; }
+        /* Translate raw input to game direction for player 1 */
+        if (game_player_is_active(&game, 0)) {
+            if (input_state.move_up) { game.players[0].queued_dir = SNAKE_DIR_UP; }
+            if (input_state.move_down) { game.players[0].queued_dir = SNAKE_DIR_DOWN; }
+            if (input_state.move_left) { game.players[0].queued_dir = SNAKE_DIR_LEFT; }
+            if (input_state.move_right) { game.players[0].queued_dir = SNAKE_DIR_RIGHT; }
+        }
 
         if (input_state.pause_toggle) { game.status = (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED; }
 
@@ -179,19 +187,28 @@ int main(void) {
         /* Update game state with latest input applied */
         game_tick(&game);
 
+        /* Load high scores (do this periodically to show updates) */
+        highscore_count = persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+
         /* Save scores when a player dies (before score reset) */
-        for (int i = 0; i < game.num_players; i++) {
-            if (game.players[i].died_this_tick && game.players[i].score_at_death > 0) {
-                char player_name[32];
-                snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
-                persist_append_score(".snake_scores", player_name, game.players[i].score_at_death);
-                render_note_session_score(player_name, game.players[i].score_at_death);
+        int num_players = game_get_num_players(&game);
+        for (int i = 0; i < num_players; i++) {
+            if (game_player_died_this_tick(&game, i)) {
+                int death_score = game_player_score_at_death(&game, i);
+                if (death_score > 0) {
+                    char player_name[32];
+                    snprintf(player_name, sizeof(player_name), "Player%d", i + 1);
+                    persist_append_score(".snake_scores", player_name, death_score);
+                    render_note_session_score(player_name, death_score);
+                    /* Reload scores after appending */
+                    highscore_count = persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+                }
             }
         }
 
         /* If the player died, show a small animation and wait for acknowledgement */
-        if (game.num_players > 0 && game.players[0].died_this_tick) {
-            render_draw(&game);
+        if (game_player_died_this_tick(&game, 0)) {
+            render_draw(&game, highscores, highscore_count);
             render_draw_death_overlay(&game, 0, true);
 
             /* Pause rendering and wait: any key restarts, Q quits */
@@ -208,7 +225,7 @@ int main(void) {
         }
 
         /* Render frame */
-        render_draw(&game);
+        render_draw(&game, highscores, highscore_count);
 
         /* Sleep to control frame rate */
         platform_sleep_ms((uint64_t)config.tick_rate_ms);
@@ -218,9 +235,9 @@ int main(void) {
 
 done:
     /* Save high scores if the player scored */
-    if (game.num_players > 0 && game.players[0].score > 0) {
-        persist_append_score(".snake_scores", "Player1", game.players[0].score);
-        render_note_session_score("Player1", game.players[0].score);
+    if (game_player_is_active(&game, 0) && game_player_current_score(&game, 0) > 0) {
+        persist_append_score(".snake_scores", "Player1", game_player_current_score(&game, 0));
+        render_note_session_score("Player1", game_player_current_score(&game, 0));
     }
 
     /* Save updated config */

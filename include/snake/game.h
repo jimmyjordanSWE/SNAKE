@@ -41,3 +41,10 @@ typedef struct {
 void game_init(GameState* game, int width, int height, uint32_t seed);
 void game_reset(GameState* game);
 void game_tick(GameState* game);
+
+/* Query functions for encapsulated state access */
+int game_get_num_players(const GameState* game);
+bool game_player_is_active(const GameState* game, int player_index);
+int game_player_current_score(const GameState* game, int player_index);
+bool game_player_died_this_tick(const GameState* game, int player_index);
+int game_player_score_at_death(const GameState* game, int player_index);

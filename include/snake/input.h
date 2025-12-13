@@ -2,17 +2,28 @@
 
 #include <stdbool.h>
 
-#include "snake/types.h"
+/*
+ * Input module - provides raw input state without game-specific interpretation
+ *
+ * This module is now decoupled from game types to improve reusability and testability.
+ * The caller (main or game controller) is responsible for translating raw inputs
+ * into game-specific actions.
+ */
 
 typedef struct {
+    /* Global commands */
     bool quit;
     bool restart;
     bool pause_toggle;
 
+    /* Generic flag for any keypress */
     bool any_key;
 
-    SnakeDir p1_dir;
-    bool p1_dir_set;
+    /* Raw directional input (not game-specific directions) */
+    bool move_up;
+    bool move_down;
+    bool move_left;
+    bool move_right;
 } InputState;
 
 bool input_init(void);

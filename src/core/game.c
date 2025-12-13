@@ -256,3 +256,33 @@ void game_tick(GameState* game) {
         food_respawn(game);
     }
 }
+
+/* Query functions for encapsulated state access */
+
+int game_get_num_players(const GameState* game) {
+    if (game == NULL) { return 0; }
+    int count = game->num_players;
+    if (count < 0) { return 0; }
+    if (count > SNAKE_MAX_PLAYERS) { return SNAKE_MAX_PLAYERS; }
+    return count;
+}
+
+bool game_player_is_active(const GameState* game, int player_index) {
+    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
+    return game->players[player_index].active;
+}
+
+int game_player_current_score(const GameState* game, int player_index) {
+    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return 0; }
+    return game->players[player_index].score;
+}
+
+bool game_player_died_this_tick(const GameState* game, int player_index) {
+    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
+    return game->players[player_index].died_this_tick;
+}
+
+int game_player_score_at_death(const GameState* game, int player_index) {
+    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return 0; }
+    return game->players[player_index].score_at_death;
+}

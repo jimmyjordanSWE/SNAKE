@@ -29,4 +29,9 @@ Terminal Snake project designed to meet the course requirements (C/C++) and the 
 - `include/` public headers (shared interfaces)
 - `src/` implementation split into independent modules
 - `design_docs/` design notes per module
+- `design_docs/60_networking.md` documents the PedroChat multiplayer connection method
 - `course_context/` provided course/spec documents
+
+## Multiplayer API reference
+
+The instructor-provided reference implementation and protocol source lives in `Multiplayer_API/`.

@@ -49,21 +49,21 @@ This file is meant to be the single “source of truth” for implementation pro
 
 ## Step 1 — Shared types + utilities (M1)
 
-4. [ ] Define shared basic types in `include/snake/types.h`
+4. [x] Define shared basic types in `include/snake/types.h`
    - Add:
      - `SnakePoint { int x, y; }`
      - `SnakeDir { UP, DOWN, LEFT, RIGHT }`
      - `GameStatus { RUNNING, PAUSED, GAME_OVER }`
    - Verify: `make`.
 
-5. [ ] Implement deterministic RNG utility (`src/utils/rng.c`)
+5. [x] Implement deterministic RNG utility (`src/utils/rng.c`)
    - API idea:
      - `void rng_seed(uint32_t *state, uint32_t seed)`
      - `uint32_t rng_next_u32(uint32_t *state)`
      - `int rng_range(uint32_t *state, int lo, int hi_inclusive)`
    - Verify: small local test in `main.c` prints stable sequence for seed 123.
 
-6. [ ] Implement bounds helpers (`src/utils/bounds.c`)
+6. [x] Implement bounds helpers (`src/utils/bounds.c`)
    - Examples:
      - `bool in_bounds(int x, int y, int w, int h)`
    - Verify: `make`.
@@ -214,15 +214,22 @@ This file is meant to be the single “source of truth” for implementation pro
 
 ## Step 10 — Networking mode (optional) (M6)
 
-29. [ ] Define the network protocol adapter layer
-   - If server protocol is unknown yet, create stubs + a placeholder codec.
-   - Verify: client can connect/disconnect cleanly.
+29. [ ] Implement PedroChat transport adapter (`src/net/`)
+   - Follow the provided PedroChat protocol described in [design_docs/60_networking.md](60_networking.md).
+   - Implement TCP newline-delimited JSON framing and strict line-length caps.
+   - Implement the core commands:
+     - `host`, `join`, `list`, `leave`, `game`
+   - Verify: `./snake` can (temporarily) connect, list sessions, host, and join without blocking the main loop.
 
-30. [ ] Implement strict packet parsing + validation
-   - Verify: malformed packets disconnect without crash.
+30. [ ] Implement strict JSON schema validation for Snake messages
+   - Validate `data.type` and required fields for `input` and `state`.
+   - Ignore/drop invalid messages without crashing.
+   - Verify: fuzz with malformed JSON and oversized lines; process survives and disconnects cleanly as designed.
 
-31. [ ] Implement online render loop (server authoritative)
-   - Verify: local input sends direction intents; server snapshots render.
+31. [ ] Implement online mode (host client authoritative)
+   - Host runs `game_tick()` locally and broadcasts `state` snapshots via `cmd:"game"`.
+   - Non-host clients send `input` messages to the host (targeted `destination=<hostClientId>`).
+   - Verify: remote client can steer its snake and sees consistent snapshots from host.
 
 ---
 

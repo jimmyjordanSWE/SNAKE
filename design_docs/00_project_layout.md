@@ -49,8 +49,8 @@ Responsibilities:
 
 ### 6) Networking client (`src/net/`)
 Responsibilities:
-- Connect to the provided server.
-- Encode outgoing inputs, decode incoming state.
+- Connect to the provided PedroChat relay server.
+- Encode outgoing inputs and decode incoming relay events.
 - Strict validation of all received data.
 
 ### 7) Shared utilities (`src/utils/`)

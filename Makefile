@@ -73,7 +73,7 @@ $(error Unknown CONFIG '$(CONFIG)'. Use CONFIG=debug-asan|release|valgrind)
 endif
 
 OBJ_DIR := $(BUILD_DIR)/obj
-BIN := $(BUILD_DIR)/snake
+BIN := snake
 LOG_DIR := $(BUILD_ROOT)/logs
 
 SRC := $(shell find src -name '*.c' -print) main.c
@@ -110,13 +110,13 @@ release:
 valgrind:
 	@$(MAKE) CONFIG=valgrind $(PREBUILD) build
 	@mkdir -p $(LOG_DIR)
-	@$(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./$(BUILD_ROOT)/valgrind/snake \
+	@$(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./snake \
 		|| { echo "error: valgrind found issues (see $(LOG_DIR)/valgrind.log)"; tail -n 80 "$(LOG_DIR)/valgrind.log"; exit 1; }
 	@echo "$(OK_MSG)"
 
 gdb:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
-	gdb ./$(BUILD_ROOT)/debug-asan/snake
+	gdb ./snake
 
 tools-check:
 	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo "error: clang-format not found"; exit 1; }
@@ -152,4 +152,4 @@ $(OBJ_DIR)/%.o: %.c
 -include $(DEP)
 
 clean:
-	@rm -rf $(BUILD_ROOT)
+	@rm -rf $(BUILD_ROOT) $(BIN)

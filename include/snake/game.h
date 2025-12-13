@@ -7,10 +7,17 @@
 
 #define SNAKE_MAX_PLAYERS 2
 
+#define SNAKE_MAX_LENGTH 1024
+
 typedef struct {
     SnakeDir current_dir;
     SnakeDir queued_dir;
     int score;
+
+    SnakePoint body[SNAKE_MAX_LENGTH];
+    int length;
+    bool active;
+    bool needs_reset;
 } PlayerState;
 
 typedef struct {
@@ -18,6 +25,8 @@ typedef struct {
     int height;
     uint32_t rng_state;
     GameStatus status;
+
+    int num_players;
 
     SnakePoint food;
     bool food_present;

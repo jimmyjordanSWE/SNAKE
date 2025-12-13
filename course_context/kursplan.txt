@@ -1,0 +1,158 @@
+
+KURSPLANERING CHAS ACADEMY
+Systemutveckling 
+Kursbenämning:
+Programmering i C/C++
+Kurspoäng:
+60 yhp
+Undervisningsspråk:
+Svenska, delvis engelska
+Utbildarens namn:
+Robin Andersson
+Antal veckor:
+12
+ÖVERSIKTSSCHEMA Preliminär grovplanering av kursen. Upplägget kan komma att ändras. 
+VeckaLektion/
+handledning
+Ämne
+Kursvecka 1 
+(v42)
+Boiler Room -- En potentiell kund vill anlita er för ett projekt.
+•Gå igenom kravspecifikationen som kunden har gett er (finns i Canvas)
+•Skapa en offert med lösningsförslag för presentation på tisdagen.
+Kursvecka 1 
+(v42)
+Workshops •Varje team presenterar sin offert och lösningsförslag för mig/samtliga.
+•Sc-rum and coke! Vi börjar arbeta enligt Scrum-modellen på en gång.
+•TCP server/klient
+•Genomgång av boiler-roomsprojektet kommande veckor.
+Kursvecka 2 
+(v43)
+Boiler Room •Varje grupp klonar sitt projekt till sin server.
+•Installera allt som krävs för att kompilera och köra projektet.
+•Dela upp projektet till tre delar med följande struktur:
+Projekt
+|----- libs
+|           |--- HTTP.c/h
+|           |--- TCP.c/h
+|           |--- utils.h
+|           |--- osv...
+|----- client
+|           |--- Makefile
+|           |--- main.c
+CHAS ACADEMY AB
+Arenavägen 61
+121 77 Johanneshov, Sweden
+KURSPLANERING CHAS 
+ACADEMY
+|           |--- weather_client
+|----- Server
+            |--- Makefile
+            |--- main.c
+            |--- weather_server
+•Börja bygga upp era TCP och HTTP server-”klasser” och lägg dem i libs.
+Kursvecka 2 
+(v43)
+Workshops •Uppfräschning av pekare och pek-pekare i C
+•Parsa HTTP requests
+•Skapa HTTP respons
+Kursvecka 3 
+(v44)
+Boiler Room •Bygg färdigt TCP och HTTP server libben
+•Ändra i klienten så att den istället frågar er server istället för Meteo direkt.
+Kursvecka 3 
+(v44)
+Workshops •Vi hjälps åt så att alla kommer ifatt med projektet
+•Kanske lite code-alongs om det behövs
+•Läsa från och skriva till filer i C
+Kursvecka 4 
+(v45)
+Boiler Room •Spara ner Meteo svaren till filesystemet.
+•Använd dem filerna som cache precis som i klienten.
+Kursvecka 4 
+(v45)
+Workshops •Teststrategier och kodgranskning
+Kursvecka 5 
+(v46)
+Boiler Room •Skriv testkod för dom viktigaste funktioner och ”klasser” i era projekt.
+•Kodgranska mitt projekt som jag har gjort och ge mig konstruktiv feedback
+•Varför misslyckas min test-kod?
+•Lämna in era svar i gruppuppgiften som jag har skapat i Canvas.
+Kursvecka 5 
+(v46)
+Workshops •Optimerade funktioner och kod
+•Optimerad dataåtkomst
+•Optimeringsflaggor
+Kursvecka 6 
+(v47)
+Boiler Room •Prova olika optimeringsflaggor i era projekt.
+Notera skillnaderna och varför ni valde just den flaggan.
+(Vi går igenom era svar i Checkpointen på tisdagen)
+•Se över er kod baserat på det vi gick igenom förra veckan och se om ni kan
+optimera er kod för att använda mindre minne. Balansera också det med
+CPU användningen.
+Notera vilka ändringar ni gjorde och varför ni valde den ändringen.
+Kursvecka 6 
+(v47)
+Workshops •Säker indata och undvikande av säkerhetsluckor
+•Säkerhetsluckor och pen-testning
+Kursvecka 7 
+(v48)
+Boiler Room •Identifiera era säkerhetsluckor (ja ni har minst en)
+Och patcha luckorna.
+Notera vilka luckor ni hittade och patchade.
+Kursvecka 7 
+(v48)
+Workshops •Grunderna i C++
+•Klasser och arv i C++
+CHAS ACADEMY AB
+Arenavägen 61
+121 77 Johanneshov, Sweden
+KURSPLANERING CHAS 
+ACADEMY
+Kursvecka 8 
+(v49)
+Boiler Room •Gör er väder-klient i C++
+Använd Makefile och samma koncept ni är vana vid.
+Notera och motivera om ni föredrar C++ över ren C eller tvärtom.
+Lista för- och nackdelar med respektive.
+Kursvecka 8 
+(v49)
+Workshops •Pekare och referenser i C++
+•Läsa och skriva till filer med C++
+•Vad är mbedtls och hur implementerar vi det i våra projekt?
+Kursvecka 9 
+(v50)
+Boiler Room •Implementera mbedtls i era projekt.
+•Slutför era projekt (C klienten, C++ klienten och servern)
+•Dokumentera era projekt för att kunna lämna över dem till en annan grupp.
+Kursvecka 9 
+(v50)
+Workshops •Hur C++ hjälper oss att skriva säker kod i förhållande till ren C.
+•Varför constructor och destructor i C++?
+•Vi tittar på sambandet mellan våra C ”klasser” och C++ klasser/objekt.
+Kursvecka 10 
+(v51)
+Boiler Room •Ni tilldelas någon annans grupps projekt för analys och testning.
+•Testa, identifiera och dokumentera säkerhetsluckor och buggar.
+Kursvecka 10 
+(v51)
+Workshops •Branschens krav på dokumentation
+•Vi går igenom och läser dokumentation i olika utföranden.
+Kursvecka 11 
+(v52)
+Boiler Room •Implementera patchar för säkerhetsluckorna och buggarna som det andra
+teamet hittade
+•Slutför projektet inför inlämning/examination
+Kursvecka 11 
+(v52)
+Workshops •AI verktyg för testning, validering och säkerhet.
+Kursvecka 12 
+(v2)
+Boiler Room •Muntlig redovisning av projektet för kunden
+Kursvecka 12 
+(v2)
+Workshops •Examinering
+CHAS ACADEMY AB
+Arenavägen 61
+121 77 Johanneshov, Sweden

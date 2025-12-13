@@ -1,0 +1,81 @@
+  Yrkeshögskolepoäng:  60  |  Undervisningsspråk:  Svenska,  delvis  engelska  |  Kursplan  fastställd:  
+2025-05-05   | Utbildningsnamn: Systemutvecklare C/C++ | Utbildningsnummer:  YH02031 | Utbildningsomgång: 3   
+ 
+KURSPLAN  PROGRAMMERING I C/C++ 
+Denna kurs introducerar avancerad programmering i C och grunderna i objektorienterad programmering (OOP) 
+med  C++.  Studerande  lär  sig  använda  pekare  och  referenser  för  effektiv  minneshantering,  implementera 
+filhantering och optimera prestanda. Kursen täcker också säkerhet och teststrategier för att säkerställa robusta 
+program.  Efter  en  inledande  inlärningsfas  genomför  studerande  projekt  där  de  utvecklar och dokumenterar 
+lösningar som använder både C och C++. 
+ 
+Lärandemål 
+Vid avslutad kurs med godkända resultat, kan den studerande: 
+Kunskaper 
+1.  Förklara hur pekare och referenser används i C och C++ för att hantera minne och data. 
+2.  Redogöra för grundläggande koncepten klasser och arv inom objektorienterad programmering (OOP) i 
+C++. 
+3.  Förklara hur filhantering i C och C++ används för att läsa och skriva data. 
+4.  Redogöra för metoder för att optimera prestanda i C och C++-program, inklusive loop-optimering och 
+dataåtkomst. 
+5.  Förklara grundläggande säkerhetsaspekter i C och C++, såsom validering av indata och undvikande av 
+säkerhetsluckor. 
+6.  Förklara hur teststrategier används för att säkerställa korrekt funktionalitet i C och C++-program. 
+7.  Redogöra för centrala principer för god dokumentation på ett övergripande sätt. 
+8.  Redogöra för vad Scrum är och innebär, på ett övergripande sätt. 
+9.  Redogöra för hur AI-verktyg kan användas för effektiv testning, på ett övergripande sätt.  
+Färdigheter 
+1.  Använda pekare och referenser för att implementera effektiv minneshantering i C och C++. 
+2.  Utveckla enkla objektorienterade program i C++, inklusive klasser och arv. 
+3.  Implementera filhantering i C och C++ för att läsa och skriva data. 
+4.  Utföra grundläggande, manuella tester för att säkerställa korrekt funktionalitet i kod. 
+ 
+ 
+5.  Skriva dokumentation för att beskriva systemstruktur och användning, på ett fungerande sätt. 
+6.  Tillämpa relevanta AI-verktyg för kodgenerering i ett för kursen aktuellt projekt, på ett ansvarsfullt sätt 
+och med hänsyn till den egna inlärningsprocessen. 
+ 
+Kunskapskontroll 
+Summativ bedömning 
+Summativ bedömning utvärderar studerandes kunskaper och färdigheter retroaktivt för att sammanfatta vad 
+den studerande kan vid examinationstillfället. Den summativa bedömningen täcker samtliga kursmål och sker vid 
+följande avgränsade examinationstillfällen: 
+ 
+●  Skriftligt kunskapstest – En (1) individuell prövning av teoretiska kunskaper. 
+●  Skriftlig reflektion – En (1) individuell redogörelse för egna lösningar och tillvägagångssätt. 
+●  Projektinlämning – En (1) gruppinlämning där varje studerandes individuella insats bedöms. 
+ 
+Formativ bedömning 
+ 
+Formativ bedömning utvärderar studerandes kunskaper och färdigheter löpande under kursens interaktiva 
+lärandemoment. Syftet är att effektivisera bedömningen och samtidigt stödja lärandet. Den formativa 
+bedömningen sker i samband med: 
+ 
+●  Workshops – Interaktiva undervisningstillfällen där klassen och utbildaren övar tillsammans. 
+●  Checkpoints – Regelbundna avstämningar där studerande presenterar sina projekt och får direkt 
+återkoppling. 
+Formativ bedömning är ett komplement till summativ bedömning och tillämpas enbart till fördel för studerande. 
+Studerande kan uppnå kursmål redan innan de summativa examinationerna genom formativ bedömning, men ett 
+underkänt resultat kan aldrig enbart baseras på denna bedömningsform.
+ 
+Principer för bedömning och betygskriterier 
+●  Icke godkänt (IG): Alla lärandemål är inte uppfyllda. 
+●  Godkänt (G): Alla lärandemål är uppfyllda på en tillfredsställande nivå. 
+ 
+ 
+●  Väl godkänt (VG): Alla lärandemål är uppfyllda på en tillfredsställande nivå. Utöver ovan uppvisar den studerande: 
+●  Hög precision i att använda pekare och referenser för att implementera effektiv minneshantering i C och 
+C++. 
+●  Stor skicklighet i att utveckla enkla objektorienterade program i C++, inklusive klasser och arv. 
+●  Hög precision i att utföra säkerhetsanalyser och föreslå åtgärder mot identifierade risker. 
+ 
+Rätt till särskilt pedagogiskt stöd och komplettering 
+Vid behov av särskilt pedagogiskt stöd kan följande anpassningar göras vid uppvisande av intyg: 
+●  Förlängd tid vid examinationstillfället. 
+●  Alternativa examinationsformer, exempelvis skriftliga istället för muntliga moment. 
+●  Utökat stöd för att underlätta inlärningen. 
+Komplettering och omprov: 
+●  Studerande har rätt till en (1) omexamination inom sex (6) månader från det ordinarie examinationstillfället. 
+Tid och form fastställs av utbildningsanordnaren och utbildaren och meddelas till studerande, som 
+förväntas följa dessa beslut. 
+ 
+ 

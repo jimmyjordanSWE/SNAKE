@@ -1,0 +1,61 @@
+Tävling, Multiplayer Snake! 
+
+1. Omfattning
+1.1. Systemet ska utgöra ett komplett spel av typen Snake, med stöd för både:
+•lokal spelomgång (singleplayer eller lokalt multiplayer), och
+•nätverksbaserat multiplayer-läge via en separat server (tillhandahålls av utbildaren).
+1.2. Tävlingsmomentet är frivilligt.
+1.3 All form av hjälp som ni kan ta till är tillåtet!
+Kalla in era favoritnördar, ert hemliga kodorakel eller vilken AI som helst!
+
+2. Grafiskt gränssnitt och interaktion
+2.1. Spelet ska visa en spelplan där minst följande visuella element framgår tydligt:
+•spelaren(s) mask(ar),
+•spelobjekt som masken kan konsumera (t.ex. “mat”) som skapas på slumpmässiga 
+positioner,
+•spelstatus (t.ex. pågående, pausad, game over),
+•aktuell poäng per spelare.
+2.2. Gränssnittet ska upplevas som visuellt tydligt. Det kan vara:
+•textbaserat i terminal (t.ex. med ncurses), eller
+•fönsterbaserat (t.ex. med SDL2 eller annan grafiklösning).
+Krav:
+•tydlig visuell separation mellan bakgrund, spelplan, mask och spelobjekt,
+•konsekvent färgsättning/utseende,
+•läsbar text för poäng, namn, tidsinfo etc.
+2.3. Spelet ska kunna styras med tangentbord. Minimikrav:
+•fyra riktningskommandon (upp, ner, vänster, höger),
+•styrningen ska vara responsiv; ändrad riktning ska slå igenom vid nästa speluppdatering 
+(“tick”).
+2.4. Vid game over ska användaren få tydlig feedback om att omgången är slut.
+2.5. Utan att avsluta programmet ska användaren kunna starta en ny omgång efter game over.
+
+3. Spelmekanik, grundläggande beteende
+3.1. En mask ska representeras som en sekvens av sammanhängande segment (t.ex. rutor/celler) där 
+ett segment är markerat som huvudet.
+3.2. Masken ska röra sig stegvis över spelplanen:
+•varje speluppdatering (“tick”) flyttas huvudet ett steg i aktuell riktning,
+•resten av kroppen följer huvudet enligt klassisk Snake-logik.
+3.3. När masken konsumerar “mat” som ökar längden ska:
+•maskens längd öka enligt spelets regler,
+•den konsumerade maten försvinna,
+•ny mat placeras på slumpmässig giltig position.
+3.4. Spelplanens dimensioner ska vara ändliga; spelaren får inte kunna lämna spelplanen.
+3.5. Speltakt (tick-frekvens) ska upplevas som flytande men förutsägbar.
+
+4. Kollisionshantering
+4.1. Systemet ska hantera minst följande kollisionstyper:
+•mask mot vägg (spelplanens gräns),
+•mask mot sin egen kropp,
+•kollision mellan två maskar.
+4.2. Vid kollision med vägg eller egen kropp ska följande ske:
+•masken “dör” och återställs omedelbart,
+•maskens längd återställs till 2 segment (eller motsvarande startlängd),
+•masken placeras på en ny slumpmässig giltig startposition,
+•den nya positionen får inte ligga utanför spelplanen.
+4.3. Vid kollision mellan två maskar ska den mask som kör in i den andra anses ha förlorat 
+kollisionen:
+•masken som kör in behandlas som “död” enligt 4.2,
+•masken som blir påkörd fortsätter som vanligt,
+•det ska vara deterministiskt definierat vad “kör in” betyder (t.ex. att ett huvud går in i en ruta 
+där annan mask redan befinner sig).
+4.4. Kollisionslogiken ska vara konsekvent och reproducerbar.

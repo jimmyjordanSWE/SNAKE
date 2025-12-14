@@ -34,6 +34,7 @@ g_render_3d.config.active_player= 0;
 g_render_3d.config.fov_degrees= 90.0f;
 g_render_3d.config.show_minimap= false;
 g_render_3d.config.show_stats= false;
+	g_render_3d.config.show_sprite_debug = false;
 g_render_3d.config.screen_width= 800;
 g_render_3d.config.screen_height= 600;
 }
@@ -85,7 +86,9 @@ camera_update_interpolation(&g_render_3d.camera, 1.0f / 60.0f);
 			WallProjection proj;
 			/* Diagnostic: if a very short hit occurs, log for debugging */
 			if(hit.distance < 0.5f) {
-				fprintf(stderr, "[ray-debug] col=%d dist=%.4f hit=(%.3f,%.3f) vert=%d\n", x, hit.distance, hit.hit_x, hit.hit_y, hit.is_vertical);
+				if (g_render_3d.config.show_sprite_debug) {
+					fprintf(stderr, "[ray-debug] col=%d dist=%.4f hit=(%.3f,%.3f) vert=%d\n", x, hit.distance, hit.hit_x, hit.hit_y, hit.is_vertical);
+				}
 			}
 			/* perpendicular distance to avoid fisheye */
 			projection_project_wall_perp(&g_render_3d.projector, hit.distance, ray_angle, interp_cam_angle, &proj);

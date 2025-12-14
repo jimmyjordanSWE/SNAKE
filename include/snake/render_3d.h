@@ -6,6 +6,7 @@ int active_player;
 float fov_degrees;
 bool show_minimap;
 bool show_stats;
+	bool show_sprite_debug;
 int screen_width;
 int screen_height;
 } Render3DConfig;

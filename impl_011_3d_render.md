@@ -12,6 +12,8 @@ Optional pseudo-3D rendering pipeline using SDL graphics backend. See `render_3d
 
 **Status:** Not core gameplay; experimental feature for visual enhancement.
 
+**Debugging:** `Render3DConfig` includes a `show_sprite_debug` flag to enable diagnostic overlays and gated `fprintf` logs for the raycaster and sprite system.
+
 ---
 
 ## Architecture

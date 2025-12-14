@@ -40,6 +40,7 @@ Start with **`impl_00_index.md`** for module status overview, then read individu
 - `impl_009_persist.md` - High scores & config
 - `impl_010_networking.md` - Network (PedroChat relay)
 - `impl_011_3d_render.md` - 3D rendering (SDL optional)
+	- Note: `Render3DConfig` now includes `show_sprite_debug` to toggle debug overlays/logging.
 
 ## Structure
 

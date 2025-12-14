@@ -2,6 +2,11 @@
 #include "snake/collision.h"
 #include "snake/utils.h"
 #include <stddef.h>
+/* Module constants to avoid magic literals and improve testability. */
+#define SPAWN_MAX_ATTEMPTS 1000
+#define FOOD_RESPAWN_MIN 1
+#define FOOD_RESPAWN_MAX 3
+#define FOOD_MIN_ATTEMPTS 32
 static SnakePoint random_point(GameState* game) {
 SnakePoint p;
 p.x= snake_rng_range(&game->rng_state, 0, game->width - 1);
@@ -30,10 +35,10 @@ return false;
 }
 static void food_respawn(GameState* game) {
 if(game == NULL) return;
-int num_to_spawn= snake_rng_range(&game->rng_state, 1, 3);
+int num_to_spawn= snake_rng_range(&game->rng_state, FOOD_RESPAWN_MIN, FOOD_RESPAWN_MAX);
 game->food_count= 0;
 int max_attempts= game->width * game->height * 2;
-if(max_attempts < 32) max_attempts= 32;
+if(max_attempts < FOOD_MIN_ATTEMPTS) max_attempts= FOOD_MIN_ATTEMPTS;
 for(int i= 0; i < num_to_spawn && game->food_count < SNAKE_MAX_FOOD; i++) {
 for(int attempt= 0; attempt < max_attempts; attempt++) {
 SnakePoint p= random_point(game);
@@ -69,7 +74,7 @@ PlayerState* player= &game->players[player_index];
 player->active= true;
 player->needs_reset= false;
 player->length= 2;
-for(int attempt= 0; attempt < 1000; attempt++) {
+for(int attempt= 0; attempt < SPAWN_MAX_ATTEMPTS; attempt++) {
 SnakePoint head= (SnakePoint){
     .x= snake_rng_range(&game->rng_state, 2, game->width - 3),
     .y= snake_rng_range(&game->rng_state, 2, game->height - 3),
@@ -176,6 +181,12 @@ for(int i= 0; i < num_players; i++) {
 PlayerState* player= &game->players[i];
 if(player->needs_reset) (void)spawn_player(game, i);
 }
+/* If no players could be (re)spawned the game is over. */
+{
+    int active_count = 0;
+    for(int i = 0; i < num_players; i++) if(game->players[i].active) active_count++;
+    if(active_count == 0) game->status = GAME_STATUS_GAME_OVER;
+}
 bool food_consumed= false;
 for(int i= 0; i < num_players; i++) {
 PlayerState* player= &game->players[i];
@@ -220,4 +231,12 @@ return game->players[player_index].died_this_tick;
 int game_player_score_at_death(const GameState* game, int player_index) {
 if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return 0;
 return game->players[player_index].score_at_death;
+}
+
+/* Test helper: set `game` food positions deterministically for unit tests. */
+void game_set_food(GameState* game, const SnakePoint* food, int count) {
+    if(!game || !food || count <= 0) return;
+    if(count > SNAKE_MAX_FOOD) count = SNAKE_MAX_FOOD;
+    for(int i = 0; i < count; i++) game->food[i] = food[i];
+    game->food_count = count;
 }

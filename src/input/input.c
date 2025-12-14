@@ -47,46 +47,53 @@ default: return -1;
 }
 }
 void input_poll(InputState* out) {
-if(!out) return;
-*out= (InputState){0};
-unsigned char buf[128];
-ssize_t nread= read(STDIN_FILENO, buf, sizeof(buf));
-if(nread <= 0) return;
-out->any_key= true;
-for(ssize_t i= 0; i < nread; i++) {
-unsigned char c= buf[i];
-if(c == '\x1b' && i + 2 < nread && buf[i + 1] == '[') {
-int code= (int)buf[i + 2];
-int dir= parse_arrow_key(code);
-if(dir == 0)
-out->move_up= true;
-else if(dir == 1)
-out->move_down= true;
-else if(dir == 2)
-out->move_right= true;
-else if(dir == 3)
-out->move_left= true;
-i+= 2;
-continue;
+	if(!out) return;
+	unsigned char buf[128];
+	ssize_t nread= read(STDIN_FILENO, buf, sizeof(buf));
+	if(nread <= 0) return;
+	input_poll_from_buf(out, buf, (size_t)nread);
 }
-switch(c) {
-case 'w':
-case 'W': out->move_up= true; break;
-case 's':
-case 'S': out->move_down= true; break;
-case 'a':
-case 'A': out->move_left= true; break;
-case 'd':
-case 'D': out->move_right= true; break;
-case 'q':
-case 'Q': out->quit= true; break;
-case 'r':
-case 'R': out->restart= true; break;
-case 'p':
-case 'P': out->pause_toggle= true; break;
-case 'v':
-case 'V': /* view toggle removed - reserved */ break;
-default: break;
-}
-}
+
+void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
+	if(!out) return;
+	*out= (InputState){0};
+	if(buf == NULL || n == 0) return;
+	out->any_key= true;
+	for(size_t i= 0; i < n; i++) {
+		unsigned char c= buf[i];
+		if(c == '\x1b' && i + 2 < n && buf[i + 1] == '[') {
+			int code= (int)buf[i + 2];
+			int dir= parse_arrow_key(code);
+			if(dir == 0)
+				out->move_up= true;
+			else if(dir == 1)
+				out->move_down= true;
+			else if(dir == 2)
+				out->move_right= true;
+			else if(dir == 3)
+				out->move_left= true;
+			i+= 2;
+			continue;
+		}
+		switch(c) {
+		case 'w':
+		case 'W': out->move_up= true; break;
+		case 's':
+		case 'S': out->move_down= true; break;
+		/* 'a' and 'd' are strafes relative to view (handled in main.c) */
+		case 'a':
+		case 'A': out->move_strafe_left= true; break;
+		case 'd':
+		case 'D': out->move_strafe_right= true; break;
+		case 'q':
+		case 'Q': out->quit= true; break;
+		case 'r':
+		case 'R': out->restart= true; break;
+		case 'p':
+		case 'P': out->pause_toggle= true; break;
+		case 'v':
+		case 'V': /* view toggle removed - reserved */ break;
+		default: break;
+		}
+	}
 }

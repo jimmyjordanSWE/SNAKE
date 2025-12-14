@@ -17,6 +17,7 @@ Non-blocking reads, ANSI escape sequence parsing. Returns raw direction booleans
 | Input | Bool Field | Type |
 |-------|-----------|------|
 | ↑↓←→ | move_up/down/left/right | ANSI escape seq |
+| a/d | move_strafe_left/move_strafe_right (relative to view) | ASCII char |
 | P | pause_toggle | ASCII char |
 | R | restart | ASCII char |
 | Q | quit | ASCII char |
@@ -39,10 +40,11 @@ Non-blocking reads, ANSI escape sequence parsing. Returns raw direction booleans
 
 ## Integration
 
-main.c loop translates inputs to game directions:
+main.c translates inputs to game directions. Arrow keys map to absolute cardinal directions while `a`/`d` are strafes relative to the player's view:
 ```
 input_poll(&state)
 if (state.move_up) game.players[0].queued_dir = SNAKE_DIR_UP;
+/* a/d map using player's current_dir to pick a perpendicular direction */
 game_tick()
 render_draw()
 ```

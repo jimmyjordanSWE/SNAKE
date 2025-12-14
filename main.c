@@ -35,6 +35,26 @@ static void handle_sigwinch(int sig) {
 (void)sig;
 terminal_resized= 1;
 }
+
+static SnakeDir strafe_left_dir(SnakeDir d) {
+    switch(d) {
+    case SNAKE_DIR_UP: return SNAKE_DIR_LEFT;
+    case SNAKE_DIR_DOWN: return SNAKE_DIR_RIGHT;
+    case SNAKE_DIR_LEFT: return SNAKE_DIR_DOWN;
+    case SNAKE_DIR_RIGHT: return SNAKE_DIR_UP;
+    default: return d;
+    }
+}
+
+static SnakeDir strafe_right_dir(SnakeDir d) {
+    switch(d) {
+    case SNAKE_DIR_UP: return SNAKE_DIR_RIGHT;
+    case SNAKE_DIR_DOWN: return SNAKE_DIR_LEFT;
+    case SNAKE_DIR_LEFT: return SNAKE_DIR_UP;
+    case SNAKE_DIR_RIGHT: return SNAKE_DIR_DOWN;
+    default: return d;
+    }
+}
 int main(void) {
 GameConfig config;
 persist_load_config(".snake_config", &config);
@@ -139,6 +159,9 @@ if(input_state.move_up) game.players[0].queued_dir= SNAKE_DIR_UP;
 if(input_state.move_down) game.players[0].queued_dir= SNAKE_DIR_DOWN;
 if(input_state.move_left) game.players[0].queued_dir= SNAKE_DIR_LEFT;
 if(input_state.move_right) game.players[0].queued_dir= SNAKE_DIR_RIGHT;
+/* handle strafing (relative to player's current view) - 'a'/'d' */
+if(input_state.move_strafe_left) game.players[0].queued_dir= strafe_left_dir(game.players[0].current_dir);
+if(input_state.move_strafe_right) game.players[0].queued_dir= strafe_right_dir(game.players[0].current_dir);
 }
     if(input_state.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
 if(input_state.restart) game_reset(&game);

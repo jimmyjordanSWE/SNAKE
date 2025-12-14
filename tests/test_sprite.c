@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "snake/render_3d_sprite.h"
 #include "snake/render_3d_camera.h"
+#include "snake/types.h"
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_sdl.h"
 #include <stdlib.h>
@@ -32,7 +33,7 @@ __attribute__((unused)) static int run_additional_tests(void) {
     Camera3D cam;
     camera_init(&cam, 90.0f, 64, 0.5f);
     /* place camera at (1,1) facing +X */
-    camera_set_from_player(&cam, 1, 1, 0);
+    camera_set_from_player(&cam, 1, 1, SNAKE_DIR_RIGHT);
     /* ensure interpolation returns current camera position */
     camera_set_interpolation_time(&cam, cam.update_interval);
     Projection3D proj;

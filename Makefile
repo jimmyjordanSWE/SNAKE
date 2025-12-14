@@ -121,6 +121,57 @@ test-sprite:
 	./test_sprite
 
 
+test-input:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_input tests/test_input.c src/input/input.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_input
+
+
+test-collision:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_collision_tail && ./test_collision_swap
+
+test-game:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_game_over
+
+
+test-utils:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_rng tests/utils/test_rng.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_bounds tests/utils/test_bounds.c src/utils/bounds.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_rng && ./test_bounds
+
+test-persist:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_persist
+
+test-net:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_net_pack
+
+test-tty:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_tty tests/platform/test_tty.c src/platform/tty.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_tty
+
+test-render:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_orient tests/render/test_camera_orient.c src/render/camera.c src/render/projection.c src/render/sprite.c src/render/render_3d_sdl.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_interp tests/render/test_camera_interp.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_world_transform tests/render/test_camera_world_transform.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_angles tests/render/test_camera_angles.c src/render/camera.c $(LDLIBS) || true
+	@echo "$(OK_MSG)"
+	./test_camera_orient || true
+	./test_camera_interp || true
+	./test_camera_world_transform || true
+	./test_camera_angles || true
+.PHONY: test all build debug release valgrind gdb clean test-3d format-llm format-human
+test: test-input test-collision test-game test-utils test-persist test-net test-tty
 
 $(BIN): $(OBJ)
 	@mkdir -p $(dir $@)

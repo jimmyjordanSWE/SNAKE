@@ -1,4 +1,5 @@
 #include "snake/render_3d_camera.h"
+#include "snake/types.h"
 #include <math.h>
 #include <string.h>
 #ifndef M_PI
@@ -17,7 +18,7 @@ return diff;
 }
 static float interpolate_angle(float from, float to, float t) {
 float diff= angle_difference(from, to);
-return from + diff * t;
+return normalize_angle(from + diff * t);
 }
 static void update_vectors(Camera3D* camera) {
 if(!camera) return;
@@ -50,16 +51,23 @@ if(!camera) return;
 	camera->prev_angle= camera->angle;
 	camera->x= (float)x + 0.5f;
 	camera->y= (float)y + 0.5f;
+	/* Map `SnakeDir` enum to world angles. Coordinate system:
+	 *  - angle==0 -> +X (right)
+	 *  - angle==pi/2 -> +Y (down)
+	 *  - angle==pi -> -X (left)
+	 *  - angle==3*pi/2 -> -Y (up)
+	 * SnakeDir values: UP=0, DOWN=1, LEFT=2, RIGHT=3
+	 */
 	float angle;
-	switch(dir) {
-	case 0: angle= 0.0f; break;
-	case 1: angle= (float)M_PI * 0.5f; break;
-	case 2: angle= (float)M_PI; break;
-	case 3: angle= (float)M_PI * 1.5f; break;
-	default: angle= 0.0f; break;
+	switch((int)dir) {
+	case SNAKE_DIR_UP: angle = (float)M_PI * 1.5f; break;   /* -Y */
+	case SNAKE_DIR_DOWN: angle = (float)M_PI * 0.5f; break;  /* +Y */
+	case SNAKE_DIR_LEFT: angle = (float)M_PI; break;         /* -X */
+	case SNAKE_DIR_RIGHT: angle = 0.0f; break;               /* +X */
+	default: angle = 0.0f; break;
 	}
 	camera->angle= normalize_angle(angle);
-	camera->interp_time= 0.0f;
+	camera->interp_time= camera->update_interval;
 	update_vectors(camera);
 }
 
@@ -90,24 +98,28 @@ float interp_angle= camera_get_interpolated_angle(camera);
 void camera_world_to_camera(const Camera3D* camera, float world_x, float world_y, float* cam_x_out, float* cam_y_out) {
 if(!camera || !cam_x_out || !cam_y_out) return;
 float cam_x, cam_y;
+float interp_angle;
 camera_get_interpolated_position(camera, &cam_x, &cam_y);
-float dx= world_x - cam_x;
-float dy= world_y - cam_y;
-float cos_a= cosf(-camera->angle);
-float sin_a= sinf(-camera->angle);
-*cam_x_out= dx * cos_a - dy * sin_a;
-*cam_y_out= dx * sin_a + dy * cos_a;
+interp_angle = camera_get_interpolated_angle(camera);
+float dx = world_x - cam_x;
+float dy = world_y - cam_y;
+float cos_a = cosf(-interp_angle);
+float sin_a = sinf(-interp_angle);
+*cam_x_out = dx * cos_a - dy * sin_a;
+*cam_y_out = dx * sin_a + dy * cos_a;
 }
 void camera_camera_to_world(const Camera3D* camera, float cam_x, float cam_y, float* world_x_out, float* world_y_out) {
 if(!camera || !world_x_out || !world_y_out) return;
 float cam_pos_x, cam_pos_y;
+float interp_angle;
 camera_get_interpolated_position(camera, &cam_pos_x, &cam_pos_y);
-float cos_a= cosf(camera->angle);
-float sin_a= sinf(camera->angle);
-float dx= cam_x * cos_a - cam_y * sin_a;
-float dy= cam_x * sin_a + cam_y * cos_a;
-*world_x_out= dx + cam_pos_x;
-*world_y_out= dy + cam_pos_y;
+interp_angle = camera_get_interpolated_angle(camera);
+float cos_a = cosf(interp_angle);
+float sin_a = sinf(interp_angle);
+float dx = cam_x * cos_a - cam_y * sin_a;
+float dy = cam_x * sin_a + cam_y * cos_a;
+*world_x_out = dx + cam_pos_x;
+*world_y_out = dy + cam_pos_y;
 }
 float camera_distance_to_point(const Camera3D* camera, float x, float y) {
 if(!camera) return 0.0f;
@@ -120,10 +132,14 @@ return sqrtf(dx * dx + dy * dy);
 bool camera_point_in_front(const Camera3D* camera, float x, float y) {
 if(!camera) return false;
 float cam_x, cam_y;
+float interp_angle;
 camera_get_interpolated_position(camera, &cam_x, &cam_y);
-float dx= x - cam_x;
-float dy= y - cam_y;
-float dot= dx * camera->dir_x + dy * camera->dir_y;
+interp_angle = camera_get_interpolated_angle(camera);
+float dx = x - cam_x;
+float dy = y - cam_y;
+float dir_x = cosf(interp_angle);
+float dir_y = sinf(interp_angle);
+float dot = dx * dir_x + dy * dir_y;
 return dot > 0.0f;
 }
 void camera_get_interpolated_position(const Camera3D* camera, float* x_out, float* y_out) {

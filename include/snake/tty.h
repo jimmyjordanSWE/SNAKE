@@ -41,6 +41,11 @@ void tty_set_resize_callback(tty_context* ctx, void (*callback)(tty_context*, in
 void tty_set_size_invalid_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
 bool tty_size_valid(tty_context* ctx);
 void tty_get_min_size(tty_context* ctx, int* min_width, int* min_height);
+/* Test helper: simulate a SIGWINCH for resize handling. */
+void tty_simulate_winch(void);
+/* Test helper: override terminal size for deterministic unit tests. */
+void tty_set_test_size(int width, int height);
+void tty_clear_test_size(void);
 #define COLOR_MAKE(fg, bg) ((uint16_t)(((bg) << 4) | (fg)))
 #define COLOR_FG(c) ((uint8_t)((c) & 0x0F))
 #define COLOR_BG(c) ((uint8_t)(((c) >> 4) & 0x0F))

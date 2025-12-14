@@ -13,6 +13,24 @@ static void sigwinch_handler(int sig) {
 (void)sig;
 winch_received= 1;
 }
+
+/* Test overrides (used by unit tests to avoid relying on ioctl). */
+static bool use_test_size = false;
+static int test_width = 0;
+static int test_height = 0;
+void tty_set_test_size(int width, int height) {
+	use_test_size = true;
+	test_width = width;
+	test_height = height;
+}
+void tty_clear_test_size(void) {
+	use_test_size = false;
+}
+
+/* Test helper to simulate SIGWINCH for unit tests. */
+void tty_simulate_winch(void) {
+	winch_received= 1;
+}
 static int utf16_to_utf8(uint16_t utf16, char* utf8_out) {
 if(utf16 < 0x0080) {
 utf8_out[0]= (char)utf16;
@@ -30,11 +48,16 @@ return 3;
 }
 static inline bool ascii_pixel_equal(struct ascii_pixel a, struct ascii_pixel b) { return a.pixel == b.pixel && a.color == b.color; }
 static bool get_terminal_size(int fd, int* width, int* height) {
-struct winsize ws;
-if(ioctl(fd, TIOCGWINSZ, &ws) == -1) return false;
-*width= ws.ws_col;
-*height= ws.ws_row;
-return true;
+	if(use_test_size) {
+		if(width) *width = test_width;
+		if(height) *height = test_height;
+		return true;
+	}
+	struct winsize ws;
+	if(ioctl(fd, TIOCGWINSZ, &ws) == -1) return false;
+	*width = ws.ws_col;
+	*height = ws.ws_row;
+	return true;
 }
 tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
 tty_context* ctx= malloc(sizeof(tty_context));

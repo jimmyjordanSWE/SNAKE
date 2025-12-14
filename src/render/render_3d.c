@@ -80,8 +80,11 @@ camera_update_interpolation(&g_render_3d.camera, 1.0f / 60.0f);
 		  */
 		  float eps_fwd = 0.0002f;
 		  float eps_perp = 0.0002f;
-		  float origin_x = interp_cam_x + cos_a * eps_fwd + sin_a * eps_perp;
-		  float origin_y = interp_cam_y + sin_a * eps_fwd - cos_a * eps_perp;
+			 /* Nudge origin slightly forward along the ray and a small amount
+				 perpendicular to the ray to avoid grid-line intersection artifacts.
+				 Perpendicular vector to (cos_a, sin_a) is (-sin_a, cos_a). */
+			 float origin_x = interp_cam_x + cos_a * eps_fwd - sin_a * eps_perp;
+			 float origin_y = interp_cam_y + sin_a * eps_fwd + cos_a * eps_perp;
 		  if(raycast_cast_ray(&g_render_3d.raycaster, origin_x, origin_y, ray_angle, &hit)) {
 			WallProjection proj;
 			/* Diagnostic: if a very short hit occurs, log for debugging */

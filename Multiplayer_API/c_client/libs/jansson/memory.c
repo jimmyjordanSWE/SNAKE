@@ -1,10 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- * Copyright (c) 2011-2012 Basile Starynkevitch <basile@starynkevitch.net>
- *
- * Jansson is free software; you can redistribute it and/or modify it
- * under the terms of the MIT license. See LICENSE for details.
- */
 
 #include <stdlib.h>
 #include <string.h>
@@ -12,11 +5,9 @@
 #include "jansson.h"
 #include "jansson_private.h"
 
-/* C89 allows these to be macros */
 #undef malloc
 #undef free
 
-/* memory function pointers */
 static json_malloc_t do_malloc = malloc;
 static json_free_t do_free = free;
 

@@ -27,19 +27,18 @@ static inline uint32_t rot(uint32_t x, uint32_t k) {
     c ^= b; c -= rot(b,24); \
 } while (0)
 
-/* ASan-safe Jenkins hashlittle: never reads past 'length' bytes */
 static uint32_t hashlittle(const void *key, size_t length, uint32_t initval)
 {
     const uint8_t *p = (const uint8_t *)key;
     uint32_t a, b, c;
 
-    a = b = 0x9e3779b9;          /* the golden ratio; an arbitrary value */
+    a = b = 0x9e3779b9;
     c = initval;
 
-    /* Handle most of the key in 12-byte chunks */
+
     while (length >= 12) {
         uint32_t x;
-        /* use memcpy so the compiler won’t issue over-reads or require alignment */
+
         memcpy(&x, p + 0, 4);  a += x;
         memcpy(&x, p + 4, 4);  b += x;
         memcpy(&x, p + 8, 4);  c += x;
@@ -49,21 +48,21 @@ static uint32_t hashlittle(const void *key, size_t length, uint32_t initval)
         length -= 12;
     }
 
-    /* Handle the last 0..11 bytes */
+
     switch (length) {
-    case 11: c += (uint32_t)p[10] << 16; /* fallthrough */
-    case 10: c += (uint32_t)p[9]  << 8;  /* fallthrough */
-    case 9:  c += (uint32_t)p[8];        /* fallthrough */
-    case 8:  b += (uint32_t)p[7]  << 24; /* fallthrough */
-    case 7:  b += (uint32_t)p[6]  << 16; /* fallthrough */
-    case 6:  b += (uint32_t)p[5]  << 8;  /* fallthrough */
-    case 5:  b += (uint32_t)p[4];        /* fallthrough */
-    case 4:  a += (uint32_t)p[3]  << 24; /* fallthrough */
-    case 3:  a += (uint32_t)p[2]  << 16; /* fallthrough */
-    case 2:  a += (uint32_t)p[1]  << 8;  /* fallthrough */
-    case 1:  a += (uint32_t)p[0];        /* fallthrough */
+    case 11: c += (uint32_t)p[10] << 16;
+    case 10: c += (uint32_t)p[9]  << 8;
+    case 9:  c += (uint32_t)p[8];
+    case 8:  b += (uint32_t)p[7]  << 24;
+    case 7:  b += (uint32_t)p[6]  << 16;
+    case 6:  b += (uint32_t)p[5]  << 8;
+    case 5:  b += (uint32_t)p[4];
+    case 4:  a += (uint32_t)p[3]  << 24;
+    case 3:  a += (uint32_t)p[2]  << 16;
+    case 2:  a += (uint32_t)p[1]  << 8;
+    case 1:  a += (uint32_t)p[0];
              break;
-    case 0:  /* nothing left */ break;
+    case 0:   break;
     }
 
     FINAL(a, b, c);

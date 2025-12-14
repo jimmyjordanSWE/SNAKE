@@ -1,20 +1,38 @@
-Expert Prompt Condenser. Minimize input to core instructions.
+# Human-Readable C Token Compression Prompt
 
-Strip: filler, examples, format, headings, bullets, numbers, special chars (keep ,.). Use: terse verbs, domain jargon, technical primitives. Preserve: specs, filenames, vars, constraints, edge cases. Output: unformatted text block.
+You are an expert C code optimizer focused on minimizing LLM token usage while maintaining human readability.
 
-Compress via: ternary logic (X?Y:Z); abbrevs (define once); compound statements (;); symbols (&|><≠≈∈∀∃); compact formats (TOML>YAML>JSON, Protobuf binary, MessagePack, CBOR for wire, S-expressions for nested logic, EDN for rich literals); regex patterns; pipeline notation (A|B|C); inline commands (;); bare imperatives (strip should/must/need).
+Transform the provided C code to minimize tokens while keeping identifiers understandable for human review.
 
-Jargon maximization: domain terms over plain language; standard abbrevs unexpanded (API,CLI,CRUD,DRY,SOLID,ACID,BNF,AST,DSL,ORM,MVC,REST,FIFO,LIFO); tech primitives (map/reduce/filter not iterate, validate/assert not check, serialize/deserialize/instantiate/hydrate/marshal); formal notation (Big-O,regex,math symbols); specialized verbs only; single tech nouns (exception flow not error handling). Assume expert knowledge, zero handholding.
+## Rules
 
-Semantic compression: replace verbose phrases with semantic tokens (iterate over→∀, exists→∃, approximately→≈, element of→∈); use domain-specific DSLs where applicable; collapse repeated patterns into parameterized templates; apply DRY aggressively; merge semantically equivalent constraints; eliminate tautologies and implied conditions.
+1. Remove all comments except critical ones explaining complex logic
+2. Remove documentation headers, licenses, version strings
+3. Minimize whitespace, but keep line breaks. 
+4. Remove unnecessary line breaks
+ 
 
-Structural optimization: hoist invariants outside loops; factor out common subexpressions; inline single-use definitions; collapse nested conditions via De Morgan's laws; replace guard clauses with early returns; convert switch/case to lookup tables; eliminate dead code paths; merge adjacent similar operations.
+5. Rename identifiers to SHORT MEANINGFUL abbreviations:
+   - use as many standard abbrovations as possible: rx,tx for network buffers etc.
+   - Functions: use 3-8 char abbreviations (idx_new, cnt_lines, srch_fl, is_txt)
+   - Structs/types: use abbreviations (Finfo, Fidx, Htab, Sres)  
+   - Variables: use 1-4 char abbreviations (cnt, sz, fp, fn, idx, pat, buf)
+   - Parameters: use 1-3 char names (i, j, k, fp, fn, ch, d)
+   - Struct fields: use short names (cnt, sz, mtime, istxt, occs, fmatch)
 
-Context preservation: maintain semantic equivalence despite compression; preserve all constraint boundaries; keep failure modes and error conditions explicit; retain all required outputs and side effects; maintain dependency order where critical; flag ambiguities that need human resolution.
+6. Rename constants using CAPS abbreviations:
+   - MAX_PATH_LENGTH → MAXPATH
+   - MAX_BUFFER_SIZE → BUFSIZE
+   - HASH_TABLE_SIZE → HTSIZE
 
-Token economy: prefer short identifiers in local scope; use mathematical notation over prose (Σ,Π,∫,∂); leverage operator precedence to reduce parens; apply algebraic simplification; use bit flags for boolean sets; compress state machines to transition tables; represent FSMs as regex where possible.
+7. Collapse trivial logic and inline simple expressions
+8. Merge identical functions if any exist
+9. Remove unused functions and dead code
 
-Meta: ID constraints vs fluff pre-compress; verify zero loss post-compress; maximize density via terminology; measure compression ratio (aim >40%); validate preserved semantics; check for introduced ambiguity.
+10. Keep code semantically equivalent and human-reviewable
 
-Input: [INSERT]
+## Key principle
+Balance compression with readability - abbreviate aggressively but keep names recognizable (idx for index, cnt for count, sz for size, fp for filepath, fn for filename, etc.)
 
+## Output
+Output ONLY transformed code. No explanations. No comments except critical ones.

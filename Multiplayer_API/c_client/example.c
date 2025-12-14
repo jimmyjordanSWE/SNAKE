@@ -17,9 +17,9 @@ static void on_pedroChat_event(
     json_t *data,
     void *context)
 {
-	
+
 	char* strData = NULL;
-	
+
 	if(data)
 		strData = json_dumps(data, JSON_INDENT(2));
 
@@ -29,18 +29,18 @@ static void on_pedroChat_event(
 		printf("Data: %s\n", strData);
 	}
 
-    /* event: "joined", "leaved" (om servern skickar det), eller "game" */
+
     if (strcmp(event, "joined") == 0) {
 
 	} else if (strcmp(event, "leaved") == 0) {
 
     } else if (strcmp(event, "game") == 0) {
-        
+
     }
 
 	free(strData);
 
-    /* data är ett json_t* (object); anropa json_incref(data) om du vill spara det efter callbacken */
+
 }
 
 int main_host(PedroChatApi* api)
@@ -63,7 +63,7 @@ int main_host(PedroChatApi* api)
 
 	printf("Du hostar session: %s (clientId: %s)\n", session, clientId);
 
-	/* hostData kan innehålla extra data från servern (oftast tomt objekt) */
+
 	if (hostData) json_decref(hostData);
 	free(session);
 	free(clientId);
@@ -75,24 +75,24 @@ int main_join(PedroChatApi* api, const char* sessionId)
 {
 	char *joinedSession = NULL;
 	char *joinedClientId = NULL;
-	json_t *joinPayload = json_object();          /* t.ex. namn, färg osv. */
+	json_t *joinPayload = json_object();
 	json_object_set_new(joinPayload, "name", json_string("Spelare 1"));
 
 	json_t *joinData = NULL;
 	int rc = mp_api_join(api, sessionId, joinPayload, &joinedSession, &joinedClientId, &joinData);
 
-	json_decref(joinPayload);  /* vår lokala payload */
+	json_decref(joinPayload);
 
 	if (rc == MP_API_OK) {
 		printf("Ansluten till session: %s (clientId: %s)\n", joinedSession, joinedClientId);
-		/* joinData kan innehålla status eller annan info */
+
 		if (joinData) json_decref(joinData);
 		free(joinedSession);
 		free(joinedClientId);
 	} else if (rc == MP_API_ERR_REJECTED) {
-		/* t.ex. ogiltigt sessions‑ID, läs ev. joinData för mer info om du valde att ta emot det */
+
 	} else {
-		/* nätverksfel/protokollfel etc. */
+
 	}
 
 	return 0;
@@ -139,7 +139,6 @@ int main_list(PedroChatApi* api)
 	else
 		main_host(api);
 
-
 	json_decref(sessionList);
 	return 0;
 }
@@ -154,9 +153,8 @@ int main()
 		return -1;
 	}
 
-	//main_host(api);
+
 	main_list(api);
-	//main_join(api, "HU2J7D");
 
 
 	int listener_id = mp_api_listen(api, on_pedroChat_event, NULL);

@@ -1,10 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- * Copyright (c) 2011-2012 Graeme Smecher <graeme.smecher@mail.mcgill.ca>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #include <string.h>
 #include "jansson.h"
@@ -82,7 +75,7 @@ static void next_token(scanner_t *s)
     s->column++;
     s->pos++;
 
-    /* skip space and ignored chars */
+
     while(*t == ' ' || *t == '\t' || *t == '\n' || *t == ',' || *t == ':') {
         if(*t == '\n') {
             s->line++;
@@ -126,9 +119,6 @@ static void set_error(scanner_t *s, const char *source, enum json_error_code cod
 
 static json_t *pack(scanner_t *s, va_list *ap);
 
-
-/* ours will be set to 1 if jsonp_free() must be called for the result
-   afterwards */
 static char *read_string(scanner_t *s, va_list *ap,
                          const char *purpose, size_t *out_len, int *ours, int optional)
 {
@@ -143,7 +133,7 @@ static char *read_string(scanner_t *s, va_list *ap,
 
     *ours = 0;
     if(t != '#' && t != '%' && t != '+') {
-        /* Optimize the simple case */
+
         str = va_arg(*ap, const char *);
 
         if(!str) {
@@ -302,7 +292,7 @@ static json_t *pack_array(scanner_t *s, va_list *ap)
 
         if(!token(s)) {
             set_error(s, "<format>", json_error_invalid_format, "Unexpected end of format string");
-            /* Format string errors are unrecoverable. */
+
             goto error;
         }
 
@@ -359,7 +349,7 @@ static json_t *pack_string(scanner_t *s, va_list *ap)
         return t == '?' && !s->has_error ? json_null() : NULL;
 
     if (s->has_error) {
-        /* It's impossible to reach this point if ours != 0, do not free str. */
+
         return NULL;
     }
 
@@ -413,7 +403,7 @@ static json_t *pack_integer(scanner_t *s, json_int_t value)
 
 static json_t *pack_real(scanner_t *s, double value)
 {
-    /* Allocate without setting value so we can identify OOM error. */
+
     json_t *json = json_real(0.0);
 
     if (!json) {
@@ -444,28 +434,28 @@ static json_t *pack(scanner_t *s, va_list *ap)
         case '[':
             return pack_array(s, ap);
 
-        case 's': /* string */
+        case 's':
             return pack_string(s, ap);
 
-        case 'n': /* null */
+        case 'n':
             return json_null();
 
-        case 'b': /* boolean */
+        case 'b':
             return va_arg(*ap, int) ? json_true() : json_false();
 
-        case 'i': /* integer from int */
+        case 'i':
             return pack_integer(s, va_arg(*ap, int));
 
-        case 'I': /* integer from json_int_t */
+        case 'I':
             return pack_integer(s, va_arg(*ap, json_int_t));
 
-        case 'f': /* real */
+        case 'f':
             return pack_real(s, va_arg(*ap, double));
 
-        case 'O': /* a json_t object; increments refcount */
+        case 'O':
             return pack_object_inter(s, ap, 1);
 
-        case 'o': /* a json_t object; doesn't increment refcount */
+        case 'o':
             return pack_object_inter(s, ap, 0);
 
         default:
@@ -484,11 +474,7 @@ static int unpack_object(scanner_t *s, json_t *root, va_list *ap)
     int strict = 0;
     int gotopt = 0;
 
-    /* Use a set (emulated by a hashtable) to check that all object
-       keys are accessed. Checking that the correct number of keys
-       were accessed is not enough, as the same key can be unpacked
-       multiple times.
-    */
+
     hashtable_t key_set;
 
     if(hashtable_init(&key_set)) {
@@ -544,7 +530,7 @@ static int unpack_object(scanner_t *s, json_t *root, va_list *ap)
         }
 
         if(!root) {
-            /* skipping */
+
             value = NULL;
         }
         else {
@@ -566,9 +552,9 @@ static int unpack_object(scanner_t *s, json_t *root, va_list *ap)
         strict = 1;
 
     if(root && strict == 1) {
-        /* We need to check that all non optional items have been parsed */
+
         const char *key;
-        /* keys_res is 1 for uninitialized, 0 for success, -1 for error. */
+
         int keys_res = 1;
         strbuffer_t unrecognized_keys;
         json_t *value;
@@ -579,7 +565,7 @@ static int unpack_object(scanner_t *s, json_t *root, va_list *ap)
                 if(!hashtable_get(&key_set, key)) {
                     unpacked++;
 
-                    /* Save unrecognized keys for the error message */
+
                     if (keys_res == 1) {
                         keys_res = strbuffer_init(&unrecognized_keys);
                     } else if (!keys_res) {
@@ -647,7 +633,7 @@ static int unpack_array(scanner_t *s, json_t *root, va_list *ap)
         }
 
         if(!root) {
-            /* skipping */
+
             value = NULL;
         }
         else {
@@ -803,7 +789,7 @@ static int unpack(scanner_t *s, json_t *root, va_list *ap)
         case 'O':
             if(root && !(s->flags & JSON_VALIDATE_ONLY))
                 json_incref(root);
-            /* Fall through */
+
 
         case 'o':
             if(!(s->flags & JSON_VALIDATE_ONLY)) {
@@ -815,7 +801,7 @@ static int unpack(scanner_t *s, json_t *root, va_list *ap)
             return 0;
 
         case 'n':
-            /* Never assign, just validate */
+
             if(root && !json_is_null(root)) {
                 set_error(s, "<validation>", json_error_wrong_type, "Expected null, got %s",
                           type_name(root));
@@ -851,7 +837,7 @@ json_t *json_vpack_ex(json_error_t *error, size_t flags,
     value = pack(&s, &ap_copy);
     va_end(ap_copy);
 
-    /* This will cover all situations where s.has_error is true */
+
     if(!value)
         return NULL;
 

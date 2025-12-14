@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -69,7 +63,6 @@ static int dump_to_fd(const char *buffer, size_t size, void *data)
     return -1;
 }
 
-/* 32 spaces (the maximum indentation size) */
 #ifdef JSON_USE_TAB_INDENT
 	static const char JSON_ws[] = "																																";
 #else
@@ -124,15 +117,15 @@ static int dump_string(const char *str, size_t len, json_dump_callback_t dump, v
             if(!end)
                 return -1;
 
-            /* mandatory escape or control char */
+
             if(codepoint == '\\' || codepoint == '"' || codepoint < 0x20)
                 break;
 
-            /* slash */
+
             if((flags & JSON_ESCAPE_SLASH) && codepoint == '/')
                 break;
 
-            /* non-ASCII */
+
             if((flags & JSON_ENSURE_ASCII) && codepoint > 0x7F)
                 break;
 
@@ -147,7 +140,7 @@ static int dump_string(const char *str, size_t len, json_dump_callback_t dump, v
         if(end == pos)
             break;
 
-        /* handle \, /, ", and control codes */
+
         length = 2;
         switch(codepoint)
         {
@@ -161,14 +154,14 @@ static int dump_string(const char *str, size_t len, json_dump_callback_t dump, v
             case '/':  text = "\\/"; break;
             default:
             {
-                /* codepoint is in BMP */
+
                 if(codepoint < 0x10000)
                 {
                     snprintf(seq, sizeof(seq), "\\u%04X", (unsigned int)codepoint);
                     length = 6;
                 }
 
-                /* not in BMP -> construct a UTF-16 surrogate pair */
+
                 else
                 {
                     int32_t first, last;
@@ -234,10 +227,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
             char buffer[MAX_INTEGER_STR_LENGTH];
             int size;
 
-            /*size = snprintf(buffer, MAX_INTEGER_STR_LENGTH,
-                            "%" JSON_INTEGER_FORMAT,
-                            json_integer_value(json));
-							*/
+
 
 			size = snprintf(buffer, MAX_INTEGER_STR_LENGTH, "%" JSON_INTEGER_FORMAT, json_integer_value(json));
 
@@ -268,10 +258,10 @@ static int do_dump(const json_t *json, size_t flags, int depth,
         {
             size_t n;
             size_t i;
-            /* Space for "0x", double the sizeof a pointer for the hex and a terminator. */
+
             char key[2 + (sizeof(json) * 2) + 1];
 
-            /* detect circular references */
+
             if (loop_check(parents, json, key, sizeof(key)))
                 return -1;
 
@@ -313,7 +303,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
             void *iter;
             const char *separator;
             int separator_length;
-            /* Space for "0x", double the sizeof a pointer for the hex and a terminator. */
+
             char loop_key[2 + (sizeof(json) * 2) + 1];
 
             if(flags & JSON_COMPACT) {
@@ -325,7 +315,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
                 separator_length = 2;
             }
 
-            /* detect circular references */
+
             if (loop_check(parents, json, loop_key, sizeof(loop_key)))
                 return -1;
 
@@ -401,7 +391,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
             }
             else
             {
-                /* Don't sort keys */
+
 
                 while(iter)
                 {
@@ -435,7 +425,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
         }
 
         default:
-            /* not reached */
+
             return -1;
     }
 }

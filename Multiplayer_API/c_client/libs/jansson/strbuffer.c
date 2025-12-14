@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -27,7 +21,7 @@ int strbuffer_init(strbuffer_t *strbuff)
     if(!strbuff->value)
         return -1;
 
-    /* initialize to empty */
+
     strbuff->value[0] = '\0';
     return 0;
 }
@@ -72,7 +66,7 @@ int strbuffer_append_bytes(strbuffer_t *strbuff, const char *data, size_t size)
         size_t new_size;
         char *new_value;
 
-        /* avoid integer overflow */
+
         if (strbuff->size > STRBUFFER_SIZE_MAX / STRBUFFER_FACTOR
             || size > STRBUFFER_SIZE_MAX - 1
             || strbuff->length > STRBUFFER_SIZE_MAX - 1 - size)

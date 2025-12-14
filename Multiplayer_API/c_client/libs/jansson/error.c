@@ -27,7 +27,7 @@ void jsonp_error_set_source(json_error_t *error, const char *source)
     length = strlen(source);
     if(length < JSON_ERROR_SOURCE_LENGTH)
     {
-        //strncpy(error->source, source, length + 1);
+
     }
     else
     {
@@ -56,7 +56,7 @@ void jsonp_error_vset(json_error_t *error, int line, int column,
         return;
 
     if(error->text[0] != '\0') {
-        /* error already set */
+
         return;
     }
 

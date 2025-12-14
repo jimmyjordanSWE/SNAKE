@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * This library is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #include "jansson_config.h"
 
@@ -12,8 +6,8 @@
 
 #include <stdint.h>
 
-#include "jansson_config.h"   /* for JSON_INLINE */
-#include "jansson_private.h"  /* for container_of() */
+#include "jansson_config.h"
+#include "jansson_private.h"
 #include "hashtable.h"
 
 #ifndef INITIAL_HASHTABLE_ORDER
@@ -26,7 +20,6 @@ typedef struct hashtable_bucket bucket_t;
 
 extern volatile uint32_t hashtable_seed;
 
-/* Implementation of the hash function */
 #include "lookup3.h"
 
 #define list_to_pair(list_)  container_of(list_, pair_t, list)
@@ -98,7 +91,6 @@ static pair_t *hashtable_find_pair(hashtable_t *hashtable, bucket_t *bucket,
     return NULL;
 }
 
-/* returns 0 on success, -1 if key was not found */
 static int hashtable_do_del(hashtable_t *hashtable,
                             const char *key, size_t hash)
 {
@@ -183,7 +175,6 @@ static int hashtable_do_rehash(hashtable_t *hashtable)
     return 0;
 }
 
-
 int hashtable_init(hashtable_t *hashtable)
 {
     size_t i;
@@ -218,7 +209,7 @@ int hashtable_set(hashtable_t *hashtable, const char *key, json_t *value)
     bucket_t* bucket;
     size_t hash, index;
 
-    /* rehash if the load ratio exceeds 1 */
+
     if(hashtable->size >= hashsize(hashtable->order))
         if(hashtable_do_rehash(hashtable))
             return -1;
@@ -235,13 +226,11 @@ int hashtable_set(hashtable_t *hashtable, const char *key, json_t *value)
     }
     else
     {
-        /* offsetof(...) returns the size of pair_t without the last,
-           flexible member. This way, the correct amount is
-           allocated. */
+
 
         size_t len = strlen(key);
         if(len >= (size_t)-1 - offsetof(pair_t, key)) {
-            /* Avoid an overflow if the key is very long */
+
             return -1;
         }
 

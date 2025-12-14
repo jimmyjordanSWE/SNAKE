@@ -1,15 +1,9 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #ifndef JSON_H
 #define JSON_H
 
 #include <stdio.h>
-#include <stdlib.h>  /* for size_t */
+#include <stdlib.h>
 #include <stdarg.h>
 
 #include "jansson_config.h"
@@ -18,23 +12,16 @@
 extern "C" {
 #endif
 
-/* version */
-
 #define JSON_MAJOR_VERSION  2
 #define JSON_MINOR_VERSION  12
 #define JSON_MICRO_VERSION  0
 
-/* Micro version is omitted if it's 0 */
 #define JSON_VERSION  "2.12"
 
-/* Version as a 3-byte hex number, e.g. 0x010201 == 1.2.1. Use this
-   for numeric comparisons, e.g. #if JSON_VERSION_HEX >= ... */
 #define JSON_VERSION_HEX  ((JSON_MAJOR_VERSION << 16) |   \
                               (JSON_MINOR_VERSION << 8)  |   \
                               (JSON_MICRO_VERSION << 0))
 
-/* If __atomic or __sync builtins are available the library is thread
- * safe for all read-only functions plus reference counting. */
 #if JSON_HAVE_ATOMIC_BUILTINS || JSON_HAVE_SYNC_BUILTINS
 #define JSON_THREAD_SAFE_REFCOUNT 1
 #endif
@@ -44,8 +31,6 @@ extern "C" {
 #else
 #define JSON_ATTRS(...)
 #endif
-
-/* types */
 
 typedef enum {
     JSON_OBJECT,
@@ -63,7 +48,7 @@ typedef struct json_t {
     volatile size_t refcount;
 } json_t;
 
-#ifndef JSON_USING_CMAKE /* disabled if using cmake */
+#ifndef JSON_USING_CMAKE
 
 	#if JSON_INTEGER_IS_LONG_LONG
 
@@ -79,7 +64,7 @@ typedef struct json_t {
 		#define JSON_INTEGER_FORMAT "ld"
 		typedef long json_int_t;
 
-	#endif /* JSON_INTEGER_IS_LONG_LONG */
+	#endif
 
 #endif
 
@@ -96,8 +81,6 @@ typedef struct json_t {
 #define json_is_boolean(json)  (json_is_true(json) || json_is_false(json))
 #define json_is_null(json)     ((json) && json_typeof(json) == JSON_NULL)
 
-/* construction, destruction, reference counting */
-
 json_t *json_object(void);
 json_t *json_array(void);
 json_t *json_string(const char *value);
@@ -111,7 +94,6 @@ json_t *json_false(void);
 #define json_boolean(val)      ((val > 0) ? json_true() : json_false())
 json_t *json_null(void);
 
-/* do not call JSON_INTERNAL_INCREF or JSON_INTERNAL_DECREF directly */
 #if JSON_HAVE_ATOMIC_BUILTINS
 #define JSON_INTERNAL_INCREF(json) __atomic_add_fetch(&json->refcount, 1, __ATOMIC_ACQUIRE)
 #define JSON_INTERNAL_DECREF(json) __atomic_sub_fetch(&json->refcount, 1, __ATOMIC_RELEASE)
@@ -131,7 +113,6 @@ json_t *json_incref(json_t *json)
     return json;
 }
 
-/* do not call json_delete directly */
 void json_delete(json_t *json);
 
 JSON_INLINE
@@ -159,9 +140,6 @@ void json_decrefp_def(json_t **json)
 
 #define json_auto_t json_t __attribute__((cleanup(json_decrefp)))
 #endif
-
-
-/* error reporting */
 
 #define JSON_ERROR_TEXT_LENGTH    160
 #define JSON_ERROR_SOURCE_LENGTH   80
@@ -207,8 +185,6 @@ enum json_error_code json_error_code_def(const json_error_t *e)
 {
     return json_error_code(e);
 }
-
-/* getters, setters, manipulation */
 
 void json_object_seed(size_t seed);
 size_t json_object_size(const json_t *object);
@@ -327,8 +303,6 @@ int json_string_setn_nocheck(json_t *string, const char *value, size_t len);
 int json_integer_set(json_t *integer, json_int_t value);
 int json_real_set(json_t *real, double value);
 
-/* pack, unpack */
-
 json_t *json_pack(const char *fmt, ...) JSON_ATTRS(warn_unused_result);
 json_t *json_pack_ex(json_error_t *error, size_t flags, const char *fmt, ...) JSON_ATTRS(warn_unused_result);
 json_t *json_vpack_ex(json_error_t *error, size_t flags, const char *fmt, va_list ap) JSON_ATTRS(warn_unused_result);
@@ -340,24 +314,13 @@ int json_unpack(json_t *root, const char *fmt, ...);
 int json_unpack_ex(json_t *root, json_error_t *error, size_t flags, const char *fmt, ...);
 int json_vunpack_ex(json_t *root, json_error_t *error, size_t flags, const char *fmt, va_list ap);
 
-/* sprintf */
-
 json_t *json_sprintf(const char *fmt, ...) JSON_ATTRS(warn_unused_result, format(printf, 1, 2));
 json_t *json_vsprintf(const char *fmt, va_list ap) JSON_ATTRS(warn_unused_result, format(printf, 1, 0));
 
-
-/* equality */
-
 int json_equal(const json_t *value1, const json_t *value2);
-
-
-/* copying */
 
 json_t *json_copy(json_t *value) JSON_ATTRS(warn_unused_result);
 json_t *json_deep_copy(const json_t *value) JSON_ATTRS(warn_unused_result);
-
-
-/* decoding */
 
 #define JSON_REJECT_DUPLICATES  0x1
 #define JSON_DISABLE_EOF_CHECK  0x2
@@ -373,9 +336,6 @@ json_t *json_loadf(FILE *input, size_t flags, json_error_t *error) JSON_ATTRS(wa
 json_t *json_loadfd(int input, size_t flags, json_error_t *error) JSON_ATTRS(warn_unused_result);
 json_t *json_load_file(const char *path, size_t flags, json_error_t *error) JSON_ATTRS(warn_unused_result);
 json_t *json_load_callback(json_load_callback_t callback, void *data, size_t flags, json_error_t *error) JSON_ATTRS(warn_unused_result);
-
-
-/* encoding */
 
 #define JSON_MAX_INDENT         0x1F
 #define JSON_INDENT(n)          ((n) & JSON_MAX_INDENT)
@@ -396,8 +356,6 @@ int json_dumpf(const json_t *json, FILE *output, size_t flags);
 int json_dumpfd(const json_t *json, int output, size_t flags);
 int json_dump_file(const json_t *json, const char *path, size_t flags);
 int json_dump_callback(const json_t *json, json_dump_callback_t callback, void *data, size_t flags);
-
-/* custom memory allocation */
 
 typedef void *(*json_malloc_t)(size_t);
 typedef void (*json_free_t)(void *);

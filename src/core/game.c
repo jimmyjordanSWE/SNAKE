@@ -1,305 +1,223 @@
 #include "snake/game.h"
 #include "snake/collision.h"
 #include "snake/utils.h"
-
 #include <stddef.h>
-
 static SnakePoint random_point(GameState* game) {
-    SnakePoint p;
-    p.x = snake_rng_range(&game->rng_state, 0, game->width - 1);
-    p.y = snake_rng_range(&game->rng_state, 0, game->height - 1);
-    return p;
+SnakePoint p;
+p.x= snake_rng_range(&game->rng_state, 0, game->width - 1);
+p.y= snake_rng_range(&game->rng_state, 0, game->height - 1);
+return p;
 }
-
 static bool point_in_player(const PlayerState* player, SnakePoint p) {
-    if (player == NULL || !player->active || player->length <= 0) { return false; }
-
-    for (int i = 0; i < player->length; i++) {
-        SnakePoint s = player->body[i];
-        if (s.x == p.x && s.y == p.y) { return true; }
-    }
-
-    return false;
+if(player == NULL || !player->active || player->length <= 0) return false;
+for(int i= 0; i < player->length; i++) {
+SnakePoint s= player->body[i];
+if(s.x == p.x && s.y == p.y) return true;
 }
-
+return false;
+}
 static bool point_in_any_snake(const GameState* game, SnakePoint p) {
-    if (game == NULL) { return false; }
-
-    for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
-        if (point_in_player(&game->players[i], p)) { return true; }
-    }
-
-    return false;
+if(game == NULL) return false;
+for(int i= 0; i < SNAKE_MAX_PLAYERS; i++)
+if(point_in_player(&game->players[i], p)) return true;
+return false;
 }
-
 static bool point_is_food(const GameState* game, SnakePoint p) {
-    if (game == NULL) { return false; }
-    for (int i = 0; i < game->food_count; i++) {
-        if (game->food[i].x == p.x && game->food[i].y == p.y) { return true; }
-    }
-    return false;
+if(game == NULL) return false;
+for(int i= 0; i < game->food_count; i++)
+if(game->food[i].x == p.x && game->food[i].y == p.y) return true;
+return false;
 }
-
 static void food_respawn(GameState* game) {
-    if (game == NULL) { return; }
-
-    /* Spawn 1-3 food items */
-    int num_to_spawn = snake_rng_range(&game->rng_state, 1, 3);
-    game->food_count = 0;
-
-    int max_attempts = game->width * game->height * 2;
-    if (max_attempts < 32) { max_attempts = 32; }
-
-    for (int i = 0; i < num_to_spawn && game->food_count < SNAKE_MAX_FOOD; i++) {
-        for (int attempt = 0; attempt < max_attempts; attempt++) {
-            SnakePoint p = random_point(game);
-            if (!point_in_any_snake(game, p) && !point_is_food(game, p)) {
-                game->food[game->food_count] = p;
-                game->food_count++;
-                break;
-            }
-        }
-    }
+if(game == NULL) return;
+int num_to_spawn= snake_rng_range(&game->rng_state, 1, 3);
+game->food_count= 0;
+int max_attempts= game->width * game->height * 2;
+if(max_attempts < 32) max_attempts= 32;
+for(int i= 0; i < num_to_spawn && game->food_count < SNAKE_MAX_FOOD; i++) {
+for(int attempt= 0; attempt < max_attempts; attempt++) {
+SnakePoint p= random_point(game);
+if(!point_in_any_snake(game, p) && !point_is_food(game, p)) {
+game->food[game->food_count]= p;
+game->food_count++;
+break;
 }
-
+}
+}
+}
 static void player_move(PlayerState* player, SnakePoint next_head, bool grow) {
-    if (player == NULL || !player->active || player->length <= 0) { return; }
-
-    bool actual_grow = grow && player->length < SNAKE_MAX_LENGTH;
-    int last = actual_grow ? player->length : (player->length - 1);
-
-    for (int i = last; i > 0; i--) { player->body[i] = player->body[i - 1]; }
-
-    player->body[0] = next_head;
-    if (actual_grow) { player->length++; }
+if(player == NULL || !player->active || player->length <= 0) return;
+bool actual_grow= grow && player->length < SNAKE_MAX_LENGTH;
+int last= actual_grow ? player->length : (player->length - 1);
+for(int i= last; i > 0; i--) player->body[i]= player->body[i - 1];
+player->body[0]= next_head;
+if(actual_grow) player->length++;
 }
-
 static SnakeDir opposite_dir(SnakeDir dir) {
-    switch (dir) {
-    case SNAKE_DIR_UP:
-        return SNAKE_DIR_DOWN;
-    case SNAKE_DIR_DOWN:
-        return SNAKE_DIR_UP;
-    case SNAKE_DIR_LEFT:
-        return SNAKE_DIR_RIGHT;
-    case SNAKE_DIR_RIGHT:
-        return SNAKE_DIR_LEFT;
-    default:
-        return SNAKE_DIR_UP;
-    }
+switch(dir) {
+case SNAKE_DIR_UP: return SNAKE_DIR_DOWN;
+case SNAKE_DIR_DOWN: return SNAKE_DIR_UP;
+case SNAKE_DIR_LEFT: return SNAKE_DIR_RIGHT;
+case SNAKE_DIR_RIGHT: return SNAKE_DIR_LEFT;
+default: return SNAKE_DIR_UP;
 }
-
+}
 static bool spawn_player(GameState* game, int player_index) {
-    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
-
-    if (game->width < 2 || game->height < 1) { return false; }
-
-    PlayerState* player = &game->players[player_index];
-    player->active = true;
-    player->needs_reset = false;
-    player->length = 2;
-
-    for (int attempt = 0; attempt < 1000; attempt++) {
-        SnakePoint head = (SnakePoint){
-            .x = snake_rng_range(&game->rng_state, 2, game->width - 3),
-            .y = snake_rng_range(&game->rng_state, 2, game->height - 3),
-        };
-
-        /* Calculate direction towards furthest wall */
-        int dist_left = head.x;
-        int dist_right = game->width - 1 - head.x;
-        int dist_up = head.y;
-        int dist_down = game->height - 1 - head.y;
-
-        int max_dist = dist_left;
-        SnakeDir best_dir = SNAKE_DIR_LEFT;
-
-        if (dist_right > max_dist) {
-            max_dist = dist_right;
-            best_dir = SNAKE_DIR_RIGHT;
-        }
-        if (dist_up > max_dist) {
-            max_dist = dist_up;
-            best_dir = SNAKE_DIR_UP;
-        }
-        if (dist_down > max_dist) {
-            max_dist = dist_down;
-            best_dir = SNAKE_DIR_DOWN;
-        }
-
-        player->current_dir = best_dir;
-        player->queued_dir = best_dir;
-
-        /* Tail must be behind head (in opposite direction of movement) */
-        SnakePoint tail = collision_next_head(head, opposite_dir(best_dir));
-
-        /* Ensure both segments are inside the board. */
-        if (collision_is_wall(tail, game->width, game->height)) { continue; }
-
-        bool overlaps = false;
-        for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
-            if (i == player_index) { continue; }
-            if (point_in_player(&game->players[i], head) || point_in_player(&game->players[i], tail)) {
-                overlaps = true;
-                break;
-            }
-        }
-
-        if (!overlaps) {
-            player->body[0] = head;
-            player->body[1] = tail;
-            return true;
-        }
-    }
-
-    player->active = false;
-    player->length = 0;
-    return false;
+if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return false;
+if(game->width < 2 || game->height < 1) return false;
+PlayerState* player= &game->players[player_index];
+player->active= true;
+player->needs_reset= false;
+player->length= 2;
+for(int attempt= 0; attempt < 1000; attempt++) {
+SnakePoint head= (SnakePoint){
+    .x= snake_rng_range(&game->rng_state, 2, game->width - 3),
+    .y= snake_rng_range(&game->rng_state, 2, game->height - 3),
+};
+int dist_left= head.x;
+int dist_right= game->width - 1 - head.x;
+int dist_up= head.y;
+int dist_down= game->height - 1 - head.y;
+int max_dist= dist_left;
+SnakeDir best_dir= SNAKE_DIR_LEFT;
+if(dist_right > max_dist) {
+max_dist= dist_right;
+best_dir= SNAKE_DIR_RIGHT;
 }
-
+if(dist_up > max_dist) {
+max_dist= dist_up;
+best_dir= SNAKE_DIR_UP;
+}
+if(dist_down > max_dist) {
+max_dist= dist_down;
+best_dir= SNAKE_DIR_DOWN;
+}
+player->current_dir= best_dir;
+player->queued_dir= best_dir;
+SnakePoint tail= collision_next_head(head, opposite_dir(best_dir));
+if(collision_is_wall(tail, game->width, game->height)) continue;
+bool overlaps= false;
+for(int i= 0; i < SNAKE_MAX_PLAYERS; i++) {
+if(i == player_index) continue;
+if(point_in_player(&game->players[i], head) || point_in_player(&game->players[i], tail)) {
+overlaps= true;
+break;
+}
+}
+if(!overlaps) {
+player->body[0]= head;
+player->body[1]= tail;
+return true;
+}
+}
+player->active= false;
+player->length= 0;
+return false;
+}
 void game_init(GameState* game, int width, int height, uint32_t seed) {
-    if (!game) { return; }
-
-    game->width = (width < 2) ? 2 : width;
-    game->height = (height < 2) ? 2 : height;
-    snake_rng_seed(&game->rng_state, seed);
-
-    game->status = GAME_STATUS_RUNNING;
-    game->food_count = 0;
-
-    game->num_players = 1;
-
-    for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
-        game->players[i].score = 0;
-        game->players[i].died_this_tick = false;
-        game->players[i].score_at_death = 0;
-        game->players[i].active = false;
-        game->players[i].needs_reset = false;
-        game->players[i].length = 0;
-    }
-
-    for (int i = 0; i < game->num_players; i++) { (void)spawn_player(game, i); }
-
-    food_respawn(game);
+if(!game) return;
+game->width= (width < 2) ? 2 : width;
+game->height= (height < 2) ? 2 : height;
+snake_rng_seed(&game->rng_state, seed);
+game->status= GAME_STATUS_RUNNING;
+game->food_count= 0;
+game->num_players= 1;
+for(int i= 0; i < SNAKE_MAX_PLAYERS; i++) {
+game->players[i].score= 0;
+game->players[i].died_this_tick= false;
+game->players[i].score_at_death= 0;
+game->players[i].active= false;
+game->players[i].needs_reset= false;
+game->players[i].length= 0;
 }
-
+for(int i= 0; i < game->num_players; i++) (void)spawn_player(game, i);
+food_respawn(game);
+}
 void game_reset(GameState* game) {
-    if (!game) { return; }
-
-    for (int i = 0; i < SNAKE_MAX_PLAYERS; i++) {
-        game->players[i].score = 0;
-        game->players[i].died_this_tick = false;
-        game->players[i].score_at_death = 0;
-        game->players[i].active = false;
-        game->players[i].needs_reset = false;
-        game->players[i].length = 0;
-    }
-
-    for (int i = 0; i < game->num_players; i++) { (void)spawn_player(game, i); }
-
-    game->status = GAME_STATUS_RUNNING;
-    food_respawn(game);
+if(!game) return;
+for(int i= 0; i < SNAKE_MAX_PLAYERS; i++) {
+game->players[i].score= 0;
+game->players[i].died_this_tick= false;
+game->players[i].score_at_death= 0;
+game->players[i].active= false;
+game->players[i].needs_reset= false;
+game->players[i].length= 0;
 }
-
+for(int i= 0; i < game->num_players; i++) (void)spawn_player(game, i);
+game->status= GAME_STATUS_RUNNING;
+food_respawn(game);
+}
 void game_tick(GameState* game) {
-    if (game == NULL) { return; }
-
-    if (game->status != GAME_STATUS_RUNNING) { return; }
-
-    int num_players = game->num_players;
-    if (num_players < 0) { num_players = 0; }
-    if (num_players > SNAKE_MAX_PLAYERS) { num_players = SNAKE_MAX_PLAYERS; }
-
-    for (int i = 0; i < num_players; i++) {
-        game->players[i].needs_reset = false;
-        game->players[i].died_this_tick = false;
-        game->players[i].score_at_death = 0;
-    }
-
-    for (int i = 0; i < num_players; i++) {
-        PlayerState* player = &game->players[i];
-        if (!player->active || player->length <= 0) { continue; }
-
-        /* Prevent 180-degree turns (opposite direction) */
-        if (player->queued_dir != opposite_dir(player->current_dir)) { player->current_dir = player->queued_dir; }
-    }
-
-    collision_detect_and_resolve(game);
-
-    /* Apply death effects (capture score, reset score) before respawn */
-    for (int i = 0; i < num_players; i++) {
-        PlayerState* player = &game->players[i];
-        if (!player->active) { continue; }
-        if (!player->needs_reset) { continue; }
-
-        player->died_this_tick = true;
-        player->score_at_death = player->score;
-        player->score = 0;
-    }
-
-    for (int i = 0; i < num_players; i++) {
-        PlayerState* player = &game->players[i];
-        if (player->needs_reset) { (void)spawn_player(game, i); }
-    }
-
-    bool food_consumed = false;
-
-    for (int i = 0; i < num_players; i++) {
-        PlayerState* player = &game->players[i];
-        if (!player->active || player->length <= 0) { continue; }
-
-        if (player->needs_reset) { continue; }
-
-        SnakePoint current_head = player->body[0];
-        SnakePoint next_head = collision_next_head(current_head, player->current_dir);
-
-        bool eat = false;
-        /* Check if next head collides with any food */
-        for (int f = 0; f < game->food_count; f++) {
-            if (next_head.x == game->food[f].x && next_head.y == game->food[f].y) {
-                eat = true;
-                /* Remove this food by shifting array */
-                for (int j = f; j < game->food_count - 1; j++) { game->food[j] = game->food[j + 1]; }
-                game->food_count--;
-                food_consumed = true;
-                break;
-            }
-        }
-
-        player_move(player, next_head, eat);
-        if (eat) { player->score++; }
-    }
-
-    /* Only respawn food when all food has been consumed */
-    if (food_consumed && game->food_count == 0) { food_respawn(game); }
+if(game == NULL) return;
+if(game->status != GAME_STATUS_RUNNING) return;
+int num_players= game->num_players;
+if(num_players < 0) num_players= 0;
+if(num_players > SNAKE_MAX_PLAYERS) num_players= SNAKE_MAX_PLAYERS;
+for(int i= 0; i < num_players; i++) {
+game->players[i].needs_reset= false;
+game->players[i].died_this_tick= false;
+game->players[i].score_at_death= 0;
 }
-
-/* Query functions for encapsulated state access */
-
+for(int i= 0; i < num_players; i++) {
+PlayerState* player= &game->players[i];
+if(!player->active || player->length <= 0) continue;
+if(player->queued_dir != opposite_dir(player->current_dir)) player->current_dir= player->queued_dir;
+}
+collision_detect_and_resolve(game);
+for(int i= 0; i < num_players; i++) {
+PlayerState* player= &game->players[i];
+if(!player->active) continue;
+if(!player->needs_reset) continue;
+player->died_this_tick= true;
+player->score_at_death= player->score;
+player->score= 0;
+}
+for(int i= 0; i < num_players; i++) {
+PlayerState* player= &game->players[i];
+if(player->needs_reset) (void)spawn_player(game, i);
+}
+bool food_consumed= false;
+for(int i= 0; i < num_players; i++) {
+PlayerState* player= &game->players[i];
+if(!player->active || player->length <= 0) continue;
+if(player->needs_reset) continue;
+SnakePoint current_head= player->body[0];
+SnakePoint next_head= collision_next_head(current_head, player->current_dir);
+bool eat= false;
+for(int f= 0; f < game->food_count; f++) {
+if(next_head.x == game->food[f].x && next_head.y == game->food[f].y) {
+eat= true;
+for(int j= f; j < game->food_count - 1; j++) game->food[j]= game->food[j + 1];
+game->food_count--;
+food_consumed= true;
+break;
+}
+}
+player_move(player, next_head, eat);
+if(eat) player->score++;
+}
+if(food_consumed && game->food_count == 0) food_respawn(game);
+}
 int game_get_num_players(const GameState* game) {
-    if (game == NULL) { return 0; }
-    int count = game->num_players;
-    if (count < 0) { return 0; }
-    if (count > SNAKE_MAX_PLAYERS) { return SNAKE_MAX_PLAYERS; }
-    return count;
+if(game == NULL) return 0;
+int count= game->num_players;
+if(count < 0) return 0;
+if(count > SNAKE_MAX_PLAYERS) return SNAKE_MAX_PLAYERS;
+return count;
 }
-
 bool game_player_is_active(const GameState* game, int player_index) {
-    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
-    return game->players[player_index].active;
+if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return false;
+return game->players[player_index].active;
 }
-
 int game_player_current_score(const GameState* game, int player_index) {
-    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return 0; }
-    return game->players[player_index].score;
+if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return 0;
+return game->players[player_index].score;
 }
-
 bool game_player_died_this_tick(const GameState* game, int player_index) {
-    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return false; }
-    return game->players[player_index].died_this_tick;
+if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return false;
+return game->players[player_index].died_this_tick;
 }
-
 int game_player_score_at_death(const GameState* game, int player_index) {
-    if (game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) { return 0; }
-    return game->players[player_index].score_at_death;
+if(game == NULL || player_index < 0 || player_index >= SNAKE_MAX_PLAYERS) return 0;
+return game->players[player_index].score_at_death;
 }

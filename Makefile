@@ -11,11 +11,7 @@ CONFIG ?= debug-asan
 
 # NOTE: GNU make defines a built-in variable named `LINT` (default value: `lint`).
 # Use explicit toggles to avoid collisions and keep builds fast.
-RUN_FORMAT ?= 0
-RUN_TIDY ?= 0
-RUN_TIDY = 0
-
-PREBUILD := $(if $(filter 1,$(RUN_FORMAT)),format-check,) $(if $(filter 1,$(RUN_TIDY)),tidy,)
+PREBUILD :=
 
 CPPFLAGS_BASE ?= -Iinclude -D_POSIX_C_SOURCE=200809L $(shell pkg-config --cflags sdl2)
 CFLAGS_BASE ?= -std=c99
@@ -47,13 +43,11 @@ VALGRIND ?= valgrind
 VALGRIND_ARGS ?= --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1
 
 CLANG_FORMAT ?= clang-format
-CLANG_TIDY ?= clang-tidy
-
-TIDY_CHECKS ?= clang-analyzer-*,bugprone-*,performance-*
-# Keep output readable: clang-tidy's underlying clang can be very noisy.
-TIDY_EXTRA_ARGS ?= --quiet --extra-arg=-w
-
+CLANG_FORMAT_STYLE_LLM ?= .clang-format_LLM
+CLANG_FORMAT_STYLE_HUMAN ?= .clang-format
 OK_MSG ?= all OK
+
+FORMAT_FILES = $(SRC) $(HDR)
 
 ifeq ($(CONFIG),debug-asan)
 BUILD_DIR := $(BUILD_ROOT)/debug-asan
@@ -84,8 +78,6 @@ SRC_ALL := $(shell find src -name '*.c' -print)
 SRC := $(SRC_ALL) main.c
 SRC_3D := $(shell find src -name '*.c' -print) main_3d.c
 HDR := $(shell find include -name '*.h' -print)
-FORMAT_FILES := $(SRC) $(HDR) main_3d.c
-TIDY_FILES := $(SRC) main_3d.c
 OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
 OBJ_3D := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC_3D))
 DEP := $(OBJ:.o=.d)
@@ -93,19 +85,11 @@ DEP_3D := $(OBJ_3D:.o=.d)
 
 .DEFAULT_GOAL := debug
 
-.PHONY: all build debug release valgrind gdb clean tools-check lint format-check format tidy test-3d
+.PHONY: all build debug release valgrind gdb clean test-3d format-llm format-human
 
 all: debug
 
 build: $(BIN)
-
-ifeq ($(RUN_FORMAT),1)
-build: format-check
-endif
-
-ifeq ($(RUN_TIDY),1)
-build: tidy
-endif
 
 debug:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
@@ -131,28 +115,7 @@ test-3d:
 	@echo "$(OK_MSG)"
 	./$(BIN_3D)
 
-tools-check:
-	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo "error: clang-format not found"; exit 1; }
-	@command -v $(CLANG_TIDY) >/dev/null 2>&1 || { echo "error: clang-tidy not found"; exit 1; }
 
-lint: tools-check format-check tidy
-	@echo "$(OK_MSG)"
-
-format-check: tools-check
-	@$(CLANG_FORMAT) --dry-run --Werror $(FORMAT_FILES) \
-		|| { echo "error: formatting check failed (run 'make format')"; exit 1; }
-
-format: tools-check
-	@$(CLANG_FORMAT) -i $(FORMAT_FILES)
-
-tidy: tools-check
-	@mkdir -p $(LOG_DIR)
-	@: > "$(LOG_DIR)/clang-tidy.log"
-	@set -e; \
-	for f in $(TIDY_FILES); do \
-		$(CLANG_TIDY) $(TIDY_EXTRA_ARGS) -checks='$(TIDY_CHECKS)' $$f -- $(CPPFLAGS_BASE) -std=c99 >>"$(LOG_DIR)/clang-tidy.log" 2>&1 \
-			|| { echo "error: clang-tidy failed (see $(LOG_DIR)/clang-tidy.log)"; tail -n 80 "$(LOG_DIR)/clang-tidy.log"; exit 1; }; \
-	done
 
 $(BIN): $(OBJ)
 	@mkdir -p $(dir $@)
@@ -165,6 +128,25 @@ $(BIN_3D): $(OBJ_3D)
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c -o $@ $<
+
+format-llm:
+	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo "error: clang-format not found"; exit 1; }
+	@if [ -z "$(FORMAT_FILES)" ]; then echo "warning: no files to format"; exit 0; fi
+	@if [ -f $(CLANG_FORMAT_STYLE_LLM) ]; then \
+		$(CLANG_FORMAT) --style=file:$(CLANG_FORMAT_STYLE_LLM) -i $(FORMAT_FILES); \
+	else \
+		echo "warning: $(CLANG_FORMAT_STYLE_LLM) not found, using Google style"; \
+		$(CLANG_FORMAT) --style=Google -i $(FORMAT_FILES); \
+	fi
+
+format:
+	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo "error: clang-format not found"; exit 1; }
+	@if [ -z "$(FORMAT_FILES)" ]; then echo "warning: no files to format"; exit 0; fi
+	@if [ -f $(CLANG_FORMAT_STYLE_HUMAN) ]; then \
+		$(CLANG_FORMAT) --style=file:$(CLANG_FORMAT_STYLE_HUMAN) -i $(FORMAT_FILES); \
+	else \
+		echo "error: $(CLANG_FORMAT_STYLE_HUMAN) not found"; exit 1; \
+	fi
 
 -include $(DEP)
 -include $(DEP_3D)

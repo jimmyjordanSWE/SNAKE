@@ -1,16 +1,9 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
 #include "jansson_config.h"
-
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -26,27 +19,11 @@
 #include "jansson_private.h"
 #include "utf.h"
 
-/* Work around nonstandard isnan() and isinf() implementations */
-
-/*
-#ifndef isnan
-#ifndef __sun
-JSON_INLINE int isnan(double x) { return x != x; }
-#endif
-#endif
-#ifndef isinf
-JSON_INLINE int isinf(double x) { return !isnan(x) && isnan(x - x); }
-#endif
-*/
-
 JSON_INLINE void json_init(json_t *json, json_type type)
 {
     json->type = type;
     json->refcount = 1;
 }
-
-
-/*** object ***/
 
 extern volatile uint32_t hashtable_seed;
 
@@ -57,7 +34,7 @@ json_t *json_object(void)
         return NULL;
 
     if (!hashtable_seed) {
-        /* Autoseed */
+
         json_object_seed(0);
     }
 
@@ -319,8 +296,7 @@ static json_t *json_object_deep_copy(const json_t *object)
     if(!result)
         return NULL;
 
-    /* Cannot use json_object_foreach because object has to be cast
-       non-const */
+
     iter = json_object_iter((json_t *)object);
     while(iter) {
         const char *key;
@@ -334,9 +310,6 @@ static json_t *json_object_deep_copy(const json_t *object)
 
     return result;
 }
-
-
-/*** array ***/
 
 json_t* json_array(void)
 {
@@ -535,7 +508,7 @@ int json_array_remove(json_t *json, size_t index)
 
     json_decref(array->table[index]);
 
-    /* If we're removing the last element, nothing has to be moved */
+
     if(index < array->entries - 1)
         array_move(array, index, index + 1, array->entries - index - 1);
 
@@ -634,8 +607,6 @@ static json_t *json_array_deep_copy(const json_t *array)
     return result;
 }
 
-/*** string ***/
-
 static json_t *string_create(const char *value, size_t len, int own)
 {
     char *v;
@@ -677,7 +648,6 @@ json_t *json_stringn_nocheck(const char *value, size_t len)
     return string_create(value, len, 0);
 }
 
-/* this is private; "steal" is not a public API concept */
 json_t *jsonp_stringn_nocheck_own(const char *value, size_t len)
 {
     return string_create(value, len, 1);
@@ -823,9 +793,6 @@ json_t *json_sprintf(const char *fmt, ...) {
     return result;
 }
 
-
-/*** integer ***/
-
 json_t *json_integer(json_int_t value)
 {
 	json_integer_t* integer = (json_integer_t*)jsonp_malloc(sizeof(json_integer_t));
@@ -869,9 +836,6 @@ static json_t *json_integer_copy(const json_t *integer)
 {
     return json_integer(json_integer_value(integer));
 }
-
-
-/*** real ***/
 
 json_t *json_real(double value)
 {
@@ -922,9 +886,6 @@ static json_t *json_real_copy(const json_t *real)
     return json_real(json_real_value(real));
 }
 
-
-/*** number ***/
-
 double json_number_value(const json_t *json)
 {
     if(json_is_integer(json))
@@ -935,15 +896,11 @@ double json_number_value(const json_t *json)
         return 0.0;
 }
 
-
-/*** simple values ***/
-
 json_t *json_true(void)
 {
     static json_t the_true = {JSON_TRUE, (size_t)-1};
     return &the_true;
 }
-
 
 json_t *json_false(void)
 {
@@ -951,15 +908,11 @@ json_t *json_false(void)
     return &the_false;
 }
 
-
 json_t *json_null(void)
 {
     static json_t the_null = {JSON_NULL, (size_t)-1};
     return &the_null;
 }
-
-
-/*** deletion ***/
 
 void json_delete(json_t *json)
 {
@@ -986,11 +939,8 @@ void json_delete(json_t *json)
             return;
     }
 
-    /* json_delete is not called for true, false or null */
+
 }
-
-
-/*** equality ***/
 
 int json_equal(const json_t *json1, const json_t *json2)
 {
@@ -1000,7 +950,7 @@ int json_equal(const json_t *json1, const json_t *json2)
     if(json_typeof(json1) != json_typeof(json2))
         return 0;
 
-    /* this covers true, false and null as they are singletons */
+
     if(json1 == json2)
         return 1;
 
@@ -1019,9 +969,6 @@ int json_equal(const json_t *json1, const json_t *json2)
             return 0;
     }
 }
-
-
-/*** copying ***/
 
 json_t *json_copy(json_t *json)
 {
@@ -1058,8 +1005,7 @@ json_t *json_deep_copy(const json_t *json)
             return json_object_deep_copy(json);
         case JSON_ARRAY:
             return json_array_deep_copy(json);
-            /* for the rest of the types, deep copying doesn't differ from
-               shallow copying */
+
         case JSON_STRING:
             return json_string_copy(json);
         case JSON_INTEGER:

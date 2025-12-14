@@ -4,12 +4,11 @@
 #include <string.h>
 #include <math.h>
 #ifdef __MINGW32__
-#undef __NO_ISOCEXT /* ensure stdlib.h will declare prototypes for mingw own 'strtod' replacement, called '__strtod' */
+#undef __NO_ISOCEXT
 #endif
 #include "jansson_private.h"
 #include "strbuffer.h"
 
-/* need jansson_config.h to get the correct snprintf */
 #include "jansson_config.h"
 
 #ifdef __MINGW32__
@@ -19,16 +18,6 @@
 #if JSON_HAVE_LOCALECONV
 #include <locale.h>
 
-/*
-  - This code assumes that the decimal separator is exactly one
-    character.
-
-  - If setlocale() is called by another thread between the call to
-    localeconv() and the call to sprintf() or strtod(), the result may
-    be wrong. setlocale() is not thread-safe and should not be used
-    this way. Multi-threaded programs should use uselocale() instead.
-*/
-
 static void to_locale(strbuffer_t *strbuffer)
 {
     const char *point;
@@ -36,7 +25,7 @@ static void to_locale(strbuffer_t *strbuffer)
 
     point = localeconv()->decimal_point;
     if(*point == '.') {
-        /* No conversion needed */
+
         return;
     }
 
@@ -52,7 +41,7 @@ static void from_locale(char *buffer)
 
     point = localeconv()->decimal_point;
     if(*point == '.') {
-        /* No conversion needed */
+
         return;
     }
 
@@ -76,7 +65,7 @@ int jsonp_strtod(strbuffer_t *strbuffer, double *out)
     assert(end == strbuffer->value + strbuffer->length);
 
     if((value == HUGE_VAL || value == -HUGE_VAL) && errno == ERANGE) {
-        /* Overflow */
+
         return -1;
     }
 
@@ -105,13 +94,12 @@ int jsonp_dtostr(char *buffer, size_t size, double value, int precision)
     from_locale(buffer);
 #endif
 
-    /* Make sure there's a dot or 'e' in the output. Otherwise
-       a real is converted to an integer when decoding */
+
     if(strchr(buffer, '.') == NULL &&
        strchr(buffer, 'e') == NULL)
     {
         if(length + 3 >= size) {
-            /* No space to append ".0" */
+
             return -1;
         }
         buffer[length] = '.';
@@ -120,8 +108,7 @@ int jsonp_dtostr(char *buffer, size_t size, double value, int precision)
         length += 2;
     }
 
-    /* Remove leading '+' from positive exponent. Also remove leading
-       zeros from exponents (added by some printf() implementations) */
+
     start = strchr(buffer, 'e');
     if(start) {
         start++;

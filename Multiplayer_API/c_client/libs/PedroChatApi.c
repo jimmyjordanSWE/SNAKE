@@ -43,7 +43,7 @@ struct PedroChatApi {
 static int connect_to_server(const char *host, uint16_t port);
 static int ensure_connected(PedroChatApi *api);
 static int send_all(int fd, const char *buf, size_t len);
-static int send_json_line(PedroChatApi *api, json_t *obj); /* tar över ägarskap */
+static int send_json_line(PedroChatApi *api, json_t *obj);
 static int read_line(int fd, char **out_line);
 static void *recv_thread_main(void *arg);
 static void process_line(PedroChatApi *api, const char *line);
@@ -55,7 +55,7 @@ PedroChatApi *mp_api_create(const char *server_host, uint16_t server_port, const
 	if (len != 36) {
 		return NULL;
 	}
-	
+
 	PedroChatApi *api = (PedroChatApi *)calloc(1, sizeof(PedroChatApi));
     if (!api) {
         return NULL;
@@ -74,7 +74,7 @@ PedroChatApi *mp_api_create(const char *server_host, uint16_t server_port, const
     }
 
     api->server_port = server_port;
-	
+
 	strncpy(api->identifier, identifier, 37);
 
     api->sockfd = -1;
@@ -143,7 +143,7 @@ int mp_api_host(PedroChatApi *api,
 
     json_object_set_new(root, "identifier", json_string(api->identifier));
     json_object_set_new(root, "cmd", json_string("host"));
-    
+
 	json_t *data_copy;
     if (data && json_is_object(data)) {
         data_copy = json_deep_copy(data);
@@ -247,7 +247,7 @@ int mp_api_list(PedroChatApi *api, json_t **out_list)
 		return rc;
 	}
 
-	printf("Received line: %s\n", line); // Debug print
+	printf("Received line: %s\n", line);
 
 	json_error_t jerr;
 	json_t *resp = json_loads(line, 0, &jerr);
@@ -296,7 +296,7 @@ int mp_api_join(PedroChatApi *api,
 
     json_t *root = json_object();
     if (!root) return MP_API_ERR_IO;
-	
+
     json_object_set_new(root, "identifier", json_string(api->identifier));
     json_object_set_new(root, "session", json_string(sessionId));
     json_object_set_new(root, "cmd", json_string("join"));
@@ -459,7 +459,6 @@ void mp_api_unlisten(PedroChatApi *api, int listener_id) {
     pthread_mutex_unlock(&api->lock);
 }
 
-/* --- Interna hjälpfunktioner --- */
 
 static int connect_to_server(const char *host, uint16_t port) {
     if (!host) host = "127.0.0.1";
@@ -469,7 +468,7 @@ static int connect_to_server(const char *host, uint16_t port) {
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;      /* IPv4 eller IPv6 */
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *res = NULL;
@@ -530,7 +529,7 @@ static int send_json_line(PedroChatApi *api, json_t *obj) {
         return MP_API_ERR_IO;
     }
 
-	printf("Sending JSON: %s\n", text); // Debug print
+	printf("Sending JSON: %s\n", text);
 
     size_t len = strlen(text);
     int fd = api->sockfd;

@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2009-2016 Petri Lehtinen <petri@digip.org>
- *
- * Jansson is free software; you can redistribute it and/or modify
- * it under the terms of the MIT license. See LICENSE for details.
- */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -38,7 +32,6 @@
 #define TOKEN_FALSE          260
 #define TOKEN_NULL           261
 
-/* Locale independent versions of isxxx() functions */
 #define l_isupper(c)  ('A' <= (c) && (c) <= 'Z')
 #define l_islower(c)  ('a' <= (c) && (c) <= 'z')
 #define l_isalpha(c)  (l_isupper(c) || l_islower(c))
@@ -46,9 +39,6 @@
 #define l_isxdigit(c) \
     (l_isdigit(c) || ('A' <= (c) && (c) <= 'F') || ('a' <= (c) && (c) <= 'f'))
 
-/* Read one byte from stream, convert to unsigned char, then int, and
-   return. return EOF on end of file. This corresponds to the
-   behaviour of fgetc(). */
 typedef int (*get_func)(void *data);
 
 typedef struct {
@@ -80,16 +70,12 @@ typedef struct {
 
 #define stream_to_lex(stream) container_of(stream, lex_t, stream)
 
-
-/*** error reporting ***/
-
 static void error_set(json_error_t *error, const lex_t *lex,
                       enum json_error_code code,
                       const char *msg, ...)
 {
     va_list ap;
     char msg_text[JSON_ERROR_TEXT_LENGTH];
-
 
     char msg_with_context[JSON_ERROR_TEXT_LENGTH + 32];
 
@@ -126,11 +112,11 @@ static void error_set(json_error_t *error, const lex_t *lex,
         else
         {
             if(code == json_error_invalid_syntax) {
-                /* More specific error code for premature end of file. */
+
                 code = json_error_premature_end_of_input;
             }
             if(lex->stream.state == STREAM_STATE_ERROR) {
-                /* No context for UTF-8 decoding errors */
+
                 result = msg_text;
             }
             else {
@@ -143,9 +129,6 @@ static void error_set(json_error_t *error, const lex_t *lex,
 
     jsonp_error_set(error, line, col, pos, code, "%s", result);
 }
-
-
-/*** lexical analyzer ***/
 
 static void
 stream_init(stream_t *stream, get_func get, void *data)
@@ -181,7 +164,7 @@ static int stream_get(stream_t *stream, json_error_t *error)
 
         if(0x80 <= c && c <= 0xFF)
         {
-            /* multi-byte UTF-8 sequence */
+
             size_t i, count;
 
             count = utf8_check_first(c);
@@ -211,8 +194,7 @@ static int stream_get(stream_t *stream, json_error_t *error)
         stream->column = 0;
     }
     else if(utf8_check_first(c)) {
-        /* track the Unicode character column, so increment only if
-           this is the first character of a UTF-8 sequence */
+
         stream->column++;
     }
 
@@ -242,7 +224,6 @@ static void stream_unget(stream_t *stream, int c)
     assert(stream->buffer[stream->buffer_pos] == c);
 }
 
-
 static int lex_get(lex_t *lex, json_error_t *error)
 {
     return stream_get(&lex->stream, error);
@@ -269,10 +250,7 @@ static void lex_unget(lex_t *lex, int c)
 static void lex_unget_unsave(lex_t *lex, int c)
 {
     if(c != STREAM_STATE_EOF && c != STREAM_STATE_ERROR) {
-        /* Since we treat warnings as errors, when assertions are turned
-         * off the "d" variable would be set but never used. Which is
-         * treated as an error by GCC.
-         */
+
         #ifndef NDEBUG
         char d;
         #endif
@@ -302,7 +280,6 @@ static void lex_free_string(lex_t *lex)
     lex->value.string.len = 0;
 }
 
-/* assumes that str points to 'u' plus at least 4 valid hex digits */
 static int32_t decode_unicode_escape(const char *str)
 {
     int i;
@@ -348,7 +325,7 @@ static void lex_scan_string(lex_t *lex, json_error_t *error)
         }
 
         else if(0 <= c && c <= 0x1F) {
-            /* control character */
+
             lex_unget_unsave(lex, c);
             if(c == '\n')
                 error_set(error, lex, json_error_invalid_syntax, "unexpected newline");
@@ -381,21 +358,15 @@ static void lex_scan_string(lex_t *lex, json_error_t *error)
             c = lex_get_save(lex, error);
     }
 
-    /* the actual value is at most of the same length as the source
-       string, because:
-         - shortcut escapes (e.g. "\t") (length 2) are converted to 1 byte
-         - a single \uXXXX escape (length 6) is converted to at most 3 bytes
-         - two \uXXXX escapes (length 12) forming an UTF-16 surrogate pair
-           are converted to 4 bytes
-    */
+
     t = (char*)jsonp_malloc(lex->saved_text.length + 1);
     if(!t) {
-        /* this is not very nice, since TOKEN_INVALID is returned */
+
         goto out;
     }
     lex->value.string.val = t;
 
-    /* + 1 to skip the " */
+
     p = strbuffer_value(&lex->saved_text) + 1;
 
     while(*p != '"') {
@@ -413,7 +384,7 @@ static void lex_scan_string(lex_t *lex, json_error_t *error)
                 p += 5;
 
                 if(0xD800 <= value && value <= 0xDBFF) {
-                    /* surrogate pair */
+
                     if(*p == '\\' && *(p + 1) == 'u') {
                         int32_t value2 = decode_unicode_escape(++p);
                         if(value2 < 0) {
@@ -423,14 +394,14 @@ static void lex_scan_string(lex_t *lex, json_error_t *error)
                         p += 5;
 
                         if(0xDC00 <= value2 && value2 <= 0xDFFF) {
-                            /* valid second surrogate */
+
                             value =
                                 ((value - 0xD800) << 10) +
                                 (value2 - 0xDC00) +
                                 0x10000;
                         }
                         else {
-                            /* invalid second surrogate */
+
                             error_set(error, lex,
                                       json_error_invalid_syntax,
                                       "invalid Unicode '\\u%04X\\u%04X'",
@@ -439,7 +410,7 @@ static void lex_scan_string(lex_t *lex, json_error_t *error)
                         }
                     }
                     else {
-                        /* no second surrogate */
+
                         error_set(error, lex, json_error_invalid_syntax, "invalid Unicode '\\u%04X'",
                                   value);
                         goto out;
@@ -481,11 +452,11 @@ out:
     lex_free_string(lex);
 }
 
-#ifndef JSON_USING_CMAKE /* disabled if using cmake */
+#ifndef JSON_USING_CMAKE
 
     #if JSON_INTEGER_IS_LONG_LONG
 
-        #ifdef _MSC_VER  /* Microsoft Visual Studio */
+        #ifdef _MSC_VER
             #define json_strtoint     _strtoi64
         #else
             #define json_strtoint     strtoll
@@ -631,7 +602,7 @@ static int lex_scan(lex_t *lex, json_error_t *error)
     }
 
     else if(l_isalpha(c)) {
-        /* eat up the whole identifier for clearer error messages */
+
         const char *saved_text;
 
         do
@@ -652,8 +623,7 @@ static int lex_scan(lex_t *lex, json_error_t *error)
     }
 
     else {
-        /* save the rest of the input UTF-8 sequence to get an error
-           message of valid UTF-8 */
+
         lex_save_cached(lex);
         lex->token = TOKEN_INVALID;
     }
@@ -691,9 +661,6 @@ static void lex_close(lex_t *lex)
         lex_free_string(lex);
     strbuffer_close(&lex->saved_text);
 }
-
-
-/*** parser ***/
 
 static json_t *parse_value(lex_t *lex, size_t flags, json_error_t *error);
 
@@ -914,7 +881,7 @@ static json_t *parse_json(lex_t *lex, size_t flags, json_error_t *error)
     }
 
     if(error) {
-        /* Save the position even though there was no error */
+
         error->position = (int)lex->stream.position;
     }
 

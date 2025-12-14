@@ -4,6 +4,7 @@
 #include "snake/render_3d_raycast.h"
 #include "snake/render_3d_sdl.h"
 #include "snake/render_3d_sprite.h"
+#include <math.h>
 #include "snake/render_3d_texture.h"
 #include "snake/types.h"
 #include <stdio.h>
@@ -65,10 +66,13 @@ camera_get_ray_angle(&g_render_3d.camera, x, &ray_angle);
 RayHit hit;
 if(raycast_cast_ray(&g_render_3d.raycaster, g_render_3d.camera.x, g_render_3d.camera.y, ray_angle, &hit)) {
 WallProjection proj;
-projection_project_wall(&g_render_3d.projector, hit.distance, &proj);
+/* perpendicular distance to avoid fisheye */
+projection_project_wall_perp(&g_render_3d.projector, hit.distance, ray_angle, g_render_3d.camera.angle, &proj);
 render_3d_sdl_draw_column(&g_render_3d.display, x, 0, proj.draw_start - 1, ceiling_color);
 Texel texel;
-texture_get_texel(&g_render_3d.texture, hit.distance, hit.is_vertical, 0.0f, &texel);
+float pd = hit.distance * cosf(ray_angle - g_render_3d.camera.angle);
+if(pd <= 0.1f) pd = 0.1f;
+texture_get_texel(&g_render_3d.texture, pd, hit.is_vertical, 0.0f, &texel);
 render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_start, proj.draw_end, texel.color);
 render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end + 1, g_render_3d.display.height - 1, floor_color);
 } else {

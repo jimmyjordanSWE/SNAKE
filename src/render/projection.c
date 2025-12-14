@@ -27,3 +27,19 @@ void projection_set_horizon(Projection3D* proj, int horizon_y) {
 if(!proj) return;
 (void)horizon_y;
 }
+
+/* Doom-style (perpendicular) helpers to remove fisheye: use raw ray distance and
+   the ray and camera angles to compute perpendicular distance before projection. */
+void projection_project_wall_perp(const Projection3D* proj, float distance, float ray_angle, float cam_angle, WallProjection* out) {
+	if(!proj || !out) return;
+	float pd = distance * cosf(ray_angle - cam_angle);
+	if(pd <= 0.1f) pd = 0.1f;
+	projection_project_wall(proj, pd, out);
+}
+
+float projection_world_distance_per_pixel_perp(const Projection3D* proj, float distance, float ray_angle, float cam_angle) {
+	if(!proj) return 1.0f;
+	float pd = distance * cosf(ray_angle - cam_angle);
+	if(pd <= 0.1f) pd = 0.1f;
+	return projection_world_distance_per_pixel(proj, pd);
+}

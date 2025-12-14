@@ -20,6 +20,7 @@ SpriteRenderer3D sprite_renderer;
 SDL3DContext display;
 Render3DConfig config;
 bool initialized;
+	float* column_depths;
 } Render3DContext;
 static Render3DContext g_render_3d= {0};
 bool render_3d_init(const GameState* game_state, const Render3DConfig* config) {
@@ -41,7 +42,9 @@ camera_init(&g_render_3d.camera, g_render_3d.config.fov_degrees, g_render_3d.con
 raycast_init(&g_render_3d.raycaster, game_state->width, game_state->height, NULL);
 projection_init(&g_render_3d.projector, g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f);
 texture_init(&g_render_3d.texture);
-sprite_init(&g_render_3d.sprite_renderer, 100, &g_render_3d.camera);
+/* allocate per-column perpendicular depth buffer for sprite occlusion */
+g_render_3d.column_depths = calloc((size_t)g_render_3d.display.width, sizeof(float));
+sprite_init(&g_render_3d.sprite_renderer, 100, &g_render_3d.camera, &g_render_3d.projector);
 g_render_3d.initialized= true;
 return true;
 }
@@ -90,42 +93,34 @@ render_3d_sdl_draw_column(&g_render_3d.display, x, 0, proj.draw_start - 1, ceili
 Texel texel;
 			float pd = hit.distance * cosf(ray_angle - interp_cam_angle);
 if(pd <= 0.1f) pd = 0.1f;
+/* record perpendicular depth for this screen column */
+if (g_render_3d.column_depths) g_render_3d.column_depths[x] = pd;
 texture_get_texel(&g_render_3d.texture, pd, hit.is_vertical, 0.0f, &texel);
 render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_start, proj.draw_end, texel.color);
 render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end + 1, g_render_3d.display.height - 1, floor_color);
 } else {
+/* no hit -> mark as infinite distance so sprites are never occluded */
+if (g_render_3d.column_depths) g_render_3d.column_depths[x] = INFINITY;
 render_3d_sdl_draw_column(&g_render_3d.display, x, 0, horizon - 1, ceiling_color);
 render_3d_sdl_draw_column(&g_render_3d.display, x, horizon, g_render_3d.display.height - 1, floor_color);
 }
 }
+/* collect sprites for this frame */
 sprite_clear(&g_render_3d.sprite_renderer);
-for(int i= 0; i < game_state->food_count; i++) sprite_add(&g_render_3d.sprite_renderer, (float)game_state->food[i].x, (float)game_state->food[i].y, 0, (uint8_t)i);
+for(int i= 0; i < game_state->food_count; i++) {
+    /* place food slightly above floor, small sprite */
+    sprite_add(&g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f, (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, (int)i, 0);
+}
 for(int p= 0; p < game_state->num_players; p++) {
-if(p == g_render_3d.config.active_player) continue;
-const PlayerState* player= &game_state->players[p];
-if(!player->active || player->length == 0) continue;
-sprite_add(&g_render_3d.sprite_renderer, (float)player->body[0].x, (float)player->body[0].y, 1, (uint8_t)p);
+    if(p == g_render_3d.config.active_player) continue;
+    const PlayerState* player= &game_state->players[p];
+    if(!player->active || player->length == 0) continue;
+    sprite_add(&g_render_3d.sprite_renderer, (float)player->body[0].x + 0.5f, (float)player->body[0].y + 0.5f, 1.0f, 0.0f, true, (int)p, 0);
 }
+/* project, sort and draw using per-column occlusion */
+sprite_project_all(&g_render_3d.sprite_renderer);
 sprite_sort_by_depth(&g_render_3d.sprite_renderer);
-for(int i= 0; i < sprite_get_count(&g_render_3d.sprite_renderer); i++) {
-const SpriteProjection* spr= sprite_get(&g_render_3d.sprite_renderer, i);
-if(!spr || !spr->is_visible) continue;
-int center_x= (int)((spr->screen_x + 1.0f) * 0.5f * (float)g_render_3d.display.width);
-	int center_y= g_render_3d.display.height / 2;
-int half_width= (int)(spr->screen_width * 0.5f * (float)g_render_3d.display.width);
-int half_height= (int)(spr->screen_height * 0.5f * (float)g_render_3d.display.height);
-int x1= center_x - half_width;
-int x2= center_x + half_width;
-int y1= center_y - half_height;
-int y2= center_y + half_height;
-if(x1 < 0) x1= 0;
-if(x2 >= g_render_3d.display.width) x2= g_render_3d.display.width - 1;
-if(y1 < 0) y1= 0;
-if(y2 >= g_render_3d.display.height) y2= g_render_3d.display.height - 1;
-uint32_t sprite_color= 0xFF00FF00;
-int radius= (half_width < half_height) ? half_width : half_height;
-if(radius > 0) render_3d_sdl_draw_filled_circle(&g_render_3d.display, center_x, center_y, radius, sprite_color);
-}
+sprite_draw(&g_render_3d.sprite_renderer, &g_render_3d.display, g_render_3d.column_depths);
 if(!render_3d_sdl_present(&g_render_3d.display)) {}
 }
 void render_3d_set_active_player(int player_index) {
@@ -144,6 +139,12 @@ if(g_render_3d.initialized) g_render_3d.config.show_stats= !g_render_3d.config.s
 void render_3d_shutdown(void) {
 if(!g_render_3d.initialized) return;
 render_3d_sdl_shutdown(&g_render_3d.display);
+if (g_render_3d.column_depths) {
+    free(g_render_3d.column_depths);
+    g_render_3d.column_depths = NULL;
+}
+/* clean up sprite renderer storage */
+sprite_shutdown(&g_render_3d.sprite_renderer);
 g_render_3d.initialized= false;
 g_render_3d.game_state= NULL;
 }

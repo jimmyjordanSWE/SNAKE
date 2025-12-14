@@ -115,6 +115,11 @@ test-3d:
 	@echo "$(OK_MSG)"
 	./$(BIN_3D)
 
+test-sprite:
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_sprite tests/test_sprite.c src/render/sprite.c src/render/camera.c src/render/projection.c src/render/render_3d_sdl.c $(LDLIBS)
+	@echo "$(OK_MSG)"
+	./test_sprite
+
 
 
 $(BIN): $(OBJ)

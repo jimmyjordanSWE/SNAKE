@@ -1,79 +1,139 @@
-#include "snake/render_3d_camera.h"
 #include "snake/render_3d_sprite.h"
-#include <math.h>
+#include "snake/render_3d_camera.h"
+#include "snake/render_3d_projection.h"
+#include "snake/render_3d_sdl.h"
 #include <stdlib.h>
 #include <string.h>
-void sprite_init(SpriteRenderer3D* sr, int max_sprites, const void* camera) {
-if(!sr) return;
-sr->max_sprites= max_sprites;
-sr->camera= camera;
-sr->sprite_count= 0;
-sr->sprites= (SpriteProjection*)malloc(sizeof(SpriteProjection) * (long unsigned int)max_sprites);
+#include <math.h>
+
+#ifdef TEST_SPRITE
+/* Minimal stubs used only when building the isolated sprite test binary. */
+float camera_get_interpolated_angle(const Camera3D* camera) { (void)camera; return 0.0f; }
+void camera_get_interpolated_position(const Camera3D* camera, float* x_out, float* y_out) { (void)camera; if (x_out) *x_out = 0.0f; if (y_out) *y_out = 0.0f; }
+void projection_project_wall_perp(const Projection3D* proj, float distance, float ray_angle, float cam_angle, WallProjection* result_out) { (void)proj; (void)distance; (void)ray_angle; (void)cam_angle; if (result_out) { result_out->wall_height = 1; result_out->draw_end = proj ? proj->horizon_y : 0; result_out->draw_start = result_out->draw_end - 1; result_out->texture_scale = 1.0f; } }
+void render_3d_sdl_draw_column(SDL3DContext* ctx, int x, int y0, int y1, uint32_t col) { (void)ctx; (void)x; (void)y0; (void)y1; (void)col; }
+#endif
+
+
+
+void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, const Projection3D* proj) {
+    if (!sr) return;
+    sr->sprites = calloc((size_t)max_sprites, sizeof(Sprite3D));
+    sr->max_sprites = max_sprites;
+    sr->count = 0;
+    sr->camera = camera;
+    sr->proj = proj;
 }
+
 void sprite_clear(SpriteRenderer3D* sr) {
-if(!sr) return;
-sr->sprite_count= 0;
+    if (!sr) return;
+    sr->count = 0;
 }
-bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, uint8_t entity_type, uint8_t entity_id) {
-if(!sr || sr->sprite_count >= sr->max_sprites || !sr->camera) return false;
-	const Camera3D* cam= (const Camera3D*)sr->camera;
-	/* use interpolated camera position & angle so sprites move smoothly with camera */
-	float cam_interp_x, cam_interp_y;
-	camera_get_interpolated_position(cam, &cam_interp_x, &cam_interp_y);
-	float cam_angle = camera_get_interpolated_angle(cam);
-	SpriteProjection* spr= &sr->sprites[sr->sprite_count];
-	float dx= world_x - cam_interp_x;
-	float dy= world_y - cam_interp_y;
-	float cos_a= cosf(-cam_angle);
-	float sin_a= sinf(-cam_angle);
-	float cam_x= dx * cos_a - dy * sin_a;
-	float cam_y= dx * sin_a + dy * cos_a;
-	float dist_euc = sqrtf(cam_x * cam_x + cam_y * cam_y);
-	if(dist_euc < 0.1f) dist_euc = 0.1f;
-	if(cam_y <= 0) return false; /* behind camera */
-float screen_x= cam_x / cam_y;
-spr->screen_x= screen_x;
-spr->screen_y= 0.0f;
-	/* use perpendicular (forward) distance for sizing and sorting (Doom-style) */
-	spr->screen_z= cam_y;
-	float base_size= 0.1f;
-	float scale= base_size / cam_y;
-spr->screen_width= scale;
-spr->screen_height= scale;
-float half_width= spr->screen_width / 2.0f;
-spr->is_visible= (screen_x + half_width >= -1.0f && screen_x - half_width <= 1.0f);
-spr->world_x= world_x;
-spr->world_y= world_y;
-spr->entity_type= entity_type;
-spr->entity_id= entity_id;
-sr->sprite_count++;
-return true;
+
+bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame) {
+    if (!sr || sr->count >= sr->max_sprites) return false;
+    Sprite3D* s = &sr->sprites[sr->count++];
+    s->world_x = world_x;
+    s->world_y = world_y;
+    s->world_height = world_height;
+    s->pivot = pivot;
+    s->face_camera = face_camera;
+    s->texture_id = texture_id;
+    s->frame = frame;
+    s->perp_distance = 0.0f;
+    s->screen_x = s->screen_w = s->screen_h = s->screen_y_top = 0;
+    s->visible = false;
+    return true;
 }
+
+void sprite_project_all(SpriteRenderer3D* sr) {
+    if (!sr || !sr->camera || !sr->proj) return;
+    float cam_x, cam_y;
+    camera_get_interpolated_position(sr->camera, &cam_x, &cam_y);
+    float cam_angle = camera_get_interpolated_angle(sr->camera);
+    float half_fov = sr->proj->fov_radians * 0.5f;
+    for (int i = 0; i < sr->count; ++i) {
+        Sprite3D* s = &sr->sprites[i];
+        float dx = s->world_x - cam_x;
+        float dy = s->world_y - cam_y;
+        float dist = sqrtf(dx * dx + dy * dy);
+        float angle_to_sprite = atan2f(dy, dx);
+        /* normalize angle difference to [-PI, PI] */
+        float delta = angle_to_sprite - cam_angle;
+        while (delta > 3.14159265358979323846f) delta -= 2.0f * 3.14159265358979323846f;
+        while (delta < -3.14159265358979323846f) delta += 2.0f * 3.14159265358979323846f;
+        /* reject behind camera or outside FOV */
+        if (cosf(delta) <= 0.0f || fabsf(delta) > half_fov) {
+            s->visible = false;
+            continue;
+        }
+        float perp = dist * cosf(delta);
+        if (perp <= 0.0f) { s->visible = false; continue; }
+        WallProjection wp;
+        projection_project_wall_perp(sr->proj, perp, angle_to_sprite, cam_angle, &wp);
+        int screen_h = (int)((float)wp.wall_height * s->world_height + 0.5f);
+        if (screen_h <= 0) { s->visible = false; continue; }
+        int screen_w = screen_h; /* square sprite for now */
+        /* normalized screen x in [-1,1] */
+        float nx = delta / half_fov;
+        if (nx < -1.0f) nx = -1.0f;
+        if (nx > 1.0f) nx = 1.0f;
+        int center_x = (int)((nx + 1.0f) * 0.5f * (float)sr->proj->screen_width + 0.5f);
+        int top = wp.draw_end - (int)((float)screen_h * (1.0f - s->pivot));
+        s->perp_distance = perp;
+        s->screen_x = center_x;
+        s->screen_w = screen_w;
+        s->screen_h = screen_h;
+        s->screen_y_top = top;
+        s->visible = true;
+    }
+}
+
 void sprite_sort_by_depth(SpriteRenderer3D* sr) {
-if(!sr || sr->sprite_count <= 1) return;
-for(int i= 0; i < sr->sprite_count - 1; i++) {
-for(int j= 0; j < sr->sprite_count - i - 1; j++) {
-if(sr->sprites[j].screen_z < sr->sprites[j + 1].screen_z) {
-SpriteProjection temp= sr->sprites[j];
-sr->sprites[j]= sr->sprites[j + 1];
-sr->sprites[j + 1]= temp;
+    if (!sr) return;
+    /* simple insertion sort by perp_distance descending (furthest first) */
+    for (int i = 1; i < sr->count; ++i) {
+        Sprite3D key = sr->sprites[i];
+        int j = i - 1;
+        while (j >= 0 && sr->sprites[j].perp_distance < key.perp_distance) {
+            sr->sprites[j+1] = sr->sprites[j];
+            --j;
+        }
+        sr->sprites[j+1] = key;
+    }
 }
+
+void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_depths) {
+    if (!sr || !ctx || !column_depths) return;
+    for (int i = 0; i < sr->count; ++i) {
+        Sprite3D* s = &sr->sprites[i];
+        if (!s->visible) continue;
+        int half_w = s->screen_w / 2;
+        int x1 = s->screen_x - half_w;
+        int x2 = s->screen_x + half_w;
+        if (x1 < 0) x1 = 0;
+        if (x2 >= ctx->width) x2 = ctx->width - 1;
+        int y0 = s->screen_y_top;
+        int y1 = y0 + s->screen_h - 1;
+        if (y0 < 0) y0 = 0;
+        if (y1 >= ctx->height) y1 = ctx->height - 1;
+        uint32_t col = render_3d_sdl_color(0, 255, 0, 255);
+        for (int x = x1; x <= x2; ++x) {
+            /* occlusion check: only draw where sprite is closer than wall */
+            if (s->perp_distance < column_depths[x]) {
+                render_3d_sdl_draw_column(ctx, x, y0, y1, col);
+            }
+        }
+    }
 }
-}
-}
-const SpriteProjection* sprite_get(const SpriteRenderer3D* sr, int idx) {
-if(!sr || idx < 0 || idx >= sr->sprite_count) return NULL;
-return &sr->sprites[idx];
-}
-int sprite_get_count(const SpriteRenderer3D* sr) {
-if(!sr) return 0;
-return sr->sprite_count;
-}
+
 void sprite_shutdown(SpriteRenderer3D* sr) {
-if(!sr) return;
-if(sr->sprites) {
-free(sr->sprites);
-sr->sprites= NULL;
+    if (!sr) return;
+    free(sr->sprites);
+    sr->sprites = NULL;
+    sr->max_sprites = 0;
+    sr->count = 0;
+    sr->camera = NULL;
+    sr->proj = NULL;
 }
-sr->sprite_count= 0;
-}
+

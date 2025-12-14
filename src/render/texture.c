@@ -3,8 +3,15 @@
 #include <string.h>
 void texture_init(Texture3D* tex) {
 if(!tex) return;
-const uint32_t default_shades[TEXTURE_MAX_SHADES]= {0xFFFFFFFF, 0xFFCCCCCC, 0xFF999999, 0xFF666666, 0xFF333333, 0xFF000000};
+const uint32_t default_shades[TEXTURE_MAX_SHADES]= {0xFFEEEEEE, 0xFFCCCCCC, 0xFF999999, 0xFF666666, 0xFF333333, 0xFF000000};
 memcpy(tex->shade_colors, default_shades, sizeof(tex->shade_colors));
+/* Provide side colors for vertical and horizontal faces to avoid single-column
+   bright seams when rays align with grid axes.
+*/
+const uint32_t side_v[TEXTURE_MAX_SHADES] = {0xFFDDDDDD, 0xFFBFBFBF, 0xFF8F8F8F, 0xFF606060, 0xFF303030, 0xFF000000};
+const uint32_t side_h[TEXTURE_MAX_SHADES] = {0xFFCCCCCC, 0xFFAAAAAA, 0xFF777777, 0xFF505050, 0xFF282828, 0xFF000000};
+memcpy(tex->side_colors[0], side_v, sizeof(side_v));
+memcpy(tex->side_colors[1], side_h, sizeof(side_h));
 }
 uint8_t texture_shade_from_distance(float distance) {
 if(distance < 3.0f) return 0;

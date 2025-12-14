@@ -12,9 +12,19 @@ float dir_x, dir_y;
 float plane_x, plane_y;
 float interp_time;
 float update_interval;
+	/* camera mode: 0 = first-person, 1 = third-person */
+	int mode;
+	/* third-person distance behind the player (world units) */
+	float third_person_distance;
+	/* vertical elevation as pixel offset for projection horizon (positive moves horizon down)
+	   used to simulate camera above the player */
+	int elevation_pixels;
 } Camera3D;
+typedef enum { CAMERA_MODE_FIRST_PERSON = 0, CAMERA_MODE_THIRD_PERSON = 1 } CameraMode;
 void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float update_interval);
 void camera_set_from_player(Camera3D* camera, int x, int y, int dir);
+void camera_set_mode(Camera3D* camera, CameraMode mode);
+void camera_set_third_person_params(Camera3D* camera, float distance, int elevation_pixels);
 void camera_update_interpolation(Camera3D* camera, float delta_time);
 void camera_set_interpolation_time(Camera3D* camera, float time);
 void camera_get_ray_angle(const Camera3D* camera, int col, float* ray_angle_out);

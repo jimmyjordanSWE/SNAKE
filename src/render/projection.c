@@ -5,6 +5,7 @@ if(!proj) return;
 proj->screen_width= screen_width;
 proj->screen_height= screen_height;
 proj->fov_radians= fov_radians;
+	proj->horizon_y = screen_height / 2;
 }
 void projection_project_wall(const Projection3D* proj, float distance, WallProjection* result_out) {
 if(!proj || !result_out) return;
@@ -12,7 +13,7 @@ if(distance <= 0.1f) distance= 0.1f;
 float wall_height= (float)proj->screen_height / (distance + 0.5f);
 if(wall_height > (float)proj->screen_height) wall_height= (float)proj->screen_height;
 result_out->wall_height= (int)wall_height;
-int center= proj->screen_height / 2;
+	int center= proj->horizon_y;
 result_out->draw_start= center - (int)(wall_height / 2);
 result_out->draw_end= result_out->draw_start + (int)wall_height;
 if(result_out->draw_start < 0) result_out->draw_start= 0;
@@ -25,7 +26,9 @@ return distance / ((float)proj->screen_height * 0.5f);
 }
 void projection_set_horizon(Projection3D* proj, int horizon_y) {
 if(!proj) return;
-(void)horizon_y;
+	if(horizon_y < 0) horizon_y = 0;
+	if(horizon_y >= proj->screen_height) horizon_y = proj->screen_height - 1;
+	proj->horizon_y = horizon_y;
 }
 
 /* Doom-style (perpendicular) helpers to remove fisheye: use raw ray distance and

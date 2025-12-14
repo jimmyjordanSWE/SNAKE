@@ -16,14 +16,18 @@ sr->sprite_count= 0;
 }
 bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, uint8_t entity_type, uint8_t entity_id) {
 if(!sr || sr->sprite_count >= sr->max_sprites || !sr->camera) return false;
-const Camera3D* cam= (const Camera3D*)sr->camera;
-SpriteProjection* spr= &sr->sprites[sr->sprite_count];
-float dx= world_x - cam->x;
-float dy= world_y - cam->y;
-float cos_a= cosf(-cam->angle);
-float sin_a= sinf(-cam->angle);
-float cam_x= dx * cos_a - dy * sin_a;
-float cam_y= dx * sin_a + dy * cos_a;
+	const Camera3D* cam= (const Camera3D*)sr->camera;
+	/* use interpolated camera position & angle so sprites move smoothly with camera */
+	float cam_interp_x, cam_interp_y;
+	camera_get_interpolated_position(cam, &cam_interp_x, &cam_interp_y);
+	float cam_angle = camera_get_interpolated_angle(cam);
+	SpriteProjection* spr= &sr->sprites[sr->sprite_count];
+	float dx= world_x - cam_interp_x;
+	float dy= world_y - cam_interp_y;
+	float cos_a= cosf(-cam_angle);
+	float sin_a= sinf(-cam_angle);
+	float cam_x= dx * cos_a - dy * sin_a;
+	float cam_y= dx * sin_a + dy * cos_a;
 	float dist_euc = sqrtf(cam_x * cam_x + cam_y * cam_y);
 	if(dist_euc < 0.1f) dist_euc = 0.1f;
 	if(cam_y <= 0) return false; /* behind camera */

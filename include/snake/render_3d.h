@@ -15,4 +15,7 @@ void render_3d_set_active_player(int player_index);
 void render_3d_set_fov(float fov_degrees);
 void render_3d_toggle_minimap(void);
 void render_3d_toggle_stats(void);
+void render_3d_set_camera_mode(int mode);
+void render_3d_set_third_person_params(float distance, int elevation_pixels);
+void render_3d_toggle_camera_mode(void);
 void render_3d_shutdown(void);

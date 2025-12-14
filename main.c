@@ -140,7 +140,10 @@ if(input_state.move_down) game.players[0].queued_dir= SNAKE_DIR_DOWN;
 if(input_state.move_left) game.players[0].queued_dir= SNAKE_DIR_LEFT;
 if(input_state.move_right) game.players[0].queued_dir= SNAKE_DIR_RIGHT;
 }
-if(input_state.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
+    if(input_state.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
+    if(input_state.view_toggle && has_3d) {
+        render_3d_toggle_camera_mode();
+    }
 if(input_state.restart) game_reset(&game);
 game_tick(&game);
 highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);

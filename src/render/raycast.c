@@ -1,5 +1,6 @@
 #include "snake/render_3d_raycast.h"
 #include <math.h>
+#include <float.h>
 #define PI 3.14159265359f
 void raycast_init(Raycaster3D* rc, int width, int height, const uint8_t* board) {
 if(!rc) return;
@@ -15,12 +16,28 @@ float dist_right= (float)rc->board_width - camera_x;
 float dist_left= camera_x;
 float dist_up= camera_y;
 float dist_down= (float)rc->board_height - camera_y;
-float cos_a= cosf(ray_angle);
-float sin_a= sinf(ray_angle);
-float dist_x= (cos_a > 0) ? dist_right / cos_a : dist_left / -cos_a;
-float dist_y= (sin_a > 0) ? dist_down / sin_a : dist_up / -sin_a;
-float distance= fminf(dist_x, dist_y);
-hit_out->distance= distance;
+	float cos_a= cosf(ray_angle);
+	float sin_a= sinf(ray_angle);
+	const float eps = 1e-6f;
+	float dist_x;
+	if(fabsf(cos_a) < eps) {
+		dist_x = FLT_MAX;
+	} else {
+		dist_x= (cos_a > 0) ? dist_right / cos_a : dist_left / -cos_a;
+		if(!isfinite(dist_x) || dist_x < 0.0f) dist_x = FLT_MAX;
+	}
+	float dist_y;
+	if(fabsf(sin_a) < eps) {
+		dist_y = FLT_MAX;
+	} else {
+		dist_y= (sin_a > 0) ? dist_down / sin_a : dist_up / -sin_a;
+		if(!isfinite(dist_y) || dist_y < 0.0f) dist_y = FLT_MAX;
+	}
+	float distance= fminf(dist_x, dist_y);
+	if(!isfinite(distance) || distance <= 0.0f) {
+		return false;
+	}
+	hit_out->distance= distance;
 hit_out->hit_x= camera_x + cos_a * distance;
 hit_out->hit_y= camera_y + sin_a * distance;
 hit_out->is_vertical= (dist_x < dist_y);

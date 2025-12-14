@@ -40,60 +40,31 @@ camera->prev_angle= 0.0f;
 camera->fov_radians= fov_degrees * (float)M_PI / 180.0f;
 camera->screen_width= screen_width;
 camera->update_interval= update_interval > 0.0f ? update_interval : 0.5f;
-camera->interp_time= 0.0f;
-	camera->mode = CAMERA_MODE_FIRST_PERSON;
-	camera->third_person_distance = 4.0f;
-	camera->elevation_pixels = 80;
+	camera->interp_time= 0.0f;
 update_vectors(camera);
 }
 void camera_set_from_player(Camera3D* camera, int x, int y, int dir) {
 if(!camera) return;
-	camera->prev_x = camera->x;
-	camera->prev_y = camera->y;
-	camera->prev_angle = camera->angle;
+	camera->prev_x= camera->x;
+	camera->prev_y= camera->y;
+	camera->prev_angle= camera->angle;
+	camera->x= (float)x + 0.5f;
+	camera->y= (float)y + 0.5f;
 	float angle;
-	 /* Map snake directions to world angles:
-		 SNAKE_DIR_RIGHT  -> 0
-		 SNAKE_DIR_DOWN   -> PI/2
-		 SNAKE_DIR_LEFT   -> PI
-		 SNAKE_DIR_UP     -> 3*PI/2 (or -PI/2) */
-	 switch(dir) {
-	 case 3: angle= 0.0f; break; /* RIGHT */
-	 case 1: angle= (float)M_PI * 0.5f; break; /* DOWN */
-	 case 2: angle= (float)M_PI; break; /* LEFT */
-	 case 0: angle= (float)M_PI * 1.5f; break; /* UP */
-	 default: angle= 0.0f; break;
-	 }
-camera->angle= normalize_angle(angle);
-	/* position depends on camera mode */
-	if(camera->mode == CAMERA_MODE_THIRD_PERSON) {
-		float px = (float)x + 0.5f;
-		float py = (float)y + 0.5f;
-		/* place camera behind player, along negative forward vector */
-		camera->x = px - cosf(camera->angle) * camera->third_person_distance;
-		camera->y = py - sinf(camera->angle) * camera->third_person_distance;
-		/* apply immediately (no interpolation lag) for third-person */
-		camera->prev_x = camera->x;
-		camera->prev_y = camera->y;
-		camera->prev_angle = camera->angle;
-		camera->interp_time = camera->update_interval;
-	} else {
-		camera->x = (float)x + 0.5f;
-		camera->y = (float)y + 0.5f;
-		camera->interp_time = 0.0f;
+	switch(dir) {
+	case 0: angle= 0.0f; break;
+	case 1: angle= (float)M_PI * 0.5f; break;
+	case 2: angle= (float)M_PI; break;
+	case 3: angle= (float)M_PI * 1.5f; break;
+	default: angle= 0.0f; break;
 	}
+	camera->angle= normalize_angle(angle);
+	camera->interp_time= 0.0f;
 	update_vectors(camera);
 }
 
-void camera_set_mode(Camera3D* camera, CameraMode mode) {
-	if(!camera) return;
-	camera->mode = mode;
-}
-
-void camera_set_third_person_params(Camera3D* camera, float distance, int elevation_pixels) {
-	if(!camera) return;
-	if(distance > 0.0f) camera->third_person_distance = distance;
-	camera->elevation_pixels = elevation_pixels;
+void camera_update_vectors(Camera3D* camera) {
+	update_vectors(camera);
 }
 void camera_update_interpolation(Camera3D* camera, float delta_time) {
 if(!camera || camera->update_interval <= 0.0f) return;

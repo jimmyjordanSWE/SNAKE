@@ -85,7 +85,7 @@ case 'R': out->restart= true; break;
 case 'p':
 case 'P': out->pause_toggle= true; break;
 case 'v':
-case 'V': out->view_toggle= true; break;
+case 'V': /* view toggle removed - reserved */ break;
 default: break;
 }
 }

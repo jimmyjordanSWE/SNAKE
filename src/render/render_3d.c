@@ -38,9 +38,6 @@ g_render_3d.config.screen_height= 600;
 }
 if(!render_3d_sdl_init(g_render_3d.config.screen_width, g_render_3d.config.screen_height, &g_render_3d.display)) return false;
 camera_init(&g_render_3d.camera, g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
-    /* default to third-person camera behind and above the player */
-    camera_set_mode(&g_render_3d.camera, CAMERA_MODE_THIRD_PERSON);
-    camera_set_third_person_params(&g_render_3d.camera, 2.0f, 40);
 raycast_init(&g_render_3d.raycaster, game_state->width, game_state->height, NULL);
 projection_init(&g_render_3d.projector, g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f);
 texture_init(&g_render_3d.texture);
@@ -54,17 +51,16 @@ void render_3d_draw(const GameState* game_state, const char* player_name, const 
 (void)score_count;
 if(!g_render_3d.initialized || !game_state) return;
 if(g_render_3d.config.active_player < game_state->num_players) {
-const PlayerState* player= &game_state->players[g_render_3d.config.active_player];
-if(player->length > 0) camera_set_from_player(&g_render_3d.camera, player->body[0].x, player->body[0].y, player->current_dir);
+	const PlayerState* player= &game_state->players[g_render_3d.config.active_player];
+	if(player->length > 0) camera_set_from_player(&g_render_3d.camera, player->body[0].x, player->body[0].y, player->current_dir);
+
 }
 camera_update_interpolation(&g_render_3d.camera, 1.0f / 60.0f);
-	/* update projection horizon based on camera elevation to simulate looking down */
-	projection_set_horizon(&g_render_3d.projector, g_render_3d.display.height / 2 + g_render_3d.camera.elevation_pixels);
-uint32_t sky_color= 0xFF87CEEB;
-render_3d_sdl_clear(&g_render_3d.display, sky_color);
-uint32_t floor_color= 0xFF8B4513;
-uint32_t ceiling_color= 0xFF4169E1;
-	int horizon= g_render_3d.projector.horizon_y;
+	uint32_t sky_color= 0xFF87CEEB;
+	render_3d_sdl_clear(&g_render_3d.display, sky_color);
+	uint32_t floor_color= 0xFF8B4513;
+	uint32_t ceiling_color= 0xFF4169E1;
+	int horizon= g_render_3d.display.height / 2;
 	/* use interpolated camera position & angle for rendering */
 	float interp_cam_x, interp_cam_y;
 	camera_get_interpolated_position(&g_render_3d.camera, &interp_cam_x, &interp_cam_y);
@@ -115,7 +111,7 @@ for(int i= 0; i < sprite_get_count(&g_render_3d.sprite_renderer); i++) {
 const SpriteProjection* spr= sprite_get(&g_render_3d.sprite_renderer, i);
 if(!spr || !spr->is_visible) continue;
 int center_x= (int)((spr->screen_x + 1.0f) * 0.5f * (float)g_render_3d.display.width);
-	int center_y= g_render_3d.projector.horizon_y;
+	int center_y= g_render_3d.display.height / 2;
 int half_width= (int)(spr->screen_width * 0.5f * (float)g_render_3d.display.width);
 int half_height= (int)(spr->screen_height * 0.5f * (float)g_render_3d.display.height);
 int x1= center_x - half_width;
@@ -144,26 +140,7 @@ if(g_render_3d.initialized) g_render_3d.config.show_minimap= !g_render_3d.config
 void render_3d_toggle_stats(void) {
 if(g_render_3d.initialized) g_render_3d.config.show_stats= !g_render_3d.config.show_stats;
 }
-void render_3d_set_camera_mode(int mode) {
-	if(!g_render_3d.initialized) return;
-	camera_set_mode(&g_render_3d.camera, (CameraMode)mode);
-}
 
-void render_3d_set_third_person_params(float distance, int elevation_pixels) {
-	if(!g_render_3d.initialized) return;
-	camera_set_third_person_params(&g_render_3d.camera, distance, elevation_pixels);
-}
-
-void render_3d_toggle_camera_mode(void) {
-	if(!g_render_3d.initialized) return;
-	if(g_render_3d.camera.mode == CAMERA_MODE_THIRD_PERSON) {
-		camera_set_mode(&g_render_3d.camera, CAMERA_MODE_FIRST_PERSON);
-		fprintf(stderr, "Camera: first-person\n");
-	} else {
-		camera_set_mode(&g_render_3d.camera, CAMERA_MODE_THIRD_PERSON);
-		fprintf(stderr, "Camera: third-person\n");
-	}
-}
 void render_3d_shutdown(void) {
 if(!g_render_3d.initialized) return;
 render_3d_sdl_shutdown(&g_render_3d.display);

@@ -15,6 +15,10 @@ SnakePoint* body;
 int length;
 int max_length;
 bool active, needs_reset;
+/* previous head position for interpolation (world coords, centered)
+ * updated on each tick before applying movement */
+float prev_head_x;
+float prev_head_y;
 } PlayerState;
 typedef struct {
 int width, height;

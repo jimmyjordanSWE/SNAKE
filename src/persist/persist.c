@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #define PERSIST_SCORE_BUFFER 256
 #define PERSIST_CONFIG_BUFFER 256
 #define PERSIST_TEMP_FILENAME_MAX 512
@@ -283,9 +284,11 @@ config->board_height= clamp_int((int)parsed_value, 10, 50);
 else if(strcmp(key, "tick_rate_ms") == 0)
 config->tick_rate_ms= clamp_int((int)parsed_value, 10, 1000);
 else if(strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0)
-config->screen_width= clamp_int((int)parsed_value, 20, 400);
+	/* Allow larger widths for SDL windows (pixels). Keep reasonable limits. */
+	config->screen_width= clamp_int((int)parsed_value, 20, 4096);
 else if(strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0)
-config->screen_height= clamp_int((int)parsed_value, 10, 200);
+	/* Allow larger heights for SDL windows (pixels). Keep reasonable limits. */
+	config->screen_height= clamp_int((int)parsed_value, 10, 2160);
 }
 fclose(fp);
 return file_exists;
@@ -334,11 +337,51 @@ if(fclose(fp) != 0) {
 (void)unlink(temp_filename);
 return false;
 }
-if(rename(temp_filename, filename) != 0) {
-(void)unlink(temp_filename);
-return false;
+/* If the existing file has identical contents to the new file, avoid touching it
+ * to preserve timestamps and comments. Compare sizes first as a fast path. */
+{
+    /* temp file already flushed and closed above; proceed to compare */
+
+    struct stat st_new;
+    struct stat st_old;
+    bool identical = false;
+    if(stat(temp_filename, &st_new) == 0 && stat(filename, &st_old) == 0) {
+        if(st_new.st_size == st_old.st_size) {
+            FILE* fnew = fopen(temp_filename, "rb");
+            FILE* fold = fopen(filename, "rb");
+            if(fnew && fold) {
+                identical = true;
+                size_t bufsize = 4096;
+                char* b1 = malloc(bufsize);
+                char* b2 = malloc(bufsize);
+                if(!b1 || !b2) {
+                    identical = false;
+                } else {
+                    size_t r1, r2;
+                    do {
+                        r1 = fread(b1, 1, bufsize, fnew);
+                        r2 = fread(b2, 1, bufsize, fold);
+                        if(r1 != r2 || (r1 > 0 && memcmp(b1, b2, r1) != 0)) { identical = false; break; }
+                    } while(r1 > 0 && r2 > 0);
+                }
+                free(b1); free(b2);
+            }
+            if(fnew) fclose(fnew);
+            if(fold) fclose(fold);
+        }
+    }
+    if(identical) {
+        /* nothing changed; remove temp and return success without touching target */
+        (void)unlink(temp_filename);
+        return true;
+    }
+
+    if(rename(temp_filename, filename) != 0) {
+        (void)unlink(temp_filename);
+        return false;
+    }
+    return true;
 }
-return true;
 write_fail:
 fclose(fp);
 (void)unlink(temp_filename);

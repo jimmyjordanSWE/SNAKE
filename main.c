@@ -60,7 +60,14 @@ static SnakeDir strafe_right_dir(SnakeDir d) {
 }
 int main(void) {
 GameConfig config;
-persist_load_config(".snake_config", &config);
+/* Prefer explicit project config file, fallback to legacy dotfile. */
+if(persist_load_config("snake_cfg.txt", &config)) {
+    fprintf(stderr, "Loaded configuration from snake_cfg.txt\n");
+} else if(persist_load_config(".snake_config", &config)) {
+    fprintf(stderr, "Loaded configuration from .snake_config\n");
+} else {
+    fprintf(stderr, "No config file found; using defaults\n");
+}
 if(config.tick_rate_ms < 10) config.tick_rate_ms= 10;
 if(config.tick_rate_ms > 1000) config.tick_rate_ms= 1000;
 render_set_glyphs((config.render_glyphs == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
@@ -96,11 +103,18 @@ platform_sleep_ms(500);
 terminal_resized= 0;
 }
 fprintf(stderr, "Terminal size OK (%dx%d). Starting game...\n", term_w, term_h);
+/* Determine minimum terminal render size. Prefer explicit `screen_width`/`screen_height`
+     * from config when external 3D view is disabled (these values are in character cells).
+     * Otherwise default to board-based minimums so UI elements fit. */
 int min_render_w = board_width + 10;
 int min_render_h = board_height + 5;
+if(!config.enable_external_3d_view) {
+    if(config.screen_width > min_render_w) min_render_w = config.screen_width;
+    if(config.screen_height > min_render_h) min_render_h = config.screen_height;
+}
 if(!render_init(min_render_w, min_render_h)) {
-fprintf(stderr, "Failed to initialize rendering\n");
-goto done;
+    fprintf(stderr, "Failed to initialize rendering\n");
+    goto done;
 }
 GameState game= {0};
     game_init(&game, board_width, board_height, &config);
@@ -112,7 +126,10 @@ GameState game= {0};
     if(config.enable_external_3d_view) {
         has_3d = render_3d_init(&game, &config_3d);
         if(!has_3d) fprintf(stderr, "Warning: external 3D view initialization failed, continuing with 2D only\n");
-        else render_3d_draw(&game, player_name, NULL, 0);
+        else {
+            render_3d_set_tick_rate_ms(config.tick_rate_ms);
+            render_3d_draw(&game, player_name, NULL, 0, 0.0f);
+        }
     }
 if(!input_init()) {
 fprintf(stderr, "Failed to initialize input\n");
@@ -176,45 +193,75 @@ if(input_state.turn_left) game.players[0].queued_dir= strafe_left_dir(game.playe
 if(input_state.turn_right) game.players[0].queued_dir= strafe_right_dir(game.players[0].current_dir);
 }
     if(input_state.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
-if(input_state.restart) game_reset(&game);
-game_tick(&game);
-highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
-int num_players= game_get_num_players(&game);
-for(int i= 0; i < num_players; i++) {
-if(game_player_died_this_tick(&game, i)) {
-int death_score= game_player_score_at_death(&game, i);
-if(death_score > 0) {
-persist_append_score(".snake_scores", player_name, death_score);
-render_note_session_score(player_name, death_score);
-highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
-}
-}
-}
-if(game_player_died_this_tick(&game, 0)) {
-render_draw(&game, player_name, highscores, highscore_count);
-render_draw_death_overlay(&game, 0, true);
-while(1) {
-InputState in= (InputState){0};
-input_poll(&in);
-if(in.quit) goto done;
-if(in.any_key) {
-game_reset(&game);
-break;
-}
-platform_sleep_ms(20);
-}
-}
-render_draw(&game, player_name, highscores, highscore_count);
-if(has_3d) render_3d_draw(&game, player_name, highscores, highscore_count);
-platform_sleep_ms((uint64_t)config.tick_rate_ms);
-tick++;
+    if(input_state.restart) game_reset(&game);
+    /* advance simulation by one tick and notify 3D renderer */
+    game_tick(&game);
+    if(has_3d) render_3d_on_tick(&game);
+    highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+    int num_players= game_get_num_players(&game);
+    for(int i= 0; i < num_players; i++) {
+        if(game_player_died_this_tick(&game, i)) {
+            int death_score= game_player_score_at_death(&game, i);
+            if(death_score > 0) {
+                persist_append_score(".snake_scores", player_name, death_score);
+                render_note_session_score(player_name, death_score);
+                highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
+            }
+        }
+    }
+    if(game_player_died_this_tick(&game, 0)) {
+        render_draw(&game, player_name, highscores, highscore_count);
+        render_draw_death_overlay(&game, 0, true);
+        while(1) {
+            InputState in= (InputState){0};
+            input_poll(&in);
+            if(in.quit) goto done;
+            if(in.any_key) {
+                game_reset(&game);
+                break;
+            }
+            platform_sleep_ms(20);
+        }
+    }
+
+    /* Render frames until next tick to provide smooth animation */
+    uint64_t frame_start = platform_now_ms();
+    uint64_t frame_deadline = frame_start + (uint64_t)config.tick_rate_ms;
+    uint64_t prev_frame = frame_start;
+    while(platform_now_ms() < frame_deadline) {
+        uint64_t now = platform_now_ms();
+        float delta_s = (float)(now - prev_frame) / 1000.0f;
+        prev_frame = now;
+        /* poll input each frame for responsiveness (queued moves will be handled on next tick) */
+        InputState in= (InputState){0};
+        input_poll(&in);
+        if(in.quit) goto done;
+        if(game_player_is_active(&game, 0)) {
+            if(in.move_up) game.players[0].queued_dir = SNAKE_DIR_UP;
+            if(in.move_down) game.players[0].queued_dir = SNAKE_DIR_DOWN;
+            if(in.move_left) game.players[0].queued_dir = SNAKE_DIR_LEFT;
+            if(in.move_right) game.players[0].queued_dir = SNAKE_DIR_RIGHT;
+            if(in.turn_left) game.players[0].queued_dir = strafe_left_dir(game.players[0].current_dir);
+            if(in.turn_right) game.players[0].queued_dir = strafe_right_dir(game.players[0].current_dir);
+        }
+        if(in.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
+        if(in.restart) game_reset(&game);
+
+        render_draw(&game, player_name, highscores, highscore_count);
+        if(has_3d) render_3d_draw(&game, player_name, highscores, highscore_count, delta_s);
+        /* target ~60 FPS */
+        platform_sleep_ms(16);
+    }
+    tick++;
 }
 done:
 if(game_player_is_active(&game, 0) && game_player_current_score(&game, 0) > 0) {
 persist_append_score(".snake_scores", player_name, game_player_current_score(&game, 0));
 render_note_session_score(player_name, game_player_current_score(&game, 0));
 }
-persist_write_config(".snake_config", &config);
+/* Do not write the configuration file from the game process. The game always reads configuration on startup
+     * but must not overwrite the user's config to avoid unwanted changes. */
+/* persist_write_config(".snake_config", &config); */
 /* free game resources allocated by game_init */
 game_free(&game);
 input_shutdown();

@@ -147,8 +147,10 @@ test-utils:
 
 test-persist:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist_write_idempotent tests/persist/test_persist_write_idempotent.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./test_persist
+	./test_persist_write_idempotent
 
 test-net:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c $(LDLIBS)

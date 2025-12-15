@@ -113,6 +113,9 @@ break;
 if(!overlaps) {
 player->body[0]= head;
 player->body[1]= tail;
+        /* initialize previous head for interpolation */
+        player->prev_head_x = (float)head.x + 0.5f;
+        player->prev_head_y = (float)head.y + 0.5f;
 return true;
 }
 }
@@ -220,6 +223,9 @@ PlayerState* player= &game->players[i];
 if(!player->active || player->length <= 0) continue;
 if(player->needs_reset) continue;
 SnakePoint current_head= player->body[0];
+    /* record previous head position (centered) for interpolation */
+    player->prev_head_x = (float)current_head.x + 0.5f;
+    player->prev_head_y = (float)current_head.y + 0.5f;
 SnakePoint next_head= collision_next_head(current_head, player->current_dir);
 bool eat= false;
 for(int f= 0; f < game->food_count; f++) {

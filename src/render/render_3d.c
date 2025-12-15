@@ -41,6 +41,8 @@ g_render_3d.config.screen_height= 600;
 	g_render_3d.config.wall_texture_path[0] = '\0';
 	g_render_3d.config.floor_texture_path[0] = '\0';
 }
+/* Log requested SDL size so config values can be traced during startup */
+fprintf(stderr, "render_3d_init: requested size %dx%d\n", g_render_3d.config.screen_width, g_render_3d.config.screen_height);
 if(!render_3d_sdl_init(g_render_3d.config.screen_width, g_render_3d.config.screen_height, &g_render_3d.display)) return false;
 camera_init(&g_render_3d.camera, g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
 raycast_init(&g_render_3d.raycaster, game_state->width, game_state->height, NULL);
@@ -75,17 +77,15 @@ sprite_init(&g_render_3d.sprite_renderer, 100, &g_render_3d.camera, &g_render_3d
 g_render_3d.initialized= true;
 return true;
 }
-void render_3d_draw(const GameState* game_state, const char* player_name, const void* scores, int score_count) {
+void render_3d_draw(const GameState* game_state, const char* player_name, const void* scores, int score_count, float delta_seconds) {
 (void)player_name;
 (void)scores;
 (void)score_count;
 if(!g_render_3d.initialized || !game_state) return;
-if(g_render_3d.config.active_player < game_state->num_players) {
-	const PlayerState* player= &game_state->players[g_render_3d.config.active_player];
-	if(player->length > 0) camera_set_from_player(&g_render_3d.camera, player->body[0].x, player->body[0].y, player->current_dir);
-
-}
-camera_update_interpolation(&g_render_3d.camera, 1.0f / 60.0f);
+/* Note: camera/player previous/current updates occur on tick via
+ * `render_3d_on_tick()` so we don't reset interpolation every frame here. */
+	/* advance interpolation timer by frame delta (seconds) */
+	camera_update_interpolation(&g_render_3d.camera, delta_seconds);
 	uint32_t sky_color= 0xFF87CEEB;
 	render_3d_sdl_clear(&g_render_3d.display, sky_color);
 	uint32_t floor_color= 0xFF8B4513;
@@ -211,7 +211,16 @@ for(int p= 0; p < game_state->num_players; p++) {
     if(p == g_render_3d.config.active_player) continue;
     const PlayerState* player= &game_state->players[p];
     if(!player->active || player->length == 0) continue;
-    sprite_add(&g_render_3d.sprite_renderer, (float)player->body[0].x + 0.5f, (float)player->body[0].y + 0.5f, 1.0f, 0.0f, true, (int)p, 0);
+	/* interpolate head position between previous and current tick */
+	float t = 0.0f;
+	if(g_render_3d.camera.update_interval > 0.0f) {
+		t = g_render_3d.camera.interp_time / g_render_3d.camera.update_interval;
+		if(t < 0.0f) t = 0.0f;
+		if(t > 1.0f) t = 1.0f;
+	}
+	float head_x = player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * t;
+	float head_y = player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * t;
+	sprite_add(&g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, (int)p, 0);
 }
 /* project, sort and draw using per-column occlusion */
 sprite_project_all(&g_render_3d.sprite_renderer);
@@ -224,6 +233,22 @@ if(g_render_3d.initialized) g_render_3d.config.active_player= player_index;
 }
 void render_3d_set_fov(float fov_degrees) {
 if(g_render_3d.initialized) g_render_3d.config.fov_degrees= fov_degrees;
+}
+
+void render_3d_on_tick(const GameState* game_state) {
+	if(!g_render_3d.initialized || !game_state) return;
+	if(g_render_3d.config.active_player < game_state->num_players) {
+		const PlayerState* player= &game_state->players[g_render_3d.config.active_player];
+		if(player->length > 0) camera_set_from_player(&g_render_3d.camera, player->body[0].x, player->body[0].y, player->current_dir);
+	}
+}
+
+void render_3d_set_tick_rate_ms(int ms) {
+	if(!g_render_3d.initialized) return;
+	if(ms <= 0) ms = 1;
+	g_render_3d.camera.update_interval = (float)ms / 1000.0f;
+	/* clamp interp_time to new interval */
+	if(g_render_3d.camera.interp_time > g_render_3d.camera.update_interval) g_render_3d.camera.interp_time = g_render_3d.camera.update_interval;
 }
 /* minimap/stats toggles intentionally removed (no rendering implementation) */
 

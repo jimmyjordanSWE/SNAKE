@@ -67,7 +67,8 @@ if(!camera) return;
 	default: angle = 0.0f; break;
 	}
 	camera->angle= normalize_angle(angle);
-	camera->interp_time= camera->update_interval;
+	/* start interpolation timer at 0 (will be advanced per-frame) */
+	camera->interp_time= 0.0f;
 	update_vectors(camera);
 }
 

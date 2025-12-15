@@ -4,7 +4,8 @@
 
 int main(void) {
     GameState game = {0};
-    game_init(&game, 32, 32, 42);
+    GameConfig cfg = { .board_width = 32, .board_height = 32, .tick_rate_ms = 100, .render_glyphs = 0, .screen_width = 800, .screen_height = 600, .render_mode = 1, .seed = 42, .fov_degrees = 90.0f, .show_minimap = 0, .show_stats = 0, .show_sprite_debug = 0, .active_player = 0, .num_players = 1, .max_players = 2, .max_length = 64, .max_food = 4 };
+    game_init(&game, 32, 32, &cfg);
     
     Render3DConfig config = {
         .active_player = 0,
@@ -26,5 +27,6 @@ int main(void) {
         render_3d_shutdown();
     }
     
+    game_free(&game);
     return result ? 0 : 1;
 }

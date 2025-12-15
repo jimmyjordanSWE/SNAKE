@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Simple binary format used for tests and for a basic transport:
  * - Input message: 1 byte flags
@@ -75,6 +76,24 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
 	memcpy(&v, p, 4); out->food_count = (int)ntohl(v); p += 4;
 	size_t expected = 24 + (size_t)out->food_count * 8 + (size_t)out->num_players * 8;
 	if(buf_size < expected) return false;
+	/* allocate storage for unpacked arrays so callers can inspect them */
+	if(out->food_count > 0) {
+		out->max_food = out->food_count;
+		out->food = (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)out->food_count);
+		if(!out->food) return false;
+	}
+	if(out->num_players > 0) {
+		out->max_players = out->num_players;
+		out->players = (PlayerState*)malloc(sizeof(PlayerState) * (size_t)out->num_players);
+		if(!out->players) { free(out->food); out->food = NULL; return false; }
+		for(int i = 0; i < out->num_players; i++) {
+			out->players[i].body = NULL;
+			out->players[i].length = 0;
+			out->players[i].score = 0;
+			out->players[i].active = false;
+			out->players[i].needs_reset = false;
+		}
+	}
 	for(int i = 0; i < out->food_count; i++) {
 		memcpy(&v, p, 4); out->food[i].x = (int)ntohl(v); p += 4;
 		memcpy(&v, p, 4); out->food[i].y = (int)ntohl(v); p += 4;

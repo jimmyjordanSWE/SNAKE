@@ -1,5 +1,6 @@
 #pragma once
 #include "snake/types.h"
+#include "snake/persist.h"
 #include <stdbool.h>
 #include <stdint.h>
 #define SNAKE_MAX_PLAYERS 2
@@ -10,8 +11,9 @@ SnakeDir current_dir, queued_dir;
 int score;
 bool died_this_tick;
 int score_at_death;
-SnakePoint body[SNAKE_MAX_LENGTH];
+SnakePoint* body;
 int length;
+int max_length;
 bool active, needs_reset;
 } PlayerState;
 typedef struct {
@@ -19,14 +21,24 @@ int width, height;
 uint32_t rng_state;
 GameStatus status;
 int num_players;
-SnakePoint food[SNAKE_MAX_FOOD];
+int max_players;
+SnakePoint* food;
 int food_count;
-PlayerState players[SNAKE_MAX_PLAYERS];
+int max_food;
+PlayerState* players;
+int max_length;
 } GameState;
 /* Initialize `game` to a running state. Width and height are clamped to
  * a minimum of 2. `seed` initializes the module RNG for deterministic
  * behavior in tests. */
-void game_init(GameState* game, int width, int height, uint32_t seed);
+/* Initialize `game` to a running state. Width, height and limits are taken
+ * from `cfg` (e.g., `cfg->max_players`, `cfg->max_length`, `cfg->max_food`).
+ * `seed` initializes the module RNG for deterministic behavior in tests. */
+void game_init(GameState* game, int width, int height, const GameConfig* cfg);
+
+/* Free any resources owned by `game`. Safe to call on partially-initialized
+ * games (will clean up allocated memory). */
+void game_free(GameState* game);
 
 /* Reset `game` while preserving configuration like `num_players`. */
 void game_reset(GameState* game);
@@ -43,5 +55,5 @@ bool game_player_died_this_tick(const GameState* game, int player_index);
 int game_player_score_at_death(const GameState* game, int player_index);
 
 /* Test helper: set the food positions deterministically. Copies up to
- * `SNAKE_MAX_FOOD` entries from `food` into `game`. Intended for tests. */
+ * `game->max_food` entries from `food` into `game`. Intended for tests. */
 void game_set_food(GameState* game, const SnakePoint* food, int count);

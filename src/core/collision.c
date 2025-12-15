@@ -1,5 +1,6 @@
 #include "snake/collision.h"
 #include <stddef.h>
+#include <stdlib.h>
 bool collision_is_wall(SnakePoint p, int board_w, int board_h) { return p.x < 0 || p.x >= board_w || p.y < 0 || p.y >= board_h; }
 bool collision_is_self(SnakePoint p, const PlayerState* player) {
 if(player == NULL || player->length < 2) return false;
@@ -29,18 +30,22 @@ return next;
 }
 void collision_detect_and_resolve(GameState* game) {
 if(game == NULL) return;
-SnakePoint next_heads[SNAKE_MAX_PLAYERS];
-bool should_reset[SNAKE_MAX_PLAYERS];
- bool will_eat[SNAKE_MAX_PLAYERS];
-for(int i= 0; i < SNAKE_MAX_PLAYERS; i++) {
-should_reset[i]= false;
-next_heads[i]= (SnakePoint){.x= -1, .y= -1};
- will_eat[i]= false;
-}
-int num_players= game->num_players;
-if(num_players < 0) num_players= 0;
-if(num_players > SNAKE_MAX_PLAYERS) num_players= SNAKE_MAX_PLAYERS;
-for(int i= 0; i < num_players; i++) {
+	int num_players = game->num_players;
+	if(num_players <= 0) return;
+	if(num_players > game->max_players) num_players = game->max_players;
+	SnakePoint* next_heads = (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)num_players);
+	bool* should_reset = (bool*)malloc(sizeof(bool) * (size_t)num_players);
+	bool* will_eat = (bool*)malloc(sizeof(bool) * (size_t)num_players);
+	if(!next_heads || !should_reset || !will_eat) {
+		free(next_heads); free(should_reset); free(will_eat);
+		return;
+	}
+	for(int i = 0; i < num_players; i++) {
+		should_reset[i]= false;
+		next_heads[i]= (SnakePoint){.x= -1, .y= -1};
+		will_eat[i]= false;
+	}
+	for(int i= 0; i < num_players; i++) {
 PlayerState* player= &game->players[i];
 if(!player->active || player->length <= 0) continue;
 SnakePoint current_head= player->body[0];
@@ -119,5 +124,7 @@ if(!b->active || b->length <= 0) continue;
 }
 }
 for(int i= 0; i < num_players; i++)
-if(should_reset[i]) game->players[i].needs_reset= true;
+	if(should_reset[i]) game->players[i].needs_reset= true;
+
+free(next_heads); free(should_reset); free(will_eat);
 }

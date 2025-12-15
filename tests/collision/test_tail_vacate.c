@@ -4,7 +4,9 @@
 
 int main(void) {
     GameState g = {0};
-    g.width = 10; g.height = 10; g.num_players = 2; g.status = GAME_STATUS_RUNNING;
+    GameConfig cfg = { .board_width = 10, .board_height = 10, .tick_rate_ms = 100, .render_glyphs = 0, .screen_width = 80, .screen_height = 25, .render_mode = 1, .seed = 42, .fov_degrees = 90.0f, .show_minimap = 0, .show_stats = 0, .show_sprite_debug = 0, .active_player = 0, .num_players = 2, .max_players = 4, .max_length = 16, .max_food = 4 };
+    game_init(&g, 10, 10, &cfg);
+    g.status = GAME_STATUS_RUNNING;
 
     /* Player 1: tail at (6,6) will vacate (not eating). */
     PlayerState *p1 = &g.players[1];
@@ -25,7 +27,9 @@ int main(void) {
 
     if(p0->needs_reset) {
         fprintf(stderr, "FAIL: player 0 should NOT be reset when moving into vacated tail\n");
+        game_free(&g);
         return 1;
     }
+    game_free(&g);
     return 0;
 }

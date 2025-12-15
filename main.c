@@ -23,12 +23,15 @@ if(ws.ws_col == 0 || ws.ws_row == 0) return false;
 *out_height= (int)ws.ws_row;
 return true;
 }
+static int board_width = PERSIST_CONFIG_DEFAULT_WIDTH;
+static int board_height = PERSIST_CONFIG_DEFAULT_HEIGHT;
+
 static bool terminal_size_sufficient(int term_width, int term_height) {
-const int field_width= FIXED_BOARD_WIDTH + 2;
-const int field_height= FIXED_BOARD_HEIGHT + 2;
-int min_h= field_height + 2;
-int min_w= field_width + 2;
-return term_width >= min_w && term_height >= min_h;
+    const int field_width = board_width + 2;
+    const int field_height = board_height + 2;
+    int min_h = field_height + 2;
+    int min_w = field_width + 2;
+    return term_width >= min_w && term_height >= min_h;
 }
 static volatile sig_atomic_t terminal_resized= 0;
 static void handle_sigwinch(int sig) {
@@ -61,6 +64,11 @@ persist_load_config(".snake_config", &config);
 if(config.tick_rate_ms < 10) config.tick_rate_ms= 10;
 if(config.tick_rate_ms > 1000) config.tick_rate_ms= 1000;
 render_set_glyphs((config.render_glyphs == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
+    /* apply board dimensions and other runtime config to main globals */
+    board_width = config.board_width;
+    board_height = config.board_height;
+    /* seed and player name */
+    snprintf(player_name, (int)sizeof(player_name), "%s", config.player_name);
 signal(SIGWINCH, handle_sigwinch);
 int term_w= 0;
 int term_h= 0;
@@ -70,13 +78,13 @@ fprintf(stderr, "Failed to get terminal size, assuming 120x30\n");
 term_w= 120;
 term_h= 30;
 }
-if(terminal_size_sufficient(term_w, term_h)) break;
+    if(terminal_size_sufficient(term_w, term_h)) break;
 fprintf(stderr, "\n");
 fprintf(stderr, "╔════════════════════════════════════════╗\n");
 fprintf(stderr, "║  TERMINAL TOO SMALL FOR SNAKE GAME    ║\n");
 fprintf(stderr, "║                                        ║\n");
 fprintf(stderr, "║  Current size: %d x %d                  ║\n", term_w, term_h);
-fprintf(stderr, "║  Minimum size: %d x %d                 ║\n", FIXED_BOARD_WIDTH + 4, FIXED_BOARD_HEIGHT + 4);
+fprintf(stderr, "║  Minimum size: %d x %d                 ║\n", board_width + 4, board_height + 4);
 fprintf(stderr, "║                                        ║\n");
 fprintf(stderr, "║  Please resize your terminal window    ║\n");
 fprintf(stderr, "║  or press Ctrl+C to exit               ║\n");
@@ -86,15 +94,15 @@ platform_sleep_ms(500);
 terminal_resized= 0;
 }
 fprintf(stderr, "Terminal size OK (%dx%d). Starting game...\n", term_w, term_h);
-int min_render_w= FIXED_BOARD_WIDTH + 10;
-int min_render_h= FIXED_BOARD_HEIGHT + 5;
+int min_render_w = board_width + 10;
+int min_render_h = board_height + 5;
 if(!render_init(min_render_w, min_render_h)) {
 fprintf(stderr, "Failed to initialize rendering\n");
 goto done;
 }
 GameState game= {0};
-game_init(&game, FIXED_BOARD_WIDTH, FIXED_BOARD_HEIGHT, 42);
-Render3DConfig config_3d= {.active_player= 0, .fov_degrees= 90.0f, .show_minimap= false, .show_stats= false, .show_sprite_debug= false, .screen_width= 800, .screen_height= 600};
+    game_init(&game, board_width, board_height, &config);
+    Render3DConfig config_3d= {.active_player= config.active_player, .fov_degrees= config.fov_degrees, .show_minimap= (config.show_minimap != 0), .show_stats= (config.show_stats != 0), .show_sprite_debug= (config.show_sprite_debug != 0), .screen_width= config.screen_width, .screen_height= config.screen_height};
 bool has_3d= render_3d_init(&game, &config_3d);
 if(!has_3d)
 fprintf(stderr,
@@ -127,7 +135,7 @@ fprintf(stderr, "╔════════════════════
 fprintf(stderr, "║  TERMINAL TOO SMALL - GAME PAUSED      ║\n");
 fprintf(stderr, "║                                        ║\n");
 fprintf(stderr, "║  Current size: %d x %d                 ║\n", new_w, new_h);
-fprintf(stderr, "║  Required: %d x %d                     ║\n", FIXED_BOARD_WIDTH + 4, FIXED_BOARD_HEIGHT + 4);
+fprintf(stderr, "║  Required: %d x %d                     ║\n", board_width + 4, board_height + 4);
 fprintf(stderr, "║                                        ║\n");
 fprintf(stderr, "║  Resize your terminal to continue      ║\n");
 fprintf(stderr, "║  or press Ctrl+C to exit               ║\n");
@@ -203,6 +211,8 @@ persist_append_score(".snake_scores", player_name, game_player_current_score(&ga
 render_note_session_score(player_name, game_player_current_score(&game, 0));
 }
 persist_write_config(".snake_config", &config);
+/* free game resources allocated by game_init */
+game_free(&game);
 input_shutdown();
 render_shutdown();
 if(has_3d) render_3d_shutdown();

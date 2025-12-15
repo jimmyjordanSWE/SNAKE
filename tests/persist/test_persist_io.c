@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "snake/persist.h"
+#include <math.h>
 
 static char* make_temp_file(void) {
     char* template = strdup("/tmp/snake_test_scores_XXXXXX");
@@ -26,12 +27,37 @@ int main(void) {
     assert(cnt >= 1);
 
     /* config write/read */
-    GameConfig cfg = {30, 15, 50, 1, 80, 25, 1};
+    GameConfig cfg = {
+        .board_width = 30,
+        .board_height = 15,
+        .tick_rate_ms = 50,
+        .render_glyphs = 1,
+        .screen_width = 80,
+        .screen_height = 25,
+        .render_mode = 1,
+        .seed = 12345,
+        .fov_degrees = 70.5f,
+        .show_minimap = 1,
+        .show_stats = 0,
+        .show_sprite_debug = 1,
+        .active_player = 0,
+        .num_players = 2,
+        .max_players = 4,
+        .max_length = 128,
+        .max_food = 4,
+        .player_name = "tester",
+    };
     char* cfgfile = make_temp_file();
     assert(persist_write_config(cfgfile, &cfg));
     GameConfig loaded;
     assert(persist_load_config(cfgfile, &loaded));
     assert(loaded.board_width == 30 && loaded.board_height == 15);
+    assert(loaded.seed == 12345);
+    assert(fabsf(loaded.fov_degrees - 70.5f) < 0.01f);
+    assert(loaded.show_minimap == 1);
+    assert(loaded.show_sprite_debug == 1);
+    assert(loaded.num_players == 2);
+    assert(strcmp(loaded.player_name, "tester") == 0);
 
     unlink(fname); free(fname);
     unlink(cfgfile); free(cfgfile);

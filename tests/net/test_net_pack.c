@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include "snake/net.h"
 #include "snake/input.h"
 #include "snake/game.h"
@@ -16,6 +17,14 @@ int main(void) {
     assert(out.move_up && out.quit);
 
     GameState g = {0};
+    GameConfig cfg = { .board_width = 20, .board_height = 10, .tick_rate_ms = 100, .render_glyphs = 0, .screen_width = 80, .screen_height = 25, .render_mode = 1, .seed = 42, .fov_degrees = 90.0f, .show_minimap = 0, .show_stats = 0, .show_sprite_debug = 0, .active_player = 0, .num_players = 1, .max_players = 2, .max_length = 16, .max_food = 4 };
+    g.max_players = cfg.max_players;
+    g.max_length = cfg.max_length;
+    g.max_food = cfg.max_food;
+    g.players = malloc(sizeof(PlayerState) * (size_t)g.max_players);
+    g.food = malloc(sizeof(SnakePoint) * (size_t)g.max_food);
+    for(int i=0;i<g.max_players;i++) g.players[i].body = malloc(sizeof(SnakePoint) * (size_t)g.max_length);
+
     g.width = 20; g.height = 10; g.rng_state = 42; g.status = GAME_STATUS_RUNNING; g.num_players = 1; g.food_count = 1;
     g.food[0].x = 3; g.food[0].y = 4;
     g.players[0].score = 7; g.players[0].length = 5;
@@ -31,5 +40,10 @@ int main(void) {
     assert(!net_unpack_input(NULL, 0, &bad));
     unsigned char empty[1] = {0};
     assert(!net_unpack_game_state(empty, 1, &g2));
+    for(int i=0;i<g.max_players;i++) free(g.players[i].body);
+    free(g.players); free(g.food);
+    /* clean up allocations made by net_unpack_game_state */
+    for(int i=0;i<g2.num_players;i++) if(g2.players && g2.players[i].body) free(g2.players[i].body);
+    free(g2.players); free(g2.food);
     return 0;
 }

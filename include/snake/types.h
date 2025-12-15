@@ -1,8 +1,11 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
-#define FIXED_BOARD_WIDTH 40
-#define FIXED_BOARD_HEIGHT 20
+#ifndef SNAKE_BOARD_DIMENSIONS_MOVED
+/* Board dimensions moved to runtime configuration (see .snake_config)
+ * Use `persist_load_config` to read `board_width` and `board_height`. */
+#define SNAKE_BOARD_DIMENSIONS_MOVED 1
+#endif
 typedef struct {
 int x, y;
 } SnakePoint;

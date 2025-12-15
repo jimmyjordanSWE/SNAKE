@@ -1,6 +1,7 @@
 #include "snake/persist.h"
 #include <ctype.h>
 #include <errno.h>
+#include <stdint.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,6 +118,18 @@ config->render_glyphs= 0;
 config->screen_width= PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
 config->screen_height= PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
 config->render_mode= 1;
+/* new defaults */
+config->seed = (uint32_t)PERSIST_CONFIG_DEFAULT_SEED;
+config->fov_degrees = (float)PERSIST_CONFIG_DEFAULT_FOV_DEGREES;
+config->show_minimap = PERSIST_CONFIG_DEFAULT_SHOW_MINIMAP;
+config->show_stats = PERSIST_CONFIG_DEFAULT_SHOW_STATS;
+config->show_sprite_debug = PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG;
+config->active_player = PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER;
+config->num_players = PERSIST_CONFIG_DEFAULT_NUM_PLAYERS;
+snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "Player");
+config->max_players = PERSIST_CONFIG_DEFAULT_MAX_PLAYERS;
+config->max_length = PERSIST_CONFIG_DEFAULT_MAX_LENGTH;
+config->max_food = PERSIST_CONFIG_DEFAULT_MAX_FOOD;
 if(filename == NULL) return false;
 FILE* fp= fopen(filename, "r");
 if(fp == NULL) return false;
@@ -129,11 +142,12 @@ buffer[len - 1]= '\0';
 len--;
 }
 if(len == 0 || buffer[0] == '#') continue;
-char* eq_pos= strchr(buffer, '=');
+	char* eq_pos= strchr(buffer, '=');
 if(eq_pos == NULL) continue;
 *eq_pos= '\0';
 char* key= trim_in_place(buffer);
 char* value= trim_in_place(eq_pos + 1);
+	char* endptr = NULL;
 if(key == NULL || value == NULL || *key == '\0' || *value == '\0') continue;
 if(strcmp(key, "render_glyphs") == 0 || strcmp(key, "glyphs") == 0 || strcmp(key, "charset") == 0) {
 if(isdigit((unsigned char)value[0])) {
@@ -159,7 +173,72 @@ else if(strcmp(value, "3d") == 0 || strcmp(value, "sdl") == 0)
 config->render_mode= 1;
 continue;
 }
-char* endptr= NULL;
+else if(strcmp(key, "seed") == 0) {
+	errno = 0;
+	unsigned long v = strtoul(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->seed = (uint32_t)v;
+	continue;
+}
+else if(strcmp(key, "fov_degrees") == 0) {
+	char* endptr2 = NULL;
+	errno = 0;
+	double dv = strtod(value, &endptr2);
+	if(errno != 0 || endptr2 == value) continue;
+	config->fov_degrees = (float)dv;
+	continue;
+}
+else if(strcmp(key, "player_name") == 0) {
+	snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", value);
+	continue;
+}
+else if(strcmp(key, "show_minimap") == 0 || strcmp(key, "show_stats") == 0 || strcmp(key, "show_sprite_debug") == 0) {
+	/* handle boolean-like values */
+	for(char* p= value; *p; p++) *p= (char)tolower((unsigned char)*p);
+	int b = -1;
+	if(strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0) b = 1;
+	else if(strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0) b = 0;
+	if(b == -1) continue;
+	if(strcmp(key, "show_minimap") == 0) config->show_minimap = b;
+	else if(strcmp(key, "show_stats") == 0) config->show_stats = b;
+	else if(strcmp(key, "show_sprite_debug") == 0) config->show_sprite_debug = b;
+	continue;
+}
+else if(strcmp(key, "active_player") == 0) {
+	errno = 0;
+	long v = strtol(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->active_player = (int)v;
+	continue;
+}
+else if(strcmp(key, "num_players") == 0) {
+	errno = 0;
+	long v = strtol(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->num_players = (int)v;
+	continue;
+}
+else if(strcmp(key, "max_players") == 0) {
+	errno = 0;
+	long v = strtol(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->max_players = (int)v;
+	continue;
+}
+else if(strcmp(key, "max_length") == 0) {
+	errno = 0;
+	long v = strtol(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->max_length = (int)v;
+	continue;
+}
+else if(strcmp(key, "max_food") == 0) {
+	errno = 0;
+	long v = strtol(value, &endptr, 10);
+	if(errno != 0 || endptr == value) continue;
+	config->max_food = (int)v;
+	continue;
+}
 errno= 0;
 long parsed_value= strtol(value, &endptr, 10);
 if(errno != 0 || endptr == value) continue;
@@ -192,6 +271,17 @@ if(fprintf(fp, "render_glyphs=%s\n", (config->render_glyphs == 1) ? "ascii" : "u
 if(fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) goto write_fail;
 if(fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) goto write_fail;
 if(fprintf(fp, "render_mode=%s\n", (config->render_mode == 1) ? "3d" : "2d") < 0) goto write_fail;
+if(fprintf(fp, "seed=%u\n", (unsigned int)config->seed) < 0) goto write_fail;
+if(fprintf(fp, "fov_degrees=%.2f\n", config->fov_degrees) < 0) goto write_fail;
+if(fprintf(fp, "show_minimap=%s\n", config->show_minimap ? "true" : "false") < 0) goto write_fail;
+if(fprintf(fp, "show_stats=%s\n", config->show_stats ? "true" : "false") < 0) goto write_fail;
+if(fprintf(fp, "show_sprite_debug=%s\n", config->show_sprite_debug ? "true" : "false") < 0) goto write_fail;
+if(fprintf(fp, "active_player=%d\n", config->active_player) < 0) goto write_fail;
+if(fprintf(fp, "num_players=%d\n", config->num_players) < 0) goto write_fail;
+if(fprintf(fp, "player_name=%s\n", config->player_name) < 0) goto write_fail;
+if(fprintf(fp, "max_players=%d\n", config->max_players) < 0) goto write_fail;
+if(fprintf(fp, "max_length=%d\n", config->max_length) < 0) goto write_fail;
+if(fprintf(fp, "max_food=%d\n", config->max_food) < 0) goto write_fail;
 if(fflush(fp) != 0) {
 fclose(fp);
 (void)unlink(temp_filename);

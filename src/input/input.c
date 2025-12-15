@@ -73,7 +73,11 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
 if(!out) return;
 *out= (InputState){0};
 if(buf == NULL || n == 0) return;
-out->any_key= true;
+/* Only set `any_key` when a meaningful (non-line-ending) key or an
+     * escape sequence (arrow keys) is actually present in the buffer. This
+     * avoids `any_key` being true for buffers containing only '\n'/'\r'.
+     */
+out->any_key= false;
 for(size_t i= 0; i < n; i++) {
 unsigned char c= buf[i];
 if(c == '\x1b' && i + 2 < n && buf[i + 1] == '[') {
@@ -87,6 +91,7 @@ else if(dir == 2)
 out->move_right= true;
 else if(dir == 3)
 out->move_left= true;
+out->any_key= true;
 i+= 2;
 continue;
 }
@@ -94,6 +99,7 @@ switch(c) {
 case '\r':
 case '\n': /* ignore line endings */ break;
 default:
+out->any_key= true;
 if(ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_up))
 out->move_up= true;
 else if(ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_down))

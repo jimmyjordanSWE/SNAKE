@@ -1,7 +1,6 @@
 #pragma once
 #include "snake/types.h"
 #include <stdbool.h>
-
 /* Forward-declare `PlayerState` and `GameState` tags - users don't need the
  * full definitions to call collision APIs. Internal code should include
  * `game_internal.h`. */

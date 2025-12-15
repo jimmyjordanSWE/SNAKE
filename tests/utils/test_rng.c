@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include "snake/utils.h"
 
 int main(void) {
@@ -16,6 +17,12 @@ int main(void) {
     for (int i = 0; i < 100; i++) {
         int r = snake_rng_range(&state3, -5, 5);
         assert(r >= -5 && r <= 5);
+    }
+    /* Test full int range (INT_MIN .. INT_MAX) — ensure no modulo-by-zero */
+    snake_rng_seed(&state3, 54321);
+    for (int i = 0; i < 1000; i++) {
+        int r = snake_rng_range(&state3, INT32_MIN, INT32_MAX);
+        assert(r >= INT32_MIN && r <= INT32_MAX);
     }
     return 0;
 }

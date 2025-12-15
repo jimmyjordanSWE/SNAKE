@@ -7,7 +7,6 @@ NetClient* net_connect(const char* host, int port);
 void net_disconnect(NetClient* client);
 bool net_send_input(NetClient* client, const InputState* input);
 bool net_recv_state(NetClient* client, GameState* out_game);
-
 /* NOTE: `net_unpack_game_state` will allocate `out->food` and `out->players`
  * when it returns successfully. Callers are responsible for freeing those
  * allocations (e.g. `free(out->food); free(out->players);`) when they are

@@ -13,27 +13,27 @@ static void sigwinch_handler(int sig) {
 (void)sig;
 winch_received= 1;
 }
-
 /* Internal definition of the tty context (kept private to the implementation)
- * This mirrors the previous public definition but hides internals from users. */
+ * This mirrors the previous public definition but hides internals from users.
+ */
 struct tty_context {
-	int tty_fd;
-	struct termios orig_termios;
-	char tty_path[256];
-	int width;
-	int height;
-	int min_width;
-	int min_height;
-	struct ascii_pixel* front;
-	struct ascii_pixel* back;
-	bool dirty;
-	bool size_valid;
-	char* write_buffer;
-	size_t write_buffer_size;
-	volatile sig_atomic_t resized;
-	void (*on_resize)(struct tty_context* ctx, int old_width, int old_height, int new_width, int new_height, void* userdata);
-	void (*on_size_invalid)(struct tty_context* ctx, int current_width, int current_height, int min_width, int min_height, void* userdata);
-	void* callback_userdata;
+int tty_fd;
+struct termios orig_termios;
+char tty_path[256];
+int width;
+int height;
+int min_width;
+int min_height;
+struct ascii_pixel* front;
+struct ascii_pixel* back;
+bool dirty;
+bool size_valid;
+char* write_buffer;
+size_t write_buffer_size;
+volatile sig_atomic_t resized;
+void (*on_resize)(struct tty_context* ctx, int old_width, int old_height, int new_width, int new_height, void* userdata);
+void (*on_size_invalid)(struct tty_context* ctx, int current_width, int current_height, int min_width, int min_height, void* userdata);
+void* callback_userdata;
 };
 /* Test overrides (used by unit tests to avoid relying on ioctl). */
 static bool use_test_size= false;
@@ -61,6 +61,19 @@ utf8_out[1]= (char)(0x80 | ((utf16 >> 6) & 0x3F));
 utf8_out[2]= (char)(0x80 | (utf16 & 0x3F));
 return 3;
 }
+}
+static int utf16_surrogate_pair_to_utf8(uint16_t high, uint16_t low, char* out) {
+/* Validate the surrogate pair and convert to codepoint */
+if(high < 0xD800 || high > 0xDBFF || low < 0xDC00 || low > 0xDFFF) return 0;
+uint32_t high_t= (uint32_t)(high - 0xD800);
+uint32_t low_t= (uint32_t)(low - 0xDC00);
+uint32_t codepoint= 0x10000u + ((high_t << 10) | low_t);
+/* Encode to UTF-8 (4 bytes) */
+out[0]= (char)(0xF0 | ((codepoint >> 18) & 0x07));
+out[1]= (char)(0x80 | ((codepoint >> 12) & 0x3F));
+out[2]= (char)(0x80 | ((codepoint >> 6) & 0x3F));
+out[3]= (char)(0x80 | (codepoint & 0x3F));
+return 4;
 }
 static inline bool ascii_pixel_equal(struct ascii_pixel a, struct ascii_pixel b) { return a.pixel == b.pixel && a.color == b.color; }
 static bool get_terminal_size(int fd, int* width, int* height) {
@@ -224,7 +237,19 @@ remaining-= (size_t)n;
 for(int i= span_start; i < span_end; i++) {
 uint16_t ch= ctx->back[y * ctx->width + i].pixel;
 char utf8[4];
-int utf8_len= utf16_to_utf8(ch, utf8);
+int utf8_len= 0;
+/* Handle UTF-16 surrogate pairs if a high surrogate is
+                 * followed by a low surrogate in the buffer. In that case
+                 * emit a 4-byte UTF-8 sequence and skip the low surrogate.
+                 */
+if(ch >= 0xD800 && ch <= 0xDBFF && i + 1 < span_end) {
+uint16_t ch2= ctx->back[y * ctx->width + (i + 1)].pixel;
+if(ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
+utf8_len= utf16_surrogate_pair_to_utf8(ch, ch2, utf8);
+i++; /* skip low surrogate (consumed) */
+}
+}
+if(utf8_len == 0) { utf8_len= utf16_to_utf8(ch, utf8); }
 if((size_t)utf8_len > remaining) return;
 memcpy(buf + pos, utf8, (size_t)utf8_len);
 pos+= (size_t)utf8_len;
@@ -321,21 +346,20 @@ if(!ctx) return;
 if(min_width) *min_width= ctx->min_width;
 if(min_height) *min_height= ctx->min_height;
 }
-
 /* Compute minimum render size for a board (matches previous logic from app)
  * Minimums are: field = board + 2; board+2 + 2 padding => board + 4
  * The external UI prefers slightly larger render area for headers, etc.
  */
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height) {
-	if(min_width) *min_width = board_width + 4;
-	if(min_height) *min_height = board_height + 4;
+if(min_width) *min_width= board_width + 4;
+if(min_height) *min_height= board_height + 4;
 }
-
 bool tty_size_sufficient_for_board(int term_width, int term_height, int board_width, int board_height) {
-	const int field_width = board_width + 2;
-	const int field_height = board_height + 2;
-	int min_h = field_height + 2;
-	int min_w = field_width + 2;
-	(void)board_width; (void)board_height; /* silence unused in some build configs */
-	return term_width >= min_w && term_height >= min_h;
+const int field_width= board_width + 2;
+const int field_height= board_height + 2;
+int min_h= field_height + 2;
+int min_w= field_width + 2;
+(void)board_width;
+(void)board_height; /* silence unused in some build configs */
+return term_width >= min_w && term_height >= min_h;
 }

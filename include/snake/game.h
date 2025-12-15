@@ -31,7 +31,9 @@ bool food_respawned;
  * `include/snake/game_internal.h`. */
 typedef struct GameState GameState;
 typedef struct PlayerState PlayerState;
-/* Create and destroy */
+/* Create and destroy
+ * Ownership: caller owns the returned `Game*` and must call `game_destroy()`
+ * when finished. */
 Game* game_create(const GameConfig* cfg, uint32_t seed_override);
 void game_destroy(Game* g);
 /* Input and progression */

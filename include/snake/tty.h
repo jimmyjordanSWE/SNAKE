@@ -4,10 +4,9 @@
 #include <stdint.h>
 #include <termios.h>
 struct ascii_pixel {
-	uint16_t pixel;
-	uint16_t color;
+uint16_t pixel;
+uint16_t color;
 } __attribute__((packed));
-
 /* Opaque tty context to encapsulate terminal implementation details. */
 typedef struct tty_context tty_context;
 tty_context* tty_open(const char* tty_path, int min_width, int min_height);
@@ -25,11 +24,9 @@ void tty_set_resize_callback(tty_context* ctx, void (*callback)(tty_context*, in
 void tty_set_size_invalid_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
 bool tty_size_valid(tty_context* ctx);
 void tty_get_min_size(tty_context* ctx, int* min_width, int* min_height);
-
 /* Helpers for board layout and terminal heuristics */
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height);
 bool tty_size_sufficient_for_board(int term_width, int term_height, int board_width, int board_height);
-
 /* Test helper: simulate a SIGWINCH for resize handling. */
 void tty_simulate_winch(void);
 /* Test helper: override terminal size for deterministic unit tests. */

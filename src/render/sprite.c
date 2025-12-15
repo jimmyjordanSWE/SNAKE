@@ -2,6 +2,29 @@
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_sdl.h"
 #include "snake/render_3d_sprite.h"
+
+/* Internal Sprite3D definition (kept in C file to avoid leaking internals
+ * via headers). This matches the public forward-declaration in
+ * `include/snake/render_3d_sprite.h` but keeps derived fields private. */
+struct Sprite3D
+{
+    /* Public fields */
+    float    world_x, world_y;
+    float    world_height;
+    float    pivot; /* 0.0 bottom .. 1.0 top */
+    bool     face_camera;
+    int      texture_id; /* -1 => solid color */
+    int      frame;
+    uint32_t color;
+
+    /* Derived / internal fields */
+    float perp_distance;
+    int   screen_x;
+    int   screen_w;
+    int   screen_h;
+    int   screen_y_top;
+    bool  visible;
+};
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

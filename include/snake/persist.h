@@ -41,7 +41,7 @@ int tick_rate_ms;
 int render_glyphs;
 int screen_width, screen_height;
 /* replaced: render_mode -> enable_external_3d_view
-        When true the optional external SDL 3D view will be started. */
+            When true the optional external SDL 3D view will be started. */
 int enable_external_3d_view;
 uint32_t seed;
 float fov_degrees;

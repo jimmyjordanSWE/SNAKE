@@ -20,5 +20,10 @@ hi_inclusive= tmp;
 }
 uint32_t span= (uint32_t)(hi_inclusive - lo + 1);
 uint32_t r= snake_rng_next_u32(state);
+/* If span == 0 the requested range covers the full 32-bit signed
+     * integer range (hi == INT_MAX && lo == INT_MIN). In that case avoid
+     * modulo-by-zero and map the 32-bit random value directly to int32.
+     */
+if(span == 0u) { return (int32_t)r; }
 return lo + (int)(r % span);
 }

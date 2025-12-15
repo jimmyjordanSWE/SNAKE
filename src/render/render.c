@@ -1,6 +1,6 @@
 #include "snake/render.h"
-#include "snake/game_internal.h"
 #include "snake/display.h"
+#include "snake/game_internal.h"
 #include "snake/input.h"
 #include "snake/persist.h"
 #include "snake/platform.h"
@@ -109,7 +109,6 @@ int display_width= 0, display_height= 0;
 display_get_size(g_display, &display_width, &display_height);
 if(y < 0 || y >= display_height) return;
 int len= (int)strlen(str);
-if(len < 0) len= 0;
 int x= 0;
 if(len < display_width) x= (display_width - len) / 2;
 draw_string(x, y, str, fg_color);

@@ -64,6 +64,11 @@ BUILD_DIR := $(BUILD_ROOT)/valgrind
 CPPFLAGS := $(CPPFLAGS_BASE)
 	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(DEBUG_FLAGS) -fno-omit-frame-pointer
 LDFLAGS := $(LDFLAGS_BASE)
+else ifeq ($(CONFIG),coverage)
+BUILD_DIR := $(BUILD_ROOT)/coverage
+CPPFLAGS := $(CPPFLAGS_BASE)
+	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) -O0 -g --coverage
+LDFLAGS := $(LDFLAGS_BASE) --coverage
 else
 $(error Unknown CONFIG '$(CONFIG)'. Use CONFIG=debug-asan|release|valgrind)
 endif
@@ -72,6 +77,7 @@ OBJ_DIR := $(BUILD_DIR)/obj
 BIN := snakegame
 BIN_3D := snakegame_3d
 LOG_DIR := $(BUILD_ROOT)/logs
+TEST_DIR := $(BUILD_DIR)/tests
 
 # Include all source files including 3D rendering
 SRC_ALL := $(shell find src -name '*.c' -print)
@@ -85,7 +91,7 @@ DEP_3D := $(OBJ_3D:.o=.d)
 
 .DEFAULT_GOAL := debug
 
-.PHONY: all build debug release valgrind gdb clean test-3d format-llm format-human
+.PHONY: all build debug release valgrind gdb clean test-3d format-llm format-human coverage
 
 all: debug
 
@@ -116,74 +122,97 @@ test-3d:
 	./$(BIN_3D)
 
 test-sprite:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_sprite tests/test_sprite.c src/render/sprite.c src/render/camera.c src/render/projection.c src/render/render_3d_sdl.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_sprite tests/test_sprite.c src/render/sprite.c src/render/camera.c src/render/projection.c src/render/render_3d_sdl.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_sprite
+	./$(TEST_DIR)/test_sprite
 
 
 test-input:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_input tests/test_input.c src/input/input.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_input tests/test_input.c src/input/input.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_input
+	./$(TEST_DIR)/test_input
 
 
 test-collision:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_collision_tail && ./test_collision_swap
+	./$(TEST_DIR)/test_collision_tail && ./$(TEST_DIR)/test_collision_swap
 
 test-game:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_game_over && ./test_game_events && ./test_game_death_events && ./test_game_input
+	./$(TEST_DIR)/test_game_over && ./$(TEST_DIR)/test_game_events && ./$(TEST_DIR)/test_game_death_events && ./$(TEST_DIR)/test_game_input
 
 
 test-utils:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_rng tests/utils/test_rng.c src/utils/rng.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_bounds tests/utils/test_bounds.c src/utils/bounds.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_direction tests/utils/test_direction.c src/utils/direction.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_rng tests/utils/test_rng.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_bounds tests/utils/test_bounds.c src/utils/bounds.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_direction tests/utils/test_direction.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_rng && ./test_bounds && ./test_direction
+	./$(TEST_DIR)/test_rng && ./$(TEST_DIR)/test_bounds && ./$(TEST_DIR)/test_direction
 
 test-persist:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist_write_idempotent tests/persist/test_persist_write_idempotent.c src/persist/persist.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist_write_idempotent tests/persist/test_persist_write_idempotent.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_persist
-	./test_persist_write_idempotent
+	./$(TEST_DIR)/test_persist
+	./$(TEST_DIR)/test_persist_write_idempotent
 
 test-net:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_net_pack
+	./$(TEST_DIR)/test_net_pack
 
 test-tty:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_tty tests/platform/test_tty.c src/platform/tty.c $(LDLIBS)
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_tty tests/platform/test_tty.c src/platform/tty.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_tty
+	./$(TEST_DIR)/test_tty
 
 test-render:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_orient tests/render/test_camera_orient.c src/render/camera.c src/render/projection.c src/render/sprite.c src/render/render_3d_sdl.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_interp tests/render/test_camera_interp.c src/render/camera.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_world_transform tests/render/test_camera_world_transform.c src/render/camera.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_angles tests/render/test_camera_angles.c src/render/camera.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture tests/render/test_texture.c src/render/texture.c src/vendor/stb_image.c src/render/raycast.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_file tests/render/test_texture_file.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_search tests/render/test_texture_search.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_assets tests/render/test_texture_assets.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
+	@mkdir -p $(TEST_DIR)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_orient tests/render/test_camera_orient.c src/render/camera.c src/render/projection.c src/render/sprite.c src/render/render_3d_sdl.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_interp tests/render/test_camera_interp.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_world_transform tests/render/test_camera_world_transform.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_angles tests/render/test_camera_angles.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_texture tests/render/test_texture.c src/render/texture.c src/vendor/stb_image.c src/render/raycast.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_texture_file tests/render/test_texture_file.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_texture_search tests/render/test_texture_search.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_texture_assets tests/render/test_texture_assets.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
 	@echo "$(OK_MSG)"
-	./test_camera_orient || true
-	./test_camera_interp || true
-	./test_camera_world_transform || true
-	./test_camera_angles || true
-	./test_texture || true
-	./test_texture_file || true
-	./test_texture_search || true
-	./test_texture_assets
+	./$(TEST_DIR)/test_camera_orient || true
+	./$(TEST_DIR)/test_camera_interp || true
+	./$(TEST_DIR)/test_camera_world_transform || true
+	./$(TEST_DIR)/test_camera_angles || true
+	./$(TEST_DIR)/test_texture || true
+	./$(TEST_DIR)/test_texture_file || true
+	./$(TEST_DIR)/test_texture_search || true
+	./$(TEST_DIR)/test_texture_assets
+
+coverage:
+	@command -v lcov >/dev/null 2>&1 || { echo "error: lcov not found; please install lcov"; exit 1; }
+	@command -v genhtml >/dev/null 2>&1 || { echo "error: genhtml not found; please install lcov"; exit 1; }
+	@echo "Building tests with coverage flags (CONFIG=coverage)"
+	@$(MAKE) CONFIG=coverage $(PREBUILD) test
+	@mkdir -p $(BUILD_DIR)/coverage
+	@echo "Capturing coverage data with lcov"
+	@lcov --capture --directory . --output-file $(BUILD_DIR)/coverage/coverage.info || { echo "lcov capture failed"; exit 1; }
+	@echo "Filtering external and tests files"
+	@lcov --remove $(BUILD_DIR)/coverage/coverage.info '/usr/*' 'tests/*' --output-file $(BUILD_DIR)/coverage/coverage.filtered.info || true
+	@echo "Generating HTML report"
+	@genhtml $(BUILD_DIR)/coverage/coverage.filtered.info --output-directory $(BUILD_DIR)/coverage/report || { echo "genhtml failed"; exit 1; }
+	@echo "Coverage report: $(BUILD_DIR)/coverage/report/index.html"
 .PHONY: test all build debug release valgrind gdb clean test-3d format-llm format-human
 test: test-input test-collision test-game test-utils test-persist test-net test-tty
 
@@ -222,4 +251,5 @@ format:
 -include $(DEP_3D)
 
 clean:
-	@rm -rf $(BUILD_ROOT) $(BIN)
+	@rm -rf $(BUILD_ROOT) $(BIN) $(TEST_DIR)
+	@rm -f test_*

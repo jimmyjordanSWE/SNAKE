@@ -12,8 +12,8 @@ if(!tex) return;
 const uint32_t default_shades[TEXTURE_MAX_SHADES]= {0xFFEEEEEE, 0xFFCCCCCC, 0xFF999999, 0xFF666666, 0xFF333333, 0xFF000000};
 memcpy(tex->shade_colors, default_shades, sizeof(tex->shade_colors));
 /* Provide side colors for vertical and horizontal faces to avoid
-       single-column bright seams when rays align with grid axes.
-    */
+           single-column bright seams when rays align with grid axes.
+        */
 const uint32_t side_v[TEXTURE_MAX_SHADES]= {0xFFDDDDDD, 0xFFBFBFBF, 0xFF8F8F8F, 0xFF606060, 0xFF303030, 0xFF000000};
 const uint32_t side_h[TEXTURE_MAX_SHADES]= {0xFFCCCCCC, 0xFFAAAAAA, 0xFF777777, 0xFF505050, 0xFF282828, 0xFF000000};
 memcpy(tex->side_colors[0], side_v, sizeof(side_v));
@@ -127,7 +127,7 @@ if(data) try_path= base;
 }
 if(!data) {
 /* Helpful diagnostic when assets fail to load: check whether candidate
-           filenames exist at the filesystem level (fopen). */
+                   filenames exist at the filesystem level (fopen). */
 fprintf(stderr,
     "texture_load_from_file: failed to load '%s' (stb_image "
     "returned NULL). Existence check:\n",
@@ -179,9 +179,9 @@ return false;
 }
 /* data is in R G B A order per pixel */
 /* SDL_PIXELFORMAT_ARGB8888 expects bytes [B, G, R, A] in little-endian
-       memory, but a hex value 0xAARRGGBB becomes [BB, GG, RR, AA]. This swaps R
-       and B. To fix this, we store as 0xAABBGGRR which becomes [RR, GG, BB, AA]
-       in memory. */
+           memory, but a hex value 0xAARRGGBB becomes [BB, GG, RR, AA]. This
+       swaps R and B. To fix this, we store as 0xAABBGGRR which becomes [RR, GG,
+       BB, AA] in memory. */
 for(int y= 0; y < h; y++) {
 for(int x= 0; x < w; x++) {
 int i= (y * w + x) * 4;

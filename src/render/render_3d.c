@@ -8,10 +8,10 @@
 #include "snake/render_3d_texture.h"
 #include "snake/types.h"
 #include <math.h>
-#include <stdio.h>
 #include <stdarg.h>
-#include <time.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 typedef enum { RENDER_MODE_2D= 0, RENDER_MODE_3D, RENDER_MODE_COUNT } RenderMode;
 typedef struct {
 const GameState* game_state;
@@ -28,144 +28,140 @@ bool initialized;
 float* column_depths;
 } Render3DContext;
 static Render3DContext g_render_3d= {0};
-
 static void render_3d_log(const char* fmt, ...) {
-    char buf[512];
-    time_t t = time(NULL);
-    struct tm tm;
-    if(localtime_r(&t, &tm) == NULL) tm = (struct tm){0};
-    int n = snprintf(buf, sizeof(buf), "[%04d-%02d-%02d %02d:%02d:%02d] ",
-        1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-    va_list ap;
-    va_start(ap, fmt);
-    size_t rem;
-    if(n < 0 || n >= (int)sizeof(buf)) {
-        rem = 0;
-        n = (int)sizeof(buf) - 1;
-    } else {
-        rem = sizeof(buf) - (size_t)n;
-    }
-    vsnprintf(buf + (n > 0 ? n : 0), rem, fmt, ap);
-    va_end(ap);
-    FILE* f = fopen("build/render_debug.log", "a");
-    if(!f) f = fopen("render_debug.log", "a");
-    if(!f) return;
-    fprintf(f, "%s", buf);
-    fclose(f);
+char buf[512];
+time_t t= time(NULL);
+struct tm tm;
+if(localtime_r(&t, &tm) == NULL) tm= (struct tm){0};
+int n= snprintf(buf, sizeof(buf), "[%04d-%02d-%02d %02d:%02d:%02d] ", 1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+va_list ap;
+va_start(ap, fmt);
+size_t rem;
+if(n < 0 || n >= (int)sizeof(buf)) {
+rem= 0;
+n= (int)sizeof(buf) - 1;
+} else {
+rem= sizeof(buf) - (size_t)n;
 }
-
+vsnprintf(buf + (n > 0 ? n : 0), rem, fmt, ap);
+va_end(ap);
+FILE* f= fopen("build/render_debug.log", "a");
+if(!f) f= fopen("render_debug.log", "a");
+if(!f) return;
+fprintf(f, "%s", buf);
+fclose(f);
+}
 /* Render a compact top-down minimap overlay showing players and food. */
 static void render_3d_draw_minimap(Render3DContext* r) {
-    if(!r || !r->game_state) {
-        render_3d_log("minimap: context or game_state NULL\n");
-        return;
-    }
-    const GameState* gs= r->game_state;
-    int map_w= gs->width;
-    int map_h= gs->height;
-    if(map_w <= 0 || map_h <= 0) {
-        render_3d_log("minimap: map size invalid %dx%d\n", map_w, map_h);
-        return;
-    }
-    /* size based on screen, keep it compact */
-    int max_dim= map_w > map_h ? map_w : map_h;
-    int base_size= r->display.width < r->display.height ? r->display.width / 5 : r->display.height / 5;
-    if(base_size < 64) base_size= 64;
-    int cell_px= base_size / max_dim;
-    if(cell_px < 1) cell_px= 1;
-    int map_px_w= cell_px * map_w;
-    int map_px_h= cell_px * map_h;
-    int padding= 8;
-    int x0= r->display.width - padding - map_px_w;
-    int y0= r->display.height - padding - map_px_h;
-    /* keep minimap fully on-screen (respect padding) */
-    if(x0 < padding) x0 = padding;
-    if(y0 < padding) y0 = padding;
-    /* optional early-call logging when debugging minimap */
-    const char* dbg_minimap_early = getenv("SNAKE_DEBUG_MINIMAP");
-    if(dbg_minimap_early && dbg_minimap_early[0] == '1') {
-        render_3d_log("minimap: called gs=%p map=%dx%d display=%dx%d x0=%d y0=%d cell_px=%d base_size=%d\n",
-                      (void*)gs, map_w, map_h, r->display.width, r->display.height, x0, y0, cell_px, base_size);
-    }
-    /* draw fullscreen-ish translucent background for minimap */
-    /* background */
-    uint32_t bg= render_3d_sdl_color(0, 0, 0, 200);
-    for(int yy= 0; yy < map_px_h; yy++) {
-        for(int xx= 0; xx < map_px_w; xx++) {
-            render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + yy, bg);
-        }
-    }
-    /* border */
-    uint32_t border= render_3d_sdl_color(255, 255, 255, 255);
-    for(int xx= 0; xx < map_px_w; xx++) {
-        render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0, border);
-        render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + map_px_h - 1, border);
-    }
-    for(int yy= 0; yy < map_px_h; yy++) {
-        render_3d_sdl_blend_pixel(&r->display, x0, y0 + yy, border);
-        render_3d_sdl_blend_pixel(&r->display, x0 + map_px_w - 1, y0 + yy, border);
-    }
-    /* Optional forced opaque debug border when requested */
-    const char* dbg_minimap = getenv("SNAKE_DEBUG_MINIMAP");
-    if(dbg_minimap && dbg_minimap[0] == '1') {
-        uint32_t dbgcol = render_3d_sdl_color(255, 0, 255, 255); /* magenta, opaque */
-        for(int xx= 0; xx < map_px_w; xx++) {
-            render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0, dbgcol);
-            render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + map_px_h - 1, dbgcol);
-        }
-        for(int yy= 0; yy < map_px_h; yy++) {
-            render_3d_sdl_blend_pixel(&r->display, x0, y0 + yy, dbgcol);
-            render_3d_sdl_blend_pixel(&r->display, x0 + map_px_w - 1, y0 + yy, dbgcol);
-        }
-        render_3d_log("minimap: debug border drawn at %d,%d size %dx%d (display %dx%d)\n", x0, y0, map_px_w, map_px_h, r->display.width, r->display.height);
-    }
-    /* draw food */
-    uint32_t food_col= render_3d_sdl_color(255, 64, 64, 255);
-    for(int i= 0; i < gs->food_count; i++) {
-        int fx= x0 + gs->food[i].x * cell_px + cell_px / 2;
-        int fy= y0 + gs->food[i].y * cell_px + cell_px / 2;
-        int radius= cell_px > 2 ? (cell_px/3) : 1;
-        render_3d_sdl_draw_filled_circle(&r->display, fx, fy, radius, food_col);
-    }
-    /* draw players (head + tail segments) */
-    uint32_t player_cols[3]= { render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255) };
-    uint32_t tail_col= render_3d_sdl_color(128, 128, 128, 255);
-    for(int p= 0; p < gs->num_players; p++) {
-        const PlayerState* pl= &gs->players[p];
-        if(!pl->active || pl->length <= 0) continue;
-        /* interpolate head similar to sprite logic when possible */
-        float t= 0.0f;
-        if(r->camera.update_interval > 0.0f) {
-            t= r->camera.interp_time / r->camera.update_interval;
-            if(t < 0.0f) t= 0.0f;
-            if(t > 1.0f) t= 1.0f;
-        }
-        float head_x= pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * t;
-        float head_y= pl->prev_head_y + (((float)pl->body[0].y + 0.5f) - pl->prev_head_y) * t;
-        int hx= x0 + (int)(head_x * (float)cell_px + 0.5f) ;
-        int hy= y0 + (int)(head_y * (float)cell_px + 0.5f) ;
-        int hr= cell_px > 2 ? (cell_px/2) : 1;
-        uint32_t pcol= player_cols[p % (int)(sizeof(player_cols)/sizeof(player_cols[0]))];
-        render_3d_sdl_draw_filled_circle(&r->display, hx, hy, hr, pcol);
-        /* small dot ahead of head to indicate facing (use player dir) */
-        int dir_off_x= 0, dir_off_y= 0;
-        int off = (cell_px/2) + 1;
-        switch(pl->current_dir) {
-            case SNAKE_DIR_UP: dir_off_y= -off; break;
-            case SNAKE_DIR_DOWN: dir_off_y= off; break;
-            case SNAKE_DIR_LEFT: dir_off_x= -off; break;
-            case SNAKE_DIR_RIGHT: dir_off_x= off; break;
-            default: break;
-        }
-        render_3d_sdl_draw_filled_circle(&r->display, hx + dir_off_x, hy + dir_off_y, hr>1?hr/2:1, pcol);
-        /* tails */
-        for(int bi= 1; bi < pl->length; bi++) {
-            int tx= x0 + pl->body[bi].x * cell_px + cell_px/2;
-            int ty= y0 + pl->body[bi].y * cell_px + cell_px/2;
-            int tr= cell_px > 2 ? (cell_px/3) : 1;
-            render_3d_sdl_draw_filled_circle(&r->display, tx, ty, tr, tail_col);
-        }
-    }
+if(!r || !r->game_state) {
+render_3d_log("minimap: context or game_state NULL\n");
+return;
+}
+const GameState* gs= r->game_state;
+int map_w= gs->width;
+int map_h= gs->height;
+if(map_w <= 0 || map_h <= 0) {
+render_3d_log("minimap: map size invalid %dx%d\n", map_w, map_h);
+return;
+}
+/* size based on screen, keep it compact */
+int max_dim= map_w > map_h ? map_w : map_h;
+int base_size= r->display.width < r->display.height ? r->display.width / 5 : r->display.height / 5;
+if(base_size < 64) base_size= 64;
+int cell_px= base_size / max_dim;
+if(cell_px < 1) cell_px= 1;
+int map_px_w= cell_px * map_w;
+int map_px_h= cell_px * map_h;
+int padding= 8;
+int x0= r->display.width - padding - map_px_w;
+int y0= r->display.height - padding - map_px_h;
+/* keep minimap fully on-screen (respect padding) */
+if(x0 < padding) x0= padding;
+if(y0 < padding) y0= padding;
+/* optional early-call logging when debugging minimap */
+const char* dbg_minimap_early= getenv("SNAKE_DEBUG_MINIMAP");
+if(dbg_minimap_early && dbg_minimap_early[0] == '1') {
+render_3d_log("minimap: called gs=%p map=%dx%d display=%dx%d x0=%d "
+              "y0=%d cell_px=%d base_size=%d\n",
+    (void*)gs, map_w, map_h, r->display.width, r->display.height, x0, y0, cell_px, base_size);
+}
+/* draw fullscreen-ish translucent background for minimap */
+/* background */
+uint32_t bg= render_3d_sdl_color(0, 0, 0, 200);
+for(int yy= 0; yy < map_px_h; yy++) {
+for(int xx= 0; xx < map_px_w; xx++) { render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + yy, bg); }
+}
+/* border */
+uint32_t border= render_3d_sdl_color(255, 255, 255, 255);
+for(int xx= 0; xx < map_px_w; xx++) {
+render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0, border);
+render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + map_px_h - 1, border);
+}
+for(int yy= 0; yy < map_px_h; yy++) {
+render_3d_sdl_blend_pixel(&r->display, x0, y0 + yy, border);
+render_3d_sdl_blend_pixel(&r->display, x0 + map_px_w - 1, y0 + yy, border);
+}
+/* Optional forced opaque debug border when requested */
+const char* dbg_minimap= getenv("SNAKE_DEBUG_MINIMAP");
+if(dbg_minimap && dbg_minimap[0] == '1') {
+uint32_t dbgcol= render_3d_sdl_color(255, 0, 255, 255); /* magenta, opaque */
+for(int xx= 0; xx < map_px_w; xx++) {
+render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0, dbgcol);
+render_3d_sdl_blend_pixel(&r->display, x0 + xx, y0 + map_px_h - 1, dbgcol);
+}
+for(int yy= 0; yy < map_px_h; yy++) {
+render_3d_sdl_blend_pixel(&r->display, x0, y0 + yy, dbgcol);
+render_3d_sdl_blend_pixel(&r->display, x0 + map_px_w - 1, y0 + yy, dbgcol);
+}
+render_3d_log("minimap: debug border drawn at %d,%d size %dx%d (display %dx%d)\n", x0, y0, map_px_w, map_px_h, r->display.width, r->display.height);
+}
+/* draw food */
+uint32_t food_col= render_3d_sdl_color(255, 64, 64, 255);
+for(int i= 0; i < gs->food_count; i++) {
+int fx= x0 + gs->food[i].x * cell_px + cell_px / 2;
+int fy= y0 + gs->food[i].y * cell_px + cell_px / 2;
+int radius= cell_px > 2 ? (cell_px / 3) : 1;
+render_3d_sdl_draw_filled_circle(&r->display, fx, fy, radius, food_col);
+}
+/* draw players (head + tail segments) */
+uint32_t player_cols[3]= {render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255)};
+uint32_t tail_col= render_3d_sdl_color(128, 128, 128, 255);
+for(int p= 0; p < gs->num_players; p++) {
+const PlayerState* pl= &gs->players[p];
+if(!pl->active || pl->length <= 0) continue;
+/* interpolate head similar to sprite logic when possible */
+float t= 0.0f;
+if(r->camera.update_interval > 0.0f) {
+t= r->camera.interp_time / r->camera.update_interval;
+if(t < 0.0f) t= 0.0f;
+if(t > 1.0f) t= 1.0f;
+}
+float head_x= pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * t;
+float head_y= pl->prev_head_y + (((float)pl->body[0].y + 0.5f) - pl->prev_head_y) * t;
+int hx= x0 + (int)(head_x * (float)cell_px + 0.5f);
+int hy= y0 + (int)(head_y * (float)cell_px + 0.5f);
+int hr= cell_px > 2 ? (cell_px / 2) : 1;
+uint32_t pcol= player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
+render_3d_sdl_draw_filled_circle(&r->display, hx, hy, hr, pcol);
+/* small dot ahead of head to indicate facing (use player dir) */
+int dir_off_x= 0, dir_off_y= 0;
+int off= (cell_px / 2) + 1;
+switch(pl->current_dir) {
+case SNAKE_DIR_UP: dir_off_y= -off; break;
+case SNAKE_DIR_DOWN: dir_off_y= off; break;
+case SNAKE_DIR_LEFT: dir_off_x= -off; break;
+case SNAKE_DIR_RIGHT: dir_off_x= off; break;
+default: break;
+}
+render_3d_sdl_draw_filled_circle(&r->display, hx + dir_off_x, hy + dir_off_y, hr > 1 ? hr / 2 : 1, pcol);
+/* tails */
+for(int bi= 1; bi < pl->length; bi++) {
+int tx= x0 + pl->body[bi].x * cell_px + cell_px / 2;
+int ty= y0 + pl->body[bi].y * cell_px + cell_px / 2;
+int tr= cell_px > 2 ? (cell_px / 3) : 1;
+render_3d_sdl_draw_filled_circle(&r->display, tx, ty, tr, tail_col);
+}
+}
 }
 bool render_3d_init(const GameState* game_state, const Render3DConfig* config) {
 if(g_render_3d.initialized) return true;
@@ -229,7 +225,7 @@ void render_3d_draw(const GameState* game_state, const char* player_name, const 
 (void)score_count;
 if(!g_render_3d.initialized || !game_state) return;
 /* ensure internal context points at the current game state for overlays */
-g_render_3d.game_state = game_state;
+g_render_3d.game_state= game_state;
 /* Note: camera/player previous/current updates occur on tick via
      * `render_3d_on_tick()` so we don't reset interpolation every frame here.
      */
@@ -275,13 +271,15 @@ RayHit hit;
 float cos_a= cosf(ray_angle);
 float sin_a= sinf(ray_angle);
 /* nudge origin slightly forward and perpendicular to ray to avoid
-           exact grid-line intersection artifacts (vertical seam when aligned)
-        */
+                   exact grid-line intersection artifacts (vertical seam when
+           aligned)
+                */
 float eps_fwd= 0.0002f;
 float eps_perp= 0.0002f;
 /* Nudge origin slightly forward along the ray and a small amount
-            perpendicular to the ray to avoid grid-line intersection artifacts.
-            Perpendicular vector to (cos_a, sin_a) is (-sin_a, cos_a). */
+                    perpendicular to the ray to avoid grid-line intersection
+           artifacts. Perpendicular vector to (cos_a, sin_a) is (-sin_a, cos_a).
+         */
 float origin_x= interp_cam_x + cos_a * eps_fwd - sin_a * eps_perp;
 float origin_y= interp_cam_y + sin_a * eps_fwd + cos_a * eps_perp;
 if(raycast_cast_ray(&g_render_3d.raycaster, origin_x, origin_y, ray_angle, &hit)) {
@@ -376,12 +374,12 @@ const char* dbg_tail= getenv("SNAKE_DEBUG_TAIL");
 if(dbg_tail && dbg_tail[0] == '1') { fprintf(stderr, "[tail-dbg] sprite_count=%d\n", g_render_3d.sprite_renderer.count); }
 }
 /* project, sort and draw using per-column occlusion */
-    sprite_project_all(&g_render_3d.sprite_renderer);
-    sprite_sort_by_depth(&g_render_3d.sprite_renderer);
-    sprite_draw(&g_render_3d.sprite_renderer, &g_render_3d.display, g_render_3d.column_depths);
-    /* draw a small top-down minimap overlay in the corner */
-    render_3d_draw_minimap(&g_render_3d);
-    if(!render_3d_sdl_present(&g_render_3d.display)) {}
+sprite_project_all(&g_render_3d.sprite_renderer);
+sprite_sort_by_depth(&g_render_3d.sprite_renderer);
+sprite_draw(&g_render_3d.sprite_renderer, &g_render_3d.display, g_render_3d.column_depths);
+/* draw a small top-down minimap overlay in the corner */
+render_3d_draw_minimap(&g_render_3d);
+if(!render_3d_sdl_present(&g_render_3d.display)) {}
 }
 void render_3d_set_active_player(int player_index) {
 if(g_render_3d.initialized) g_render_3d.config.active_player= player_index;

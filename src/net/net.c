@@ -146,20 +146,20 @@ p+= 4;
 return true;
 }
 void net_free_unpacked_game_state(GameState* out) {
-	if(!out) return;
-	if(out->food) {
-		free(out->food);
-		out->food = NULL;
-		out->food_count = 0;
-		out->max_food = 0;
-	}
-	if(out->players) {
-		/* Note: player bodies are not allocated by the unpacker */
-		free(out->players);
-		out->players = NULL;
-		out->num_players = 0;
-		out->max_players = 0;
-	}
+if(!out) return;
+if(out->food) {
+free(out->food);
+out->food= NULL;
+out->food_count= 0;
+out->max_food= 0;
+}
+if(out->players) {
+/* Note: player bodies are not allocated by the unpacker */
+free(out->players);
+out->players= NULL;
+out->num_players= 0;
+out->max_players= 0;
+}
 }
 struct NetClient {
 int unused;

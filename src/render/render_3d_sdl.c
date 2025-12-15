@@ -95,11 +95,11 @@ if(x2 >= ctx->width) x2= ctx->width - 1;
 if(y1 < 0) y1= 0;
 if(y2 >= ctx->height) y2= ctx->height - 1;
 for(int y= y1; y <= y2; y++) {
-	for(int x= x1; x <= x2; x++) {
-		int dx= x - center_x;
-		int dy= y - center_y;
-		if(dx * dx + dy * dy <= radius * radius) render_3d_sdl_blend_pixel(ctx, x, y, col);
-	}
+for(int x= x1; x <= x2; x++) {
+int dx= x - center_x;
+int dy= y - center_y;
+if(dx * dx + dy * dy <= radius * radius) render_3d_sdl_blend_pixel(ctx, x, y, col);
+}
 }
 }
 void render_3d_sdl_clear(SDL3DContext* ctx, uint32_t col) {

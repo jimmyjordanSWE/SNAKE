@@ -1,4 +1,5 @@
 #include "snake/game.h"
+#include "snake/game_internal.h"
 #include "snake/collision.h"
 #include "snake/direction.h"
 #include "snake/input.h"

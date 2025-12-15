@@ -1,4 +1,5 @@
 #include "snake/game.h"
+#include "snake/game_internal.h"
 #include <assert.h>
 
 int main(void)

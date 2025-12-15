@@ -4,6 +4,7 @@
 #include "snake/net.h"
 #include "snake/input.h"
 #include "snake/game.h"
+#include "snake/game_internal.h"
 
 int main(void) {
     unsigned char buf[512];

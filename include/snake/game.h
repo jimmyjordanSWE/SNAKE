@@ -25,39 +25,12 @@ bool game_over;
 bool food_respawned;
 } GameEvents;
 #include "snake/input.h"
-/* NOTE: The following structure definitions are kept available for internal
- * modules and tests that currently work with raw game state (collision,
- * rendering, tests). Prefer using the opaque `Game` API above for new code.
- */
-typedef struct {
-SnakeDir current_dir, queued_dir;
-int score;
-bool died_this_tick;
-int score_at_death;
-SnakePoint* body;
-int length;
-int max_length;
-bool active, needs_reset;
-/* previous head position for interpolation (world coords, centered)
-     * updated on each tick before applying movement */
-float prev_head_x;
-float prev_head_y;
-} PlayerState;
-typedef struct {
-int width, height;
-uint32_t rng_state;
-GameStatus status;
-int num_players;
-int max_players;
-SnakePoint* food;
-int food_count;
-int max_food;
-/* Test/diagnostic flag: set to true when food was respawned during last
-     * tick; cleared on observation. */
-bool last_food_respawned;
-PlayerState* players;
-int max_length;
-} GameState;
+/* The internal `GameState` / `PlayerState` definitions are intentionally
+ * hidden from the public header to enforce encapsulation. Internal modules
+ * and tests that require direct access should include
+ * `include/snake/game_internal.h`. */
+typedef struct GameState GameState;
+typedef struct PlayerState PlayerState;
 /* Create and destroy */
 Game* game_create(const GameConfig* cfg, uint32_t seed_override);
 void game_destroy(Game* g);

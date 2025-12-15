@@ -1,8 +1,9 @@
 #include "snake/collision.h"
+#include "snake/game_internal.h"
 #include <stddef.h>
 #include <stdlib.h>
 bool collision_is_wall(SnakePoint p, int board_w, int board_h) { return p.x < 0 || p.x >= board_w || p.y < 0 || p.y >= board_h; }
-bool collision_is_self(SnakePoint p, const PlayerState* player) {
+bool collision_is_self(SnakePoint p, const struct PlayerState* player) {
 if(player == NULL || player->length < 2) return false;
 for(int i= 1; i < player->length; i++) {
 SnakePoint segment= player->body[i];
@@ -10,7 +11,7 @@ if(segment.x == p.x && segment.y == p.y) return true;
 }
 return false;
 }
-bool collision_is_snake(SnakePoint p, const PlayerState* player) {
+bool collision_is_snake(SnakePoint p, const struct PlayerState* player) {
 if(player == NULL || player->length <= 0) return false;
 for(int i= 0; i < player->length; i++) {
 SnakePoint segment= player->body[i];
@@ -28,7 +29,7 @@ case SNAKE_DIR_RIGHT: next.x++; break;
 }
 return next;
 }
-void collision_detect_and_resolve(GameState* game) {
+void collision_detect_and_resolve(struct GameState* game) {
 if(game == NULL) return;
 int num_players= game->num_players;
 if(num_players <= 0) return;
@@ -48,7 +49,7 @@ next_heads[i]= (SnakePoint){.x= -1, .y= -1};
 will_eat[i]= false;
 }
 for(int i= 0; i < num_players; i++) {
-PlayerState* player= &game->players[i];
+struct PlayerState* player= &game->players[i];
 if(!player->active || player->length <= 0) continue;
 SnakePoint current_head= player->body[0];
 next_heads[i]= collision_next_head(current_head, player->current_dir);
@@ -66,7 +67,7 @@ break;
 }
 }
 for(int i= 0; i < num_players; i++) {
-PlayerState* player= &game->players[i];
+struct PlayerState* player= &game->players[i];
 if(!player->active || player->length <= 0) continue;
 SnakePoint next_head= next_heads[i];
 if(collision_is_wall(next_head, game->width, game->height)) {
@@ -88,7 +89,7 @@ continue;
 }
 for(int j= 0; j < num_players; j++) {
 if(i == j) continue;
-PlayerState* other= &game->players[j];
+struct PlayerState* other= &game->players[j];
 if(!other->active || other->length <= 0) continue;
 /* Collisions into other snakes: allow stepping into their tail if
              * it will be vacated (they are not growing). */
@@ -104,10 +105,10 @@ break;
 }
 }
 for(int i= 0; i < num_players; i++) {
-PlayerState* a= &game->players[i];
+struct PlayerState* a= &game->players[i];
 if(!a->active || a->length <= 0) continue;
 for(int j= i + 1; j < num_players; j++) {
-PlayerState* b= &game->players[j];
+struct PlayerState* b= &game->players[j];
 if(!b->active || b->length <= 0) continue;
 /* Head-on to the same cell (both die). */
 if(next_heads[i].x == next_heads[j].x && next_heads[i].y == next_heads[j].y) {

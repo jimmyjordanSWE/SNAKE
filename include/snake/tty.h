@@ -4,28 +4,12 @@
 #include <stdint.h>
 #include <termios.h>
 struct ascii_pixel {
-uint16_t pixel;
-uint16_t color;
+	uint16_t pixel;
+	uint16_t color;
 } __attribute__((packed));
-typedef struct tty_context {
-int tty_fd;
-struct termios orig_termios;
-char tty_path[256];
-int width;
-int height;
-int min_width;
-int min_height;
-struct ascii_pixel* front;
-struct ascii_pixel* back;
-bool dirty;
-bool size_valid;
-char* write_buffer;
-size_t write_buffer_size;
-volatile sig_atomic_t resized;
-void (*on_resize)(struct tty_context* ctx, int old_width, int old_height, int new_width, int new_height, void* userdata);
-void (*on_size_invalid)(struct tty_context* ctx, int current_width, int current_height, int min_width, int min_height, void* userdata);
-void* callback_userdata;
-} tty_context;
+
+/* Opaque tty context to encapsulate terminal implementation details. */
+typedef struct tty_context tty_context;
 tty_context* tty_open(const char* tty_path, int min_width, int min_height);
 void tty_close(tty_context* ctx);
 struct ascii_pixel* tty_get_buffer(tty_context* ctx);

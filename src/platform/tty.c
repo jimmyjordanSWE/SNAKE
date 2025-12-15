@@ -13,6 +13,28 @@ static void sigwinch_handler(int sig) {
 (void)sig;
 winch_received= 1;
 }
+
+/* Internal definition of the tty context (kept private to the implementation)
+ * This mirrors the previous public definition but hides internals from users. */
+struct tty_context {
+	int tty_fd;
+	struct termios orig_termios;
+	char tty_path[256];
+	int width;
+	int height;
+	int min_width;
+	int min_height;
+	struct ascii_pixel* front;
+	struct ascii_pixel* back;
+	bool dirty;
+	bool size_valid;
+	char* write_buffer;
+	size_t write_buffer_size;
+	volatile sig_atomic_t resized;
+	void (*on_resize)(struct tty_context* ctx, int old_width, int old_height, int new_width, int new_height, void* userdata);
+	void (*on_size_invalid)(struct tty_context* ctx, int current_width, int current_height, int min_width, int min_height, void* userdata);
+	void* callback_userdata;
+};
 /* Test overrides (used by unit tests to avoid relying on ioctl). */
 static bool use_test_size= false;
 static int test_width= 0;

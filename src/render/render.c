@@ -1,4 +1,5 @@
 #include "snake/render.h"
+#include "snake/game_internal.h"
 #include "snake/display.h"
 #include "snake/input.h"
 #include "snake/persist.h"

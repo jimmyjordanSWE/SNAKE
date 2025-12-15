@@ -1,5 +1,6 @@
 #include "snake/snakegame.h"
 #include "snake/game.h"
+#include "snake/game_internal.h"
 #include "snake/input.h"
 #include "snake/persist.h"
 #include "snake/platform.h"
@@ -85,7 +86,7 @@ int snakegame_run(const GameConfig* config_in) {
     int highscore_count= 0;
     highscore_count= persist_read_scores(".snake_scores", highscores, PERSIST_MAX_SCORES);
     render_draw(game_get_state(game), cfg.player_name, highscores, highscore_count);
-    while(game_get_state(game)->status != GAME_STATUS_GAME_OVER) {
+    while(((const struct GameState*)game_get_state(game))->status != GAME_STATUS_GAME_OVER) {
         if(platform_was_resized()) {
             int new_w= 0, new_h= 0;
             if(!platform_get_terminal_size(&new_w, &new_h)) {

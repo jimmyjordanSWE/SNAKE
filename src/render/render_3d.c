@@ -1,4 +1,5 @@
 #include "snake/render_3d.h"
+#include "snake/game_internal.h"
 #include "snake/render_3d_camera.h"
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_raycast.h"

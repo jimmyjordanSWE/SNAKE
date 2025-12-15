@@ -1,8 +1,201 @@
 #include "snake/game.h"
 #include "snake/collision.h"
 #include "snake/utils.h"
+#include "snake/direction.h"
+#include "snake/input.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
+
+/* Forward declarations for functions defined later in this file (used by the
+ * opaque `Game` wrappers defined near the top). */
+void  game_init(GameState* game, int width, int height, const GameConfig* cfg);
+void  game_free(GameState* game);
+void  game_tick(GameState* game);
+void  game_set_food(GameState* game, const SnakePoint* food, int count);
+static void game_state_reset(GameState* game);
+static int  game_state_get_num_players(const GameState* game);
+static bool game_state_player_is_active(const GameState* game,
+                                        int player_index);
+static int  game_state_player_current_score(const GameState* game,
+                                            int player_index);
+static bool game_state_player_died_this_tick(const GameState* game,
+                                            int player_index);
+static int  game_state_player_score_at_death(const GameState* game,
+                                             int player_index);
+
+/* Opaque Game wrapper around the existing `GameState` implementation. New
+ * API prefers driving the simulation via `game_step()` which returns a small
+ * `GameEvents` struct suitable for network serialization. */
+struct Game
+{
+    GameState state;
+};
+
+Game* game_create(const GameConfig* cfg, uint32_t seed_override)
+{
+    if (!cfg)
+        return NULL;
+    Game* g = (Game*)malloc(sizeof(Game));
+    if (!g)
+        return NULL;
+    /* copy config and optionally override seed */
+    GameConfig cfg_copy = *cfg;
+    if (seed_override != 0)
+        cfg_copy.seed = seed_override;
+    (void)memset(g, 0, sizeof(*g));
+    game_init(&g->state, cfg_copy.board_width, cfg_copy.board_height, &cfg_copy);
+    return g;
+}
+
+void game_destroy(Game* g)
+{
+    if (!g)
+        return;
+    game_free(&g->state);
+    free(g);
+}
+
+int game_enqueue_input(Game* g, int player_index, const InputState* in)
+{
+    if (!g || !in)
+        return -1;
+    if (player_index < 0 || player_index >= g->state.max_players)
+        return -1;
+    /* apply simple input model: set queued direction and handle pause/restart */
+    PlayerState* player = &g->state.players[player_index];
+    if (in->move_up)
+        player->queued_dir = SNAKE_DIR_UP;
+    if (in->move_down)
+        player->queued_dir = SNAKE_DIR_DOWN;
+    if (in->move_left)
+        player->queued_dir = SNAKE_DIR_LEFT;
+    if (in->move_right)
+        player->queued_dir = SNAKE_DIR_RIGHT;
+    if (in->turn_left)
+        player->queued_dir = snake_dir_turn_left(player->current_dir);
+    if (in->turn_right)
+        player->queued_dir = snake_dir_turn_right(player->current_dir);
+    if (in->pause_toggle)
+        g->state.status = (g->state.status == GAME_STATUS_PAUSED)
+                              ? GAME_STATUS_RUNNING
+                              : GAME_STATUS_PAUSED;
+    if (in->restart)
+        game_state_reset(&g->state);
+    return 0;
+}
+
+void game_step(Game* g, GameEvents* out_events)
+{
+    if (!g)
+        return;
+    if (out_events)
+        (void)memset(out_events, 0, sizeof(*out_events));
+    /* Reset diagnostic flag before stepping so we can observe it afterward. */
+    g->state.last_food_respawned = false;
+    game_tick(&g->state);
+    if (out_events && g->state.last_food_respawned)
+        out_events->food_respawned = true;
+    /* Clear the diagnostic flag after reporting. */
+    g->state.last_food_respawned = false;
+    int num_players = game_state_get_num_players(&g->state);
+    if (!out_events)
+        return;
+    out_events->died_count = 0;
+    for (int i = 0; i < num_players && out_events->died_count < GAME_EVENTS_MAX_PLAYERS;
+         i++)
+    {
+        if (g->state.players[i].died_this_tick)
+        {
+            int idx = out_events->died_count++;
+            out_events->died_players[idx] = i;
+            out_events->died_scores[idx]  = g->state.players[i].score_at_death;
+        }
+    }
+    if (g->state.status == GAME_STATUS_GAME_OVER)
+        out_events->game_over = true;
+}
+
+const GameState* game_get_state(const Game* g)
+{
+    if (!g)
+        return NULL;
+    return &g->state;
+}
+
+int game_get_num_players(const Game* g)
+{
+    if (!g)
+        return 0;
+    return game_state_get_num_players(&g->state);
+}
+
+bool game_player_is_active(const Game* g, int player_index)
+{
+    if (!g)
+        return false;
+    return game_state_player_is_active(&g->state, player_index);
+}
+
+int game_player_current_score(const Game* g, int player_index)
+{
+    if (!g)
+        return 0;
+    return game_state_player_current_score(&g->state, player_index);
+}
+
+bool game_player_died_this_tick(const Game* g, int player_index)
+{
+    if (!g)
+        return false;
+    return game_state_player_died_this_tick(&g->state, player_index);
+}
+
+int game_player_score_at_death(const Game* g, int player_index)
+{
+    if (!g)
+        return 0;
+    return game_state_player_score_at_death(&g->state, player_index);
+}
+
+/* Test helpers */
+void game_test_set_dimensions(Game* g, int width, int height)
+{
+    if (!g)
+        return;
+    g->state.width  = width;
+    g->state.height = height;
+}
+
+void game_test_set_food(Game* g, const SnakePoint* food, int count)
+{
+    if (!g)
+        return;
+    game_set_food(&g->state, food, count);
+}
+
+void game_test_set_num_players(Game* g, int n)
+{
+    if (!g)
+        return;
+    g->state.num_players = n;
+}
+
+void game_test_set_player_needs_reset(Game* g, int player_index, bool needs)
+{
+    if (!g)
+        return;
+    if (player_index < 0 || player_index >= g->state.max_players)
+        return;
+    g->state.players[player_index].needs_reset = needs;
+}
+
+GameState* game_test_get_state(Game* g)
+{
+    if (!g)
+        return NULL;
+    return &g->state;
+}
 /* Module constants to avoid magic literals and improve testability. */
 #define SPAWN_MAX_ATTEMPTS 1000
 #define FOOD_RESPAWN_MIN   1
@@ -68,6 +261,7 @@ static void food_respawn(GameState* game)
             }
         }
     }
+    game->last_food_respawned = true;
 }
 static void player_move(PlayerState* player, SnakePoint next_head, bool grow)
 {
@@ -237,7 +431,7 @@ void game_free(GameState* game)
         game->food = NULL;
     }
 }
-void game_reset(GameState* game)
+static void game_state_reset(GameState* game)
 {
     if (!game)
         return;
@@ -255,6 +449,13 @@ void game_reset(GameState* game)
         (void)spawn_player(game, i);
     game->status = GAME_STATUS_RUNNING;
     food_respawn(game);
+}
+
+void game_reset(Game* g)
+{
+    if (!g)
+        return;
+    game_state_reset(&g->state);
 }
 void game_tick(GameState* game)
 {
@@ -343,7 +544,7 @@ void game_tick(GameState* game)
     if (food_consumed && game->food_count == 0)
         food_respawn(game);
 }
-int game_get_num_players(const GameState* game)
+static int game_state_get_num_players(const GameState* game)
 {
     if (game == NULL)
         return 0;
@@ -354,25 +555,25 @@ int game_get_num_players(const GameState* game)
         return game->max_players;
     return count;
 }
-bool game_player_is_active(const GameState* game, int player_index)
+static bool game_state_player_is_active(const GameState* game, int player_index)
 {
     if (game == NULL || player_index < 0 || player_index >= game->max_players)
         return false;
     return game->players[player_index].active;
 }
-int game_player_current_score(const GameState* game, int player_index)
+static int game_state_player_current_score(const GameState* game, int player_index)
 {
     if (game == NULL || player_index < 0 || player_index >= game->max_players)
         return 0;
     return game->players[player_index].score;
 }
-bool game_player_died_this_tick(const GameState* game, int player_index)
+static bool game_state_player_died_this_tick(const GameState* game, int player_index)
 {
     if (game == NULL || player_index < 0 || player_index >= game->max_players)
         return false;
     return game->players[player_index].died_this_tick;
 }
-int game_player_score_at_death(const GameState* game, int player_index)
+static int game_state_player_score_at_death(const GameState* game, int player_index)
 {
     if (game == NULL || player_index < 0 || player_index >= game->max_players)
         return 0;

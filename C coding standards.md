@@ -8,7 +8,7 @@ Formatting should be human-readable, but the highest priority is on minimizing L
 
 ## Files & Headers
 - Each module has a single public header `module.h` and an implementation `module.c`.
-- Use `#pragma once` (fallback to include guards if portability requires it)
+- Use `#pragma once` 
 - Opaque pattern. Public headers expose only the API needed by callers; types and helpers that are internal should be in a `module_internal.h` or `module.c`.
 
 ## Code Organization

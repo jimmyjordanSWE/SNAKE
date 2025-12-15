@@ -128,22 +128,26 @@ test-input:
 
 
 test-collision:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./test_collision_tail && ./test_collision_swap
 
 test-game:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_game_over
+	./test_game_over && ./test_game_events && ./test_game_death_events && ./test_game_input
 
 
 test-utils:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_rng tests/utils/test_rng.c src/utils/rng.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_bounds tests/utils/test_bounds.c src/utils/bounds.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_direction tests/utils/test_direction.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
-	./test_rng && ./test_bounds
+	./test_rng && ./test_bounds && ./test_direction
 
 test-persist:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)

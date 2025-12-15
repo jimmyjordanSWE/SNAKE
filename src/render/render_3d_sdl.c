@@ -11,6 +11,31 @@ int width;
 int height;
 } SDLState;
 static SDLState g_sdl_state= {0};
+
+/* Internal definition of SDL3DContext (opaque to headers) */
+struct SDL3DContext {
+    int width;
+    int height;
+    uint32_t* pixels;
+};
+
+SDL3DContext* render_3d_sdl_create(int width, int height) {
+    SDL3DContext* ctx = (SDL3DContext*)calloc(1, sizeof(*ctx));
+    if(!ctx) return NULL;
+    if(!render_3d_sdl_init(width, height, ctx)) {
+        free(ctx);
+        return NULL;
+    }
+    return ctx;
+}
+void render_3d_sdl_destroy(SDL3DContext* ctx) {
+    if(!ctx) return;
+    render_3d_sdl_shutdown(ctx);
+    free(ctx);
+}
+int render_3d_sdl_get_width(const SDL3DContext* ctx) { return ctx ? ctx->width : 0; }
+int render_3d_sdl_get_height(const SDL3DContext* ctx) { return ctx ? ctx->height : 0; }
+uint32_t* render_3d_sdl_get_pixels(SDL3DContext* ctx) { return ctx ? ctx->pixels : NULL; }
 bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
 if(!ctx_out || width <= 0 || height <= 0) return false;
 if(SDL_Init(SDL_INIT_VIDEO) < 0) return false;
@@ -78,6 +103,33 @@ SDL_Quit();
 ctx->width= 0;
 ctx->height= 0;
 }
+void render_3d_sdl_set_pixel(SDL3DContext* ctx, int x, int y, uint32_t col) {
+    if(!ctx || !ctx->pixels || x < 0 || x >= ctx->width || y < 0 || y >= ctx->height) return;
+    ctx->pixels[y * ctx->width + x]= col;
+}
+
+void render_3d_sdl_blend_pixel(SDL3DContext* ctx, int x, int y, uint32_t src_col) {
+    if(!ctx || !ctx->pixels || x < 0 || x >= ctx->width || y < 0 || y >= ctx->height) return;
+    uint32_t dst= ctx->pixels[y * ctx->width + x];
+    uint8_t sa= (uint8_t)((src_col >> 24) & 0xFFu);
+    if(sa == 255) {
+        ctx->pixels[y * ctx->width + x]= src_col;
+        return;
+    }
+    if(sa == 0) return;
+    uint8_t sr= (uint8_t)((src_col >> 16) & 0xFFu);
+    uint8_t sg= (uint8_t)((src_col >> 8) & 0xFFu);
+    uint8_t sb= (uint8_t)(src_col & 0xFFu);
+    uint8_t dr= (uint8_t)((dst >> 16) & 0xFFu);
+    uint8_t dg= (uint8_t)((dst >> 8) & 0xFFu);
+    uint8_t db= (uint8_t)(dst & 0xFFu);
+    float a= (float)sa / 255.0f;
+    uint8_t out_r= (uint8_t)(sr * a + dr * (1.0f - a));
+    uint8_t out_g= (uint8_t)(sg * a + dg * (1.0f - a));
+    uint8_t out_b= (uint8_t)(sb * a + db * (1.0f - a));
+    ctx->pixels[y * ctx->width + x]= (0xFFu << 24) | ((uint32_t)out_r << 16) | ((uint32_t)out_g << 8) | (uint32_t)out_b;
+}
+
 void render_3d_sdl_draw_column(SDL3DContext* ctx, int x, int y_start, int y_end, uint32_t col) {
 if(!ctx || !ctx->pixels || x < 0 || x >= ctx->width) return;
 if(y_start < 0) y_start= 0;

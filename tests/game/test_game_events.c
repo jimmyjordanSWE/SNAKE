@@ -5,20 +5,19 @@
 
 int main(void)
 {
-    GameConfig cfg = {.board_width = 5,
-                      .board_height = 5,
-                      .tick_rate_ms = 100,
-                      .render_glyphs = 0,
-                      .screen_width = 80,
-                      .screen_height = 25,
-                      .enable_external_3d_view = 0,
-                      .seed = 1337,
-                      .num_players = 1,
-                      .max_players = 1,
-                      .max_length = 8,
-                      .max_food = 1};
-    Game* g = game_create(&cfg, cfg.seed);
-    if (!g) return 2;
+    GameConfig* cfg = game_config_create();
+    game_config_set_board_size(cfg, 5, 5);
+    game_config_set_tick_rate_ms(cfg, 100);
+    game_config_set_render_glyphs(cfg, 0);
+    game_config_set_screen_size(cfg, 80, 25);
+    game_config_set_enable_external_3d_view(cfg, 0);
+    game_config_set_seed(cfg, 1337);
+    game_config_set_num_players(cfg, 1);
+    game_config_set_max_players(cfg, 1);
+    game_config_set_max_length(cfg, 8);
+    game_config_set_max_food(cfg, 1);
+    Game* g = game_create(cfg, game_config_get_seed(cfg));
+    if (!g) { game_config_destroy(cfg); return 2; }
     
     GameState* s = game_test_get_state(g);
     s->players[0].active = true;
@@ -36,5 +35,6 @@ int main(void)
     assert(ev.food_respawned == true);
 
     game_destroy(g);
+    game_config_destroy(cfg);
     return 0;
 }

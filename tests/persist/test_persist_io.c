@@ -15,62 +15,71 @@ static char* make_temp_file(void) {
 
 int main(void) {
     char* fname = make_temp_file();
-    HighScore scores[3] = {{"alice", 10}, {"bob", 5}, {"carol", 7}};
+    HighScore* scores[3] = { highscore_create("alice", 10), highscore_create("bob", 5), highscore_create("carol", 7) };
     assert(persist_write_scores(fname, scores, 3));
-    HighScore out[5];
-    int cnt = persist_read_scores(fname, out, 5);
+    for(int i=0;i<3;i++) highscore_destroy(scores[i]);
+    HighScore** out = NULL;
+    int cnt = persist_read_scores(fname, &out);
     assert(cnt == 3);
-    assert(strcmp(out[0].name, "alice") == 0);
-    
+    assert(strcmp(highscore_get_name(out[0]), "alice") == 0);
+    persist_free_scores(out, cnt);
+
     assert(persist_append_score(fname, "dave", 20));
-    cnt = persist_read_scores(fname, out, 5);
+    out = NULL;
+    cnt = persist_read_scores(fname, &out);
     assert(cnt >= 1);
+    persist_free_scores(out, cnt);
 
     
-    GameConfig cfg = {
-        .board_width = 30,
-        .board_height = 15,
-        .tick_rate_ms = 50,
-        .render_glyphs = 1,
-        .screen_width = 80,
-        .screen_height = 25,
-        .enable_external_3d_view = 1,
-        .seed = 12345,
-        .fov_degrees = 70.5f,
-        
-        .show_sprite_debug = 1,
-        .active_player = 0,
-        .num_players = 2,
-        .max_players = 4,
-        .max_length = 128,
-        .max_food = 4,
-        .player_name = "tester",
-        .wall_height_scale = 1.25f,
-        .wall_texture = "assets/wall_custom.png",
-        .floor_texture = "assets/floor_custom.png",
-        .key_up = 'i',
-        .key_down = 'k',
-        .key_left = 'j',
-        .key_right = 'l',
-        
-        .key_quit = 'x',
-        .key_restart = 'n',
-        .key_pause = 'm',
-    };
+    GameConfig* cfg = game_config_create();
+    game_config_set_board_size(cfg, 30, 15);
+    game_config_set_tick_rate_ms(cfg, 50);
+    game_config_set_screen_size(cfg, 80, 25);
+    game_config_set_seed(cfg, 12345);
+    game_config_set_fov_degrees(cfg, 70.5f);
+    game_config_set_show_sprite_debug(cfg, 1);
+    game_config_set_num_players(cfg, 2);
+    game_config_set_max_players(cfg, 4);
+    game_config_set_max_length(cfg, 128);
+    game_config_set_max_food(cfg, 4);
+    game_config_set_player_name(cfg, "tester");
+    game_config_set_wall_height_scale(cfg, 1.25f);
+    game_config_set_wall_texture(cfg, "assets/wall_custom.png");
+    game_config_set_floor_texture(cfg, "assets/floor_custom.png");
+    game_config_set_key_up(cfg, 'i');
+    game_config_set_key_down(cfg, 'k');
+    game_config_set_key_left(cfg, 'j');
+    game_config_set_key_right(cfg, 'l');
+    game_config_set_key_quit(cfg, 'x');
+    game_config_set_key_restart(cfg, 'n');
+    game_config_set_key_pause(cfg, 'm');
+
     char* cfgfile = make_temp_file();
-    assert(persist_write_config(cfgfile, &cfg));
-    GameConfig loaded;
+    assert(persist_write_config(cfgfile, cfg));
+    /* debug: print written config */
+    {
+        FILE* f = fopen(cfgfile, "r");
+        if(f) {
+            char buf[256];
+            while(fgets(buf, sizeof(buf), f)) fputs(buf, stdout);
+            fclose(f);
+        }
+    }
+    GameConfig* loaded = NULL;
     assert(persist_load_config(cfgfile, &loaded));
-    assert(loaded.board_width == 30 && loaded.board_height == 15);
-    assert(loaded.seed == 12345);
-    assert(fabsf(loaded.fov_degrees - 70.5f) < 0.01f);
-    assert(loaded.show_sprite_debug == 1);
-    assert(loaded.num_players == 2);
-    assert(strcmp(loaded.player_name, "tester") == 0);
-    assert(fabsf(loaded.wall_height_scale - 1.25f) < 0.001f);
-    assert(strcmp(loaded.wall_texture, "assets/wall_custom.png") == 0);
-    assert(strcmp(loaded.floor_texture, "assets/floor_custom.png") == 0);
-    assert(loaded.key_up == 'i' && loaded.key_down == 'k');
+    int bw, bh; game_config_get_board_size(loaded, &bw, &bh);
+    assert(bw == 30 && bh == 15);
+    assert(game_config_get_seed(loaded) == 12345);
+    assert(fabsf(game_config_get_fov_degrees(loaded) - 70.5f) < 0.01f);
+    assert(game_config_get_show_sprite_debug(loaded) == 1);
+    assert(game_config_get_num_players(loaded) == 2);
+    assert(strcmp(game_config_get_player_name(loaded), "tester") == 0);
+    assert(fabsf(game_config_get_wall_height_scale(loaded) - 1.25f) < 0.001f);
+    assert(strcmp(game_config_get_wall_texture(loaded), "assets/wall_custom.png") == 0);
+    assert(strcmp(game_config_get_floor_texture(loaded), "assets/floor_custom.png") == 0);
+    assert(game_config_get_key_up(loaded) == 'i' && game_config_get_key_down(loaded) == 'k');
+    game_config_destroy(cfg);
+    game_config_destroy(loaded);
 
     unlink(fname); free(fname);
     unlink(cfgfile); free(cfgfile);

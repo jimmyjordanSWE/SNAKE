@@ -171,11 +171,11 @@ int half_w= s->screen_w / 2;
 int x1= s->screen_x - half_w;
 int x2= s->screen_x + half_w;
 if(x1 < 0) x1= 0;
-if(x2 >= ctx->width) x2= ctx->width - 1;
+if(x2 >= render_3d_sdl_get_width(ctx)) x2= render_3d_sdl_get_width(ctx) - 1;
 int y0= s->screen_y_top;
 int y1= y0 + s->screen_h - 1;
 if(y0 < 0) y0= 0;
-if(y1 >= ctx->height) y1= ctx->height - 1;
+if(y1 >= render_3d_sdl_get_height(ctx)) y1= render_3d_sdl_get_height(ctx) - 1;
 uint32_t col= s->color ? s->color : render_3d_sdl_color(0, 255, 0, 255);
 if(s->texture_id == -1) {
 int center_x= s->screen_x;
@@ -185,11 +185,11 @@ if(radius <= 0) radius= 1;
 int bx0= center_x - radius;
 if(bx0 < 0) bx0= 0;
 int bx1= center_x + radius;
-if(bx1 >= ctx->width) bx1= ctx->width - 1;
+if(bx1 >= render_3d_sdl_get_width(ctx)) bx1= render_3d_sdl_get_width(ctx) - 1;
 int by0= center_y - radius;
 if(by0 < 0) by0= 0;
 int by1= center_y + radius;
-if(by1 >= ctx->height) by1= ctx->height - 1;
+if(by1 >= render_3d_sdl_get_height(ctx)) by1= render_3d_sdl_get_height(ctx) - 1;
 for(int yy= by0; yy <= by1; ++yy) {
 for(int xx= bx0; xx <= bx1; ++xx) {
 int dx= xx - center_x;

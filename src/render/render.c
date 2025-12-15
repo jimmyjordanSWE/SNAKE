@@ -14,19 +14,31 @@
 static DisplayContext* g_display= NULL;
 static RenderGlyphs g_glyphs= RENDER_GLYPHS_UTF8;
 static int last_score_count= -1;
-static HighScore last_scores[PERSIST_MAX_SCORES];
+typedef struct {
+    char name[PERSIST_NAME_MAX];
+    int score;
+} DisplayScore;
+static DisplayScore last_scores[PERSIST_MAX_SCORES];
 #define SESSION_MAX_SCORES 32
-static HighScore g_session_scores[SESSION_MAX_SCORES];
+static DisplayScore g_session_scores[SESSION_MAX_SCORES];
 static int g_session_score_count= 0;
 void render_set_glyphs(RenderGlyphs glyphs) {
 if(glyphs != RENDER_GLYPHS_ASCII) glyphs= RENDER_GLYPHS_UTF8;
 g_glyphs= glyphs;
 }
+static bool is_session_score_from_display(const DisplayScore* s) {
+    if(!s) return false;
+    for(int i= 0; i < g_session_score_count; i++)
+        if(g_session_scores[i].score == s->score && strcmp(g_session_scores[i].name, s->name) == 0) return true;
+    return false;
+}
 static bool is_session_score(const HighScore* s) {
-if(!s) return false;
-for(int i= 0; i < g_session_score_count; i++)
-if(g_session_scores[i].score == s->score && strcmp(g_session_scores[i].name, s->name) == 0) return true;
-return false;
+    if(!s) return false;
+    const char* name = highscore_get_name(s);
+    int score = highscore_get_score(s);
+    for(int i= 0; i < g_session_score_count; i++)
+        if(g_session_scores[i].score == score && strcmp(g_session_scores[i].name, name) == 0) return true;
+    return false;
 }
 static uint16_t gradient_color_for_rank(int rank, int total) {
 (void)total;
@@ -42,12 +54,12 @@ if(rank < 0) rank= 0;
 if(rank >= palette_len) rank= palette_len - 1;
 return palette[rank];
 }
-static int compare_highscores_desc(const void* a, const void* b) {
-const HighScore* sa= (const HighScore*)a;
-const HighScore* sb= (const HighScore*)b;
-if(sa->score > sb->score) return -1;
-if(sa->score < sb->score) return 1;
-return strcmp(sa->name, sb->name);
+static int compare_display_scores_desc(const void* a, const void* b) {
+    const DisplayScore* sa = (const DisplayScore*)a;
+    const DisplayScore* sb = (const DisplayScore*)b;
+    if(sa->score > sb->score) return -1;
+    if(sa->score < sb->score) return 1;
+    return strcmp(sa->name, sb->name);
 }
 bool render_init(int min_width, int min_height) {
 if(min_width < 20) min_width= 20;
@@ -217,7 +229,7 @@ static uint16_t glyph_for_segment(const SnakePoint* body, int length, int idx) {
 if(g_glyphs == RENDER_GLYPHS_ASCII) return glyph_for_segment_ascii(body, length, idx);
 return glyph_for_segment_utf8(body, length, idx);
 }
-void render_draw(const GameState* game, const char* player_name, const HighScore* scores, int score_count) {
+void render_draw(const GameState* game, const char* player_name, HighScore** scores, int score_count) {
 if(!g_display || !game) return;
 display_clear(g_display);
 fill_background();
@@ -255,49 +267,57 @@ draw_string(field_x + field_width + 2, field_y + p * 2, score_str, color);
 if(!scores) score_count= 0;
 if(score_count < 0) score_count= 0;
 if(score_count > PERSIST_MAX_SCORES) score_count= PERSIST_MAX_SCORES;
-HighScore display_scores[PERSIST_MAX_SCORES + SNAKE_MAX_PLAYERS];
+
+DisplayScore display_scores[PERSIST_MAX_SCORES + SNAKE_MAX_PLAYERS];
 int display_count= 0;
-for(int i= 0; i < score_count && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); i++) display_scores[display_count++]= scores[i];
-for(int p= 0; p < game->num_players && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); p++) {
-if(!game->players[p].active) continue;
-if(game->players[p].score <= 0) continue;
-HighScore live= {0};
-if(p == 0 && player_name != NULL)
-snprintf(live.name, sizeof(live.name), "%s (live)", player_name);
-else
-snprintf(live.name, sizeof(live.name), "P%d (live)", p + 1);
-live.score= game->players[p].score;
-display_scores[display_count++]= live;
+for(int i= 0; i < score_count && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); i++) {
+    if(!scores || !scores[i]) continue;
+    snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.31s", highscore_get_name(scores[i]));
+    display_scores[display_count].score = highscore_get_score(scores[i]);
+    display_count++;
 }
-if(display_count > 1) qsort(display_scores, (size_t)display_count, sizeof(HighScore), compare_highscores_desc);
+for(int p= 0; p < game->num_players && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); p++) {
+    if(!game->players[p].active) continue;
+    if(game->players[p].score <= 0) continue;
+    if(p == 0 && player_name != NULL)
+        snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%s (live)", player_name);
+    else
+        snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "P%d (live)", p + 1);
+    display_scores[display_count].score = game->players[p].score;
+    display_count++;
+}
+if(display_count > 1) qsort(display_scores, (size_t)display_count, sizeof(DisplayScore), compare_display_scores_desc);
 int max_display= (display_count > 5) ? 5 : display_count;
 bool scores_changed= (score_count != last_score_count);
 if(!scores_changed && score_count > 0 && scores) {
-for(int i= 0; i < score_count; i++) {
-if(last_scores[i].score != scores[i].score || strcmp(last_scores[i].name, scores[i].name) != 0) {
-scores_changed= true;
-break;
-}
-}
+    for(int i= 0; i < score_count; i++) {
+        if(last_scores[i].score != highscore_get_score(scores[i]) || strcmp(last_scores[i].name, highscore_get_name(scores[i])) != 0) {
+            scores_changed= true;
+            break;
+        }
+    }
 }
 if(scores_changed && scores) {
-last_score_count= score_count;
-for(int i= 0; i < score_count; i++) last_scores[i]= scores[i];
-invalidate_front_buffer(g_display);
+    last_score_count= score_count;
+    for(int i= 0; i < score_count && i < PERSIST_MAX_SCORES; i++) {
+        snprintf(last_scores[i].name, sizeof(last_scores[i].name), "%.31s", highscore_get_name(scores[i]));
+        last_scores[i].score = highscore_get_score(scores[i]);
+    }
+    invalidate_front_buffer(g_display);
 }
 int hiscore_y= field_y + 5;
 draw_string(field_x + field_width + 2, hiscore_y, "High Scores:", DISPLAY_COLOR_WHITE);
 if(max_display > 0) {
-for(int i= 0; i < max_display && hiscore_y + i + 1 < display_height; i++) {
-char hiscore_str[80];
-int written= snprintf(hiscore_str, sizeof(hiscore_str), "%d. ", i + 1);
-if(written > 0 && written < (int)sizeof(hiscore_str)) snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
-uint16_t fg= gradient_color_for_rank(i, max_display);
-if(is_session_score(&display_scores[i]) || strstr(display_scores[i].name, "(live)") != NULL) fg= DISPLAY_COLOR_BRIGHT_GREEN;
-draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, fg);
-}
+    for(int i= 0; i < max_display && hiscore_y + i + 1 < display_height; i++) {
+        char hiscore_str[80];
+        int written= snprintf(hiscore_str, sizeof(hiscore_str), "%d. ", i + 1);
+        if(written > 0 && written < (int)sizeof(hiscore_str)) snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
+        uint16_t fg= gradient_color_for_rank(i, max_display);
+        if(is_session_score_from_display(&display_scores[i]) || strstr(display_scores[i].name, "(live)") != NULL) fg= DISPLAY_COLOR_BRIGHT_GREEN;
+        draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, fg);
+    }
 } else {
-draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", DISPLAY_COLOR_CYAN);
+    draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", DISPLAY_COLOR_CYAN);
 }
 if(display_height > field_y + field_height + 1) draw_string(1, field_y + field_height + 1, "Q: Quit", DISPLAY_COLOR_WHITE);
 display_present(g_display);

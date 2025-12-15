@@ -24,10 +24,14 @@ Game* game_create(const GameConfig* cfg, uint32_t seed_override) {
 if(!cfg) return NULL;
 Game* g= (Game*)malloc(sizeof(Game));
 if(!g) return NULL;
-GameConfig cfg_copy= *cfg;
-if(seed_override != 0) cfg_copy.seed= seed_override;
+int bw = 0, bh = 0;
+game_config_get_board_size(cfg, &bw, &bh);
 (void)memset(g, 0, sizeof(*g));
-game_init(&g->state, cfg_copy.board_width, cfg_copy.board_height, &cfg_copy);
+game_init(&g->state, bw, bh, cfg);
+if(seed_override != 0) {
+    /* Override the RNG seed if requested */
+    snake_rng_seed(&g->state.rng_state, seed_override);
+}
 return g;
 }
 void game_destroy(Game* g) {
@@ -237,14 +241,14 @@ void game_init(GameState* game, int width, int height, const GameConfig* cfg) {
 if(!game || !cfg) return;
 game->width= (width < 2) ? 2 : width;
 game->height= (height < 2) ? 2 : height;
-snake_rng_seed(&game->rng_state, cfg->seed);
+snake_rng_seed(&game->rng_state, game_config_get_seed(cfg));
 game->status= GAME_STATUS_RUNNING;
 game->food_count= 0;
-game->num_players= cfg->num_players;
+game->num_players= game_config_get_num_players(cfg);
 if(game->num_players < 1) game->num_players= 1;
-game->max_players= cfg->max_players;
-game->max_length= cfg->max_length;
-game->max_food= cfg->max_food;
+game->max_players= game_config_get_max_players(cfg);
+game->max_length= game_config_get_max_length(cfg);
+game->max_food= game_config_get_max_food(cfg);
 game->players= (PlayerState*)malloc(sizeof(PlayerState) * (size_t)game->max_players);
 if(!game->players) return;
 game->food= (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)game->max_food);

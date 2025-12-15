@@ -30,39 +30,77 @@
 #define PERSIST_CONFIG_DEFAULT_KEY_RESTART 'r'
 #define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
 #define PERSIST_PLAYER_NAME_MAX 32
-typedef struct {
-char name[PERSIST_NAME_MAX];
-int score;
-} HighScore;
-typedef struct {
-int board_width, board_height;
-int tick_rate_ms;
-int render_glyphs;
-int screen_width, screen_height;
-int enable_external_3d_view;
-uint32_t seed;
-float fov_degrees;
-int show_sprite_debug;
-int active_player;
-int num_players;
-char player_name[PERSIST_PLAYER_NAME_MAX];
-int max_players;
-int max_length;
-int max_food;
-float wall_height_scale;
-float tail_height_scale;
-char wall_texture[PERSIST_TEXTURE_PATH_MAX];
-char floor_texture[PERSIST_TEXTURE_PATH_MAX];
-char key_up;
-char key_down;
-char key_left;
-char key_right;
-char key_quit;
-char key_restart;
-char key_pause;
-} GameConfig;
-int persist_read_scores(const char* filename, HighScore* scores, int max_count);
-bool persist_write_scores(const char* filename, const HighScore* scores, int count);
+typedef struct HighScore HighScore;
+/* HighScore API */
+HighScore* highscore_create(const char* name, int score);
+void highscore_destroy(HighScore* hs);
+const char* highscore_get_name(const HighScore* hs);
+int highscore_get_score(const HighScore* hs);
+void highscore_set_name(HighScore* hs, const char* name);
+void highscore_set_score(HighScore* hs, int score);
+
+/* Persistence helpers for high scores */
+int persist_read_scores(const char* filename, HighScore*** out_scores);
+bool persist_write_scores(const char* filename, HighScore** scores, int count);
 bool persist_append_score(const char* filename, const char* name, int score);
-bool persist_load_config(const char* filename, GameConfig* config);
+void persist_free_scores(HighScore** scores, int count);
+
+typedef struct GameConfig GameConfig;
+/* GameConfig lifecycle and accessors */
+GameConfig* game_config_create(void);
+void game_config_destroy(GameConfig* cfg);
+void game_config_set_board_size(GameConfig* cfg, int w, int h);
+void game_config_get_board_size(const GameConfig* cfg, int* w_out, int* h_out);
+void game_config_set_tick_rate_ms(GameConfig* cfg, int ms);
+int game_config_get_tick_rate_ms(const GameConfig* cfg);
+void game_config_set_screen_size(GameConfig* cfg, int w, int h);
+void game_config_get_screen_size(const GameConfig* cfg, int* w_out, int* h_out);
+void game_config_set_seed(GameConfig* cfg, uint32_t seed);
+uint32_t game_config_get_seed(const GameConfig* cfg);
+void game_config_set_fov_degrees(GameConfig* cfg, float fov);
+float game_config_get_fov_degrees(const GameConfig* cfg);
+void game_config_set_player_name(GameConfig* cfg, const char* name);
+const char* game_config_get_player_name(const GameConfig* cfg);
+void game_config_set_render_glyphs(GameConfig* cfg, int v);
+int game_config_get_render_glyphs(const GameConfig* cfg);
+void game_config_set_show_sprite_debug(GameConfig* cfg, int v);
+int game_config_get_show_sprite_debug(const GameConfig* cfg);
+void game_config_set_num_players(GameConfig* cfg, int n);
+int game_config_get_num_players(const GameConfig* cfg);
+void game_config_set_max_players(GameConfig* cfg, int n);
+int game_config_get_max_players(const GameConfig* cfg);
+void game_config_set_max_length(GameConfig* cfg, int v);
+int game_config_get_max_length(const GameConfig* cfg);
+void game_config_set_max_food(GameConfig* cfg, int v);
+int game_config_get_max_food(const GameConfig* cfg);
+void game_config_set_wall_height_scale(GameConfig* cfg, float v);
+float game_config_get_wall_height_scale(const GameConfig* cfg);
+void game_config_set_tail_height_scale(GameConfig* cfg, float v);
+float game_config_get_tail_height_scale(const GameConfig* cfg);
+void game_config_set_wall_texture(GameConfig* cfg, const char* path);
+const char* game_config_get_wall_texture(const GameConfig* cfg);
+void game_config_set_floor_texture(GameConfig* cfg, const char* path);
+const char* game_config_get_floor_texture(const GameConfig* cfg);
+void game_config_set_key_up(GameConfig* cfg, char c);
+char game_config_get_key_up(const GameConfig* cfg);
+void game_config_set_key_down(GameConfig* cfg, char c);
+char game_config_get_key_down(const GameConfig* cfg);
+void game_config_set_key_left(GameConfig* cfg, char c);
+char game_config_get_key_left(const GameConfig* cfg);
+void game_config_set_key_right(GameConfig* cfg, char c);
+char game_config_get_key_right(const GameConfig* cfg);
+void game_config_set_key_quit(GameConfig* cfg, char c);
+char game_config_get_key_quit(const GameConfig* cfg);
+void game_config_set_key_restart(GameConfig* cfg, char c);
+char game_config_get_key_restart(const GameConfig* cfg);
+void game_config_set_key_pause(GameConfig* cfg, char c);
+char game_config_get_key_pause(const GameConfig* cfg);
+
+void game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
+int game_config_get_enable_external_3d_view(const GameConfig* cfg);
+
+void game_config_set_active_player(GameConfig* cfg, int v);
+int game_config_get_active_player(const GameConfig* cfg);
+
+bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);

@@ -137,17 +137,17 @@ test-input:
 
 test-collision:
 	@mkdir -p $(TEST_DIR)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_tail tests/collision/test_tail_vacate.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_collision_swap tests/collision/test_head_swap.c src/core/collision.c src/core/game.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_collision_tail && ./$(TEST_DIR)/test_collision_swap
 
 test-game:
 	@mkdir -p $(TEST_DIR)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_game_over && ./$(TEST_DIR)/test_game_events && ./$(TEST_DIR)/test_game_death_events && ./$(TEST_DIR)/test_game_input
 
@@ -164,13 +164,15 @@ test-persist:
 	@mkdir -p $(TEST_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist_write_idempotent tests/persist/test_persist_write_idempotent.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_opaque_lifecycle tests/persist/test_opaque_lifecycle.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_persist
 	./$(TEST_DIR)/test_persist_write_idempotent
+	./$(TEST_DIR)/test_opaque_lifecycle
 
 test-net:
 	@mkdir -p $(TEST_DIR)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_net_pack
 

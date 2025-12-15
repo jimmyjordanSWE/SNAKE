@@ -117,12 +117,11 @@ config->tick_rate_ms= PERSIST_CONFIG_DEFAULT_TICK_MS;
 config->render_glyphs= 0;
 config->screen_width= PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
 config->screen_height= PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
-config->render_mode= 1;
+config->enable_external_3d_view = PERSIST_CONFIG_DEFAULT_ENABLE_EXTERNAL_3D_VIEW;
 /* new defaults */
 config->seed = (uint32_t)PERSIST_CONFIG_DEFAULT_SEED;
 config->fov_degrees = (float)PERSIST_CONFIG_DEFAULT_FOV_DEGREES;
-config->show_minimap = PERSIST_CONFIG_DEFAULT_SHOW_MINIMAP;
-config->show_stats = PERSIST_CONFIG_DEFAULT_SHOW_STATS;
+/* show_minimap/show_stats removed (unused) */
 config->show_sprite_debug = PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG;
 config->active_player = PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER;
 config->num_players = PERSIST_CONFIG_DEFAULT_NUM_PLAYERS;
@@ -130,6 +129,17 @@ snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "Player");
 config->max_players = PERSIST_CONFIG_DEFAULT_MAX_PLAYERS;
 config->max_length = PERSIST_CONFIG_DEFAULT_MAX_LENGTH;
 config->max_food = PERSIST_CONFIG_DEFAULT_MAX_FOOD;
+/* new fields: textures, wall scale, key bindings */
+config->wall_height_scale = (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE;
+snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_WALL_TEXTURE);
+snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE);
+config->key_up = PERSIST_CONFIG_DEFAULT_KEY_UP;
+config->key_down = PERSIST_CONFIG_DEFAULT_KEY_DOWN;
+config->key_left = PERSIST_CONFIG_DEFAULT_KEY_LEFT;
+config->key_right = PERSIST_CONFIG_DEFAULT_KEY_RIGHT;
+config->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
+config->key_restart = PERSIST_CONFIG_DEFAULT_KEY_RESTART;
+config->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
 if(filename == NULL) return false;
 FILE* fp= fopen(filename, "r");
 if(fp == NULL) return false;
@@ -165,13 +175,11 @@ config->render_glyphs= 1;
 }
 continue;
 }
-if(strcmp(key, "render_mode") == 0) {
-for(char* p= value; *p; p++) *p= (char)tolower((unsigned char)*p);
-if(strcmp(value, "2d") == 0 || strcmp(value, "console") == 0)
-config->render_mode= 0;
-else if(strcmp(value, "3d") == 0 || strcmp(value, "sdl") == 0)
-config->render_mode= 1;
-continue;
+if(strcmp(key, "enable_external_3d_view") == 0) {
+	for(char* p= value; *p; p++) *p= (char)tolower((unsigned char)*p);
+	if(strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0) config->enable_external_3d_view = 1;
+	else if(strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0) config->enable_external_3d_view = 0;
+	continue;
 }
 else if(strcmp(key, "seed") == 0) {
 	errno = 0;
@@ -192,16 +200,41 @@ else if(strcmp(key, "player_name") == 0) {
 	snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", value);
 	continue;
 }
-else if(strcmp(key, "show_minimap") == 0 || strcmp(key, "show_stats") == 0 || strcmp(key, "show_sprite_debug") == 0) {
-	/* handle boolean-like values */
+else if(strcmp(key, "wall_height_scale") == 0) {
+	char* endptr2 = NULL;
+	errno = 0;
+	double dv = strtod(value, &endptr2);
+	if(errno != 0 || endptr2 == value) continue;
+	config->wall_height_scale = (float)dv;
+	continue;
+}
+else if(strcmp(key, "wall_texture") == 0) {
+	snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
+	continue;
+}
+else if(strcmp(key, "floor_texture") == 0) {
+	snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
+	continue;
+}
+else if(strcmp(key, "key_up") == 0 || strcmp(key, "key_down") == 0 || strcmp(key, "key_left") == 0 || strcmp(key, "key_right") == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
+	/* accept a single character binding */
+	char c = value[0];
+	if(strcmp(key, "key_up") == 0) config->key_up = c;
+	else if(strcmp(key, "key_down") == 0) config->key_down = c;
+	else if(strcmp(key, "key_left") == 0) config->key_left = c;
+	else if(strcmp(key, "key_right") == 0) config->key_right = c;
+	else if(strcmp(key, "key_quit") == 0) config->key_quit = c;
+	else if(strcmp(key, "key_restart") == 0) config->key_restart = c;
+	else if(strcmp(key, "key_pause") == 0) config->key_pause = c;
+	continue;
+}
+else if(strcmp(key, "show_sprite_debug") == 0) {
 	for(char* p= value; *p; p++) *p= (char)tolower((unsigned char)*p);
 	int b = -1;
 	if(strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0) b = 1;
 	else if(strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0) b = 0;
 	if(b == -1) continue;
-	if(strcmp(key, "show_minimap") == 0) config->show_minimap = b;
-	else if(strcmp(key, "show_stats") == 0) config->show_stats = b;
-	else if(strcmp(key, "show_sprite_debug") == 0) config->show_sprite_debug = b;
+	config->show_sprite_debug = b;
 	continue;
 }
 else if(strcmp(key, "active_player") == 0) {
@@ -270,11 +303,11 @@ if(fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) goto write_fail;
 if(fprintf(fp, "render_glyphs=%s\n", (config->render_glyphs == 1) ? "ascii" : "utf8") < 0) goto write_fail;
 if(fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) goto write_fail;
 if(fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) goto write_fail;
-if(fprintf(fp, "render_mode=%s\n", (config->render_mode == 1) ? "3d" : "2d") < 0) goto write_fail;
+/* write whether external SDL 3D view should be started */
+if(fprintf(fp, "enable_external_3d_view=%s\n", (config->enable_external_3d_view ? "true" : "false")) < 0) goto write_fail;
 if(fprintf(fp, "seed=%u\n", (unsigned int)config->seed) < 0) goto write_fail;
 if(fprintf(fp, "fov_degrees=%.2f\n", config->fov_degrees) < 0) goto write_fail;
-if(fprintf(fp, "show_minimap=%s\n", config->show_minimap ? "true" : "false") < 0) goto write_fail;
-if(fprintf(fp, "show_stats=%s\n", config->show_stats ? "true" : "false") < 0) goto write_fail;
+/* show_minimap/show_stats removed (unused) */
 if(fprintf(fp, "show_sprite_debug=%s\n", config->show_sprite_debug ? "true" : "false") < 0) goto write_fail;
 if(fprintf(fp, "active_player=%d\n", config->active_player) < 0) goto write_fail;
 if(fprintf(fp, "num_players=%d\n", config->num_players) < 0) goto write_fail;
@@ -282,6 +315,16 @@ if(fprintf(fp, "player_name=%s\n", config->player_name) < 0) goto write_fail;
 if(fprintf(fp, "max_players=%d\n", config->max_players) < 0) goto write_fail;
 if(fprintf(fp, "max_length=%d\n", config->max_length) < 0) goto write_fail;
 if(fprintf(fp, "max_food=%d\n", config->max_food) < 0) goto write_fail;
+if(fprintf(fp, "wall_height_scale=%.2f\n", config->wall_height_scale) < 0) goto write_fail;
+if(fprintf(fp, "wall_texture=%s\n", config->wall_texture) < 0) goto write_fail;
+if(fprintf(fp, "floor_texture=%s\n", config->floor_texture) < 0) goto write_fail;
+if(fprintf(fp, "key_up=%c\n", config->key_up) < 0) goto write_fail;
+if(fprintf(fp, "key_down=%c\n", config->key_down) < 0) goto write_fail;
+if(fprintf(fp, "key_left=%c\n", config->key_left) < 0) goto write_fail;
+if(fprintf(fp, "key_right=%c\n", config->key_right) < 0) goto write_fail;
+if(fprintf(fp, "key_quit=%c\n", config->key_quit) < 0) goto write_fail;
+if(fprintf(fp, "key_restart=%c\n", config->key_restart) < 0) goto write_fail;
+if(fprintf(fp, "key_pause=%c\n", config->key_pause) < 0) goto write_fail;
 if(fflush(fp) != 0) {
 fclose(fp);
 (void)unlink(temp_filename);

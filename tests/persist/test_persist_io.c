@@ -34,11 +34,10 @@ int main(void) {
         .render_glyphs = 1,
         .screen_width = 80,
         .screen_height = 25,
-        .render_mode = 1,
+        .enable_external_3d_view = 1,
         .seed = 12345,
         .fov_degrees = 70.5f,
-        .show_minimap = 1,
-        .show_stats = 0,
+        /* show_minimap/show_stats removed (unused) */
         .show_sprite_debug = 1,
         .active_player = 0,
         .num_players = 2,
@@ -46,6 +45,17 @@ int main(void) {
         .max_length = 128,
         .max_food = 4,
         .player_name = "tester",
+        .wall_height_scale = 1.25f,
+        .wall_texture = "assets/wall_custom.png",
+        .floor_texture = "assets/floor_custom.png",
+        .key_up = 'i',
+        .key_down = 'k',
+        .key_left = 'j',
+        .key_right = 'l',
+        /* strafing removed - use key_left/key_right for turning */
+        .key_quit = 'x',
+        .key_restart = 'n',
+        .key_pause = 'm',
     };
     char* cfgfile = make_temp_file();
     assert(persist_write_config(cfgfile, &cfg));
@@ -54,10 +64,13 @@ int main(void) {
     assert(loaded.board_width == 30 && loaded.board_height == 15);
     assert(loaded.seed == 12345);
     assert(fabsf(loaded.fov_degrees - 70.5f) < 0.01f);
-    assert(loaded.show_minimap == 1);
     assert(loaded.show_sprite_debug == 1);
     assert(loaded.num_players == 2);
     assert(strcmp(loaded.player_name, "tester") == 0);
+    assert(fabsf(loaded.wall_height_scale - 1.25f) < 0.001f);
+    assert(strcmp(loaded.wall_texture, "assets/wall_custom.png") == 0);
+    assert(strcmp(loaded.floor_texture, "assets/floor_custom.png") == 0);
+    assert(loaded.key_up == 'i' && loaded.key_down == 'k');
 
     unlink(fname); free(fname);
     unlink(cfgfile); free(cfgfile);

@@ -64,6 +64,8 @@ persist_load_config(".snake_config", &config);
 if(config.tick_rate_ms < 10) config.tick_rate_ms= 10;
 if(config.tick_rate_ms > 1000) config.tick_rate_ms= 1000;
 render_set_glyphs((config.render_glyphs == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
+    /* apply key bindings from config */
+    input_set_key_bindings(config.key_up, config.key_down, config.key_left, config.key_right, config.key_quit, config.key_restart, config.key_pause);
     /* apply board dimensions and other runtime config to main globals */
     board_width = config.board_width;
     board_height = config.board_height;
@@ -102,14 +104,16 @@ goto done;
 }
 GameState game= {0};
     game_init(&game, board_width, board_height, &config);
-    Render3DConfig config_3d= {.active_player= config.active_player, .fov_degrees= config.fov_degrees, .show_minimap= (config.show_minimap != 0), .show_stats= (config.show_stats != 0), .show_sprite_debug= (config.show_sprite_debug != 0), .screen_width= config.screen_width, .screen_height= config.screen_height};
-bool has_3d= render_3d_init(&game, &config_3d);
-if(!has_3d)
-fprintf(stderr,
-    "Warning: 3D rendering initialization failed, continuing "
-    "with 2D only\n");
-else
-render_3d_draw(&game, player_name, NULL, 0);
+    Render3DConfig config_3d= {.active_player= config.active_player, .fov_degrees= config.fov_degrees, .show_sprite_debug= (config.show_sprite_debug != 0), .screen_width= config.screen_width, .screen_height= config.screen_height, .wall_height_scale = config.wall_height_scale};
+    /* copy optional texture paths into Render3D config (zero-terminated) */
+    if(config.wall_texture[0]) snprintf(config_3d.wall_texture_path, (int)sizeof(config_3d.wall_texture_path), "%s", config.wall_texture);
+    if(config.floor_texture[0]) snprintf(config_3d.floor_texture_path, (int)sizeof(config_3d.floor_texture_path), "%s", config.floor_texture);
+    bool has_3d = false;
+    if(config.enable_external_3d_view) {
+        has_3d = render_3d_init(&game, &config_3d);
+        if(!has_3d) fprintf(stderr, "Warning: external 3D view initialization failed, continuing with 2D only\n");
+        else render_3d_draw(&game, player_name, NULL, 0);
+    }
 if(!input_init()) {
 fprintf(stderr, "Failed to initialize input\n");
 goto done;
@@ -167,9 +171,9 @@ if(input_state.move_up) game.players[0].queued_dir= SNAKE_DIR_UP;
 if(input_state.move_down) game.players[0].queued_dir= SNAKE_DIR_DOWN;
 if(input_state.move_left) game.players[0].queued_dir= SNAKE_DIR_LEFT;
 if(input_state.move_right) game.players[0].queued_dir= SNAKE_DIR_RIGHT;
-/* handle strafing (relative to player's current view) - 'a'/'d' */
-if(input_state.move_strafe_left) game.players[0].queued_dir= strafe_left_dir(game.players[0].current_dir);
-if(input_state.move_strafe_right) game.players[0].queued_dir= strafe_right_dir(game.players[0].current_dir);
+/* handle turning (relative to player's current view) - 'a'/'d' */
+if(input_state.turn_left) game.players[0].queued_dir= strafe_left_dir(game.players[0].current_dir);
+if(input_state.turn_right) game.players[0].queued_dir= strafe_right_dir(game.players[0].current_dir);
 }
     if(input_state.pause_toggle) game.status= (game.status == GAME_STATUS_PAUSED) ? GAME_STATUS_RUNNING : GAME_STATUS_PAUSED;
 if(input_state.restart) game_reset(&game);

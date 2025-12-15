@@ -1,18 +1,19 @@
 #include "snake/render_3d_projection.h"
 #include <math.h>
-void projection_init(Projection3D* proj, int screen_width, int screen_height, float fov_radians) {
+void projection_init(Projection3D* proj, int screen_width, int screen_height, float fov_radians, float wall_scale) {
 if(!proj) return;
 proj->screen_width= screen_width;
 proj->screen_height= screen_height;
 proj->fov_radians= fov_radians;
 	proj->horizon_y = screen_height / 2;
+	proj->wall_scale = wall_scale;
 }
 void projection_project_wall(const Projection3D* proj, float distance, WallProjection* result_out) {
 if(!proj || !result_out) return;
 if(distance <= 0.1f) distance= 0.1f;
 float wall_height= (float)proj->screen_height / (distance + 0.5f);
 /* Scale wall height for better visual impact - walls appear taller */
-wall_height *= 1.5f;
+wall_height *= (proj->wall_scale > 0.0f ? proj->wall_scale : 1.5f);
 if(wall_height > (float)proj->screen_height) wall_height= (float)proj->screen_height;
 result_out->wall_height= (int)wall_height;
 	int center= proj->horizon_y;

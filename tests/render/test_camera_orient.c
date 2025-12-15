@@ -9,7 +9,7 @@ int main(void) {
     Camera3D cam;
     camera_init(&cam, 90.0f, 64, 0.5f);
     Projection3D proj;
-    projection_init(&proj, 64, 32, cam.fov_radians);
+    projection_init(&proj, 64, 32, cam.fov_radians, (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE);
     SpriteRenderer3D sr;
     int rc = 0;
     sprite_init(&sr, 4, &cam, &proj);

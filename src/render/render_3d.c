@@ -33,28 +33,41 @@ if(config) {
 g_render_3d.config= *config;
 } else {
 g_render_3d.config.active_player= 0;
-g_render_3d.config.fov_degrees= 90.0f;
-g_render_3d.config.show_minimap= false;
-g_render_3d.config.show_stats= false;
+	g_render_3d.config.fov_degrees= 90.0f;
 	g_render_3d.config.show_sprite_debug = false;
 g_render_3d.config.screen_width= 800;
 g_render_3d.config.screen_height= 600;
+	g_render_3d.config.wall_height_scale = (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE;
+	g_render_3d.config.wall_texture_path[0] = '\0';
+	g_render_3d.config.floor_texture_path[0] = '\0';
 }
 if(!render_3d_sdl_init(g_render_3d.config.screen_width, g_render_3d.config.screen_height, &g_render_3d.display)) return false;
 camera_init(&g_render_3d.camera, g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
 raycast_init(&g_render_3d.raycaster, game_state->width, game_state->height, NULL);
-projection_init(&g_render_3d.projector, g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f);
+/* projection with configurable wall height scale */
+projection_init(&g_render_3d.projector, g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f, g_render_3d.config.wall_height_scale);
 /* initialize textures */
 texture_init(&g_render_3d.texture);
 texture_init(&g_render_3d.wall_texture);
 texture_init(&g_render_3d.floor_texture);
-/* try to load assets/wall.png and assets/floor.png (optional)
-   Log a diagnostic if loading fails to help users notice missing assets. */
-if(!texture_load_from_file(&g_render_3d.wall_texture, "assets/wall.png")) {
-	fprintf(stderr, "render_3d_init: failed to load assets/wall.png (using procedural fallback)\n");
+/* try to load configured textures (optional). Use configured paths if set, otherwise fall back to built-in defaults. */
+if(g_render_3d.config.wall_texture_path[0]) {
+	if(!texture_load_from_file(&g_render_3d.wall_texture, g_render_3d.config.wall_texture_path)) {
+		fprintf(stderr, "render_3d_init: failed to load %s (using procedural fallback)\n", g_render_3d.config.wall_texture_path);
+	}
+} else {
+	if(!texture_load_from_file(&g_render_3d.wall_texture, PERSIST_CONFIG_DEFAULT_WALL_TEXTURE)) {
+		fprintf(stderr, "render_3d_init: failed to load %s (using procedural fallback)\n", PERSIST_CONFIG_DEFAULT_WALL_TEXTURE);
+	}
 }
-if(!texture_load_from_file(&g_render_3d.floor_texture, "assets/floor.png")) {
-	fprintf(stderr, "render_3d_init: failed to load assets/floor.png (using flat floor color)\n");
+if(g_render_3d.config.floor_texture_path[0]) {
+	if(!texture_load_from_file(&g_render_3d.floor_texture, g_render_3d.config.floor_texture_path)) {
+		fprintf(stderr, "render_3d_init: failed to load %s (using flat floor color)\n", g_render_3d.config.floor_texture_path);
+	}
+} else {
+	if(!texture_load_from_file(&g_render_3d.floor_texture, PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE)) {
+		fprintf(stderr, "render_3d_init: failed to load %s (using flat floor color)\n", PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE);
+	}
 }
 /* allocate per-column perpendicular depth buffer for sprite occlusion */
 g_render_3d.column_depths = calloc((size_t)g_render_3d.display.width, sizeof(float));
@@ -212,12 +225,7 @@ if(g_render_3d.initialized) g_render_3d.config.active_player= player_index;
 void render_3d_set_fov(float fov_degrees) {
 if(g_render_3d.initialized) g_render_3d.config.fov_degrees= fov_degrees;
 }
-void render_3d_toggle_minimap(void) {
-if(g_render_3d.initialized) g_render_3d.config.show_minimap= !g_render_3d.config.show_minimap;
-}
-void render_3d_toggle_stats(void) {
-if(g_render_3d.initialized) g_render_3d.config.show_stats= !g_render_3d.config.show_stats;
-}
+/* minimap/stats toggles intentionally removed (no rendering implementation) */
 
 void render_3d_shutdown(void) {
 if(!g_render_3d.initialized) return;

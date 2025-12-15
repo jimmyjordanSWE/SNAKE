@@ -17,7 +17,7 @@ int main(void) {
     assert(out.move_up && out.quit);
 
     GameState g = {0};
-    GameConfig cfg = { .board_width = 20, .board_height = 10, .tick_rate_ms = 100, .render_glyphs = 0, .screen_width = 80, .screen_height = 25, .render_mode = 1, .seed = 42, .fov_degrees = 90.0f, .show_minimap = 0, .show_stats = 0, .show_sprite_debug = 0, .active_player = 0, .num_players = 1, .max_players = 2, .max_length = 16, .max_food = 4 };
+    GameConfig cfg = { .board_width = 20, .board_height = 10, .tick_rate_ms = 100, .render_glyphs = 0, .screen_width = 80, .screen_height = 25, .enable_external_3d_view = 1, .seed = 42, .fov_degrees = 90.0f, .show_sprite_debug = 0, .active_player = 0, .num_players = 1, .max_players = 2, .max_length = 16, .max_food = 4 };
     g.max_players = cfg.max_players;
     g.max_length = cfg.max_length;
     g.max_food = cfg.max_food;

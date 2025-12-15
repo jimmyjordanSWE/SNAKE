@@ -17,24 +17,25 @@ static float dir_to_angle(int dir) {
 }
 
 int main(void) {
-    Camera3D cam;
-    camera_init(&cam, 90.0f, 64, 0.5f);
+    Camera3D* cam = camera_create(90.0f, 64, 0.5f);
+    if(!cam) return 2;
     for (int dir = SNAKE_DIR_UP; dir <= SNAKE_DIR_RIGHT; ++dir) {
-        camera_set_from_player(&cam, 5, 5, dir);
-        float a = camera_get_interpolated_angle(&cam);
+        camera_set_from_player(cam, 5, 5, dir);
+        float a = camera_get_interpolated_angle(cam);
         float expected = dir_to_angle(dir);
-        /* angles normalized to [0,2pi) */
+        
         float d = a - expected;
         while (d > (float)M_PI) d -= 2.0f * (float)M_PI;
         while (d < -(float)M_PI) d += 2.0f * (float)M_PI;
-        if (fabsf(d) > 1e-6f) return 1;
-        /* check direction vectors */
+        if (fabsf(d) > 1e-6f) { camera_destroy(cam); return 1; }
+        
         float dx = cosf(a);
         float dy = sinf(a);
-        /* compare to camera->dir_x/dir_y via update_vectors()
-           those are set in camera_set_from_player */
-        if (fabsf(dx - cam.dir_x) > 1e-6f) return 2;
-        if (fabsf(dy - cam.dir_y) > 1e-6f) return 3;
+        float dir_x, dir_y;
+        camera_get_dir(cam, &dir_x, &dir_y);
+        if (fabsf(dx - dir_x) > 1e-6f) { camera_destroy(cam); return 2; }
+        if (fabsf(dy - dir_y) > 1e-6f) { camera_destroy(cam); return 3; }
     }
+    camera_destroy(cam);
     return 0;
 }

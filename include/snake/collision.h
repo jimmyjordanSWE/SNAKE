@@ -1,9 +1,6 @@
 #pragma once
 #include "snake/types.h"
 #include <stdbool.h>
-/* Forward-declare `PlayerState` and `GameState` tags - users don't need the
- * full definitions to call collision APIs. Internal code should include
- * `game_internal.h`. */
 struct PlayerState;
 struct GameState;
 bool collision_is_wall(SnakePoint p, int board_w, int board_h);

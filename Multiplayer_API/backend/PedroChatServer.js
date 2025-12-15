@@ -33,7 +33,7 @@ class PedroChatServer {
 
 		console.log("PedroChatServer online at path:", this.path);
 
-		// Starta TCP-server för C-klienter om tcpPort är satt
+		
 		if (typeof this.tcpPort === "number") {
 			this.tcpServer = net.createServer((socket) => this.handleTcpConnection(socket));
 
@@ -67,7 +67,7 @@ class PedroChatServer {
 		return id;
 	}
 
-	// --- WebSocket-klienter (JS) ---
+	
 
 	handleWebSocketConnection(ws) {
 		console.log("New WebSocket pedroChat connection");
@@ -92,7 +92,7 @@ class PedroChatServer {
 		ws.on("error", () => this.handleClose(client));
 	}
 
-	// --- TCP-klienter (C via PedroChatApi.c) ---
+	
 
 	handleTcpConnection(socket) {
 		console.log("New TCP pedroChat connection");
@@ -109,7 +109,7 @@ class PedroChatServer {
 			messageId: 0,
 			send: (jsonString) => {
 				if (!socket.destroyed) {
-					// Varje JSON‑meddelande avslutas med '\n'
+					
 					socket.write(jsonString + "\n");
 				}
 			},
@@ -133,7 +133,7 @@ class PedroChatServer {
 		socket.on("error", () => this.handleClose(client));
 	}
 
-	// --- Gemensam meddelandehantering ---
+	
 
 	handleMessage(client, message) {
 		let payload;
@@ -340,7 +340,7 @@ class PedroChatServer {
 	handleClose(client) {
 		console.log("Client disconnected:", client.clientId);
 
-		// Ta bort klienten från dess session
+		
 		const sessionId = client.sessionId;
 		if (sessionId && this.sessions.has(sessionId)) {
 			const session = this.sessions.get(sessionId);
@@ -349,7 +349,7 @@ class PedroChatServer {
 				session.clients.splice(index, 1);
 			}
 
-			// Om klienten var host, ta bort hela sessionen och informera övriga klienter
+			
 			if (client === session.host) {
 				const serialized = JSON.stringify({
 					cmd: "closed",
@@ -368,7 +368,7 @@ class PedroChatServer {
 		}
 
 		try {
-			// Stäng anslutningen om den fortfarande är öppen
+			
 			client.close();
 		} catch (e) {
 

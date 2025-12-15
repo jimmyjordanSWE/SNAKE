@@ -183,6 +183,7 @@ test-tty:
 test-render:
 	@mkdir -p $(TEST_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_orient tests/render/test_camera_orient.c src/render/camera.c src/render/projection.c src/render/sprite.c src/render/render_3d_sdl.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_projection_api tests/render/test_projection_api.c src/render/projection.c $(LDLIBS) || true
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_interp tests/render/test_camera_interp.c src/render/camera.c $(LDLIBS) || true
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_world_transform tests/render/test_camera_world_transform.c src/render/camera.c $(LDLIBS) || true
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_camera_angles tests/render/test_camera_angles.c src/render/camera.c $(LDLIBS) || true

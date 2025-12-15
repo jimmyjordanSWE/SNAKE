@@ -1,6 +1,28 @@
 #include "snake/render_3d_display.h"
 #include <stdlib.h>
 #include <string.h>
+
+struct Display3D {
+    int width;
+    int height;
+    Framebuffer3DCell* buffer;
+};
+
+Display3D* display_3d_create(int width, int height) {
+    Display3D* d = (Display3D*)calloc(1, sizeof(*d));
+    if(!d) return NULL;
+    display_3d_init(d, width, height);
+    return d;
+}
+void display_3d_destroy(Display3D* disp) {
+    if(!disp) return;
+    display_3d_shutdown(disp);
+    free(disp);
+}
+int display_3d_get_width(const Display3D* disp) { return disp ? disp->width : 0; }
+int display_3d_get_height(const Display3D* disp) { return disp ? disp->height : 0; }
+Framebuffer3DCell* display_3d_get_buffer(Display3D* disp) { return disp ? disp->buffer : NULL; }
+
 void display_3d_init(Display3D* disp, int width, int height) {
 if(!disp) return;
 disp->width= width;
@@ -45,4 +67,4 @@ if(disp->buffer) {
 free(disp->buffer);
 disp->buffer= NULL;
 }
-}
+} 

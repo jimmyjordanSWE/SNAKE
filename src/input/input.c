@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
-/* lightweight ASCII-only tolower replacement to avoid locale/ctype dependency
- */
 static inline unsigned char ascii_tolower(unsigned char c) {
 if(c >= 'A' && c <= 'Z') return (unsigned char)(c - 'A' + 'a');
 return c;
@@ -14,10 +12,8 @@ return c;
 static struct termios g_original_termios;
 static int g_stdin_flags= -1;
 static bool g_initialized= false;
-/* key bindings (single characters) */
 static char s_key_up= 'w';
 static char s_key_down= 's';
-/* left/right letters act as relative turn keys */
 static char s_key_left= 'a';
 static char s_key_right= 'd';
 static char s_key_quit= 'q';
@@ -73,10 +69,6 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
 if(!out) return;
 *out= (InputState){0};
 if(buf == NULL || n == 0) return;
-/* Only set `any_key` when a meaningful (non-line-ending) key or an
-     * escape sequence (arrow keys) is actually present in the buffer. This
-     * avoids `any_key` being true for buffers containing only '\n'/'\r'.
-     */
 out->any_key= false;
 for(size_t i= 0; i < n; i++) {
 unsigned char c= buf[i];
@@ -97,7 +89,7 @@ continue;
 }
 switch(c) {
 case '\r':
-case '\n': /* ignore line endings */ break;
+case '\n': break;
 default:
 out->any_key= true;
 if(ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_up))

@@ -22,7 +22,7 @@ class Server {
 
 		if (process.env.FORCE_HTTPS == "true") {
 			this.app.use((req, res, next) => {
-				// The 'x-forwarded-proto' check is for load balancers
+				
 				if (!req.secure && req.get("x-forwarded-proto") !== "https" && process.env.NODE_ENV !== "development") {
 					return res.redirect("https://" + req.get("host") + req.url);
 				}
@@ -78,7 +78,7 @@ class Server {
 
 		this.app.use(express.static("frontend"));
 
-		// This must be the last route
+		
 		this.app.use("*", (req, res) => {
 			return res.status(404).json({
 				message: "Page not found"

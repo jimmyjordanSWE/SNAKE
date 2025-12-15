@@ -36,14 +36,14 @@ int main(void) {
     assert(g2.width == 20 && g2.height == 10 && g2.rng_state == 42);
     assert(g2.num_players == 1 && g2.players[0].score == 7 && g2.players[0].length == 5);
     assert(g2.food_count == 1 && g2.food[0].x == 3 && g2.food[0].y == 4);
-    /* Negative/error cases */
+    
     InputState bad;
     assert(!net_unpack_input(NULL, 0, &bad));
     unsigned char empty[1] = {0};
     assert(!net_unpack_game_state(empty, 1, &g2));
     for(int i=0;i<g.max_players;i++) free(g.players[i].body);
     free(g.players); free(g.food);
-    /* clean up allocations made by net_unpack_game_state */
+    
     for(int i=0;i<g2.num_players;i++) if(g2.players && g2.players[i].body) free(g2.players[i].body);
     free(g2.players); free(g2.food);
     return 0;

@@ -1,4 +1,4 @@
-// js/chatClient.js
+
 import { PedroChatApi } from "./PedroChatApi.js";
 
 const APP_IDENTIFIER = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
@@ -10,7 +10,7 @@ export class ChatClient {
 		this.clientId = null;
 		this.userName = null;
 
-		this.onlineUsers = new Map(); // clientId -> { id, name }
+		this.onlineUsers = new Map(); 
 
 		this._onMessage = null;
 		this._onSystemEvent = null;

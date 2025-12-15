@@ -68,15 +68,7 @@ export class PedroChatApi {
 					this.onHost(session, clientId, data);
 
 			} else if (cmd === 'join') {
-				/*
-					session: sessionId,
-					name: session.name,
-					host: session.host.clientId,
-					clients: session.clients.map(c => c.clientId),
-					cmd: "join",
-					clientId: client.clientId,
-					data
-				*/
+				
 
 				delete payload.cmd;
 
@@ -109,7 +101,7 @@ export class PedroChatApi {
 
 		this.socket.addEventListener('error', (e) => {
 			console.error('WebSocket error occurred', e);
-			// Ingen ytterligare hantering här; spelkoden kan själv reagera på uteblivna meddelanden.
+			
 		});
 	}
 
@@ -133,12 +125,7 @@ export class PedroChatApi {
 		return JSON.stringify(payload);
 	}
 
-	/*
-		data: {
-			name: "OPTIONAL NAME",
-			private: true|false
-		}
-	*/
+	
 	host(data = {}) {
 		return new Promise((resolve, reject) => {
 			if (this.sessionId)
@@ -162,15 +149,7 @@ export class PedroChatApi {
 			if (typeof sessionId !== 'string')
 				return reject("error_invalid_session_id");
 
-			/*
-				session: sessionId,
-				name: session.name,
-				host: session.host.clientId,
-				clients: session.clients.map(c => c.clientId),
-				cmd: "join",
-				clientId: client.clientId,
-				data
-			*/
+			
 
 			this.onJoin = (data) => {
 				this.onJoin = null;
@@ -189,7 +168,7 @@ export class PedroChatApi {
 		this.sessionId = null;
 	}
 
-	// type can be 'sessions' or 'clients'
+	
 	list(type = "sessions") {
 		return new Promise((resolve, reject) => {
 			this.onList = (data) => {

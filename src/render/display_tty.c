@@ -26,15 +26,16 @@ if(!ctx) return;
 if(ctx->tty) tty_close(ctx->tty);
 free(ctx);
 }
-void display_get_size(DisplayContext* ctx, int* width, int* height) {
+void display_get_size(const DisplayContext* ctx, int* width, int* height) {
 if(!ctx || !ctx->tty) {
 if(width) *width= 0;
 if(height) *height= 0;
 return;
 }
+/* tty_get_size accepts non-const tty_context* but we only query size */
 tty_get_size(ctx->tty, width, height);
 }
-bool display_size_valid(DisplayContext* ctx) {
+bool display_size_valid(const DisplayContext* ctx) {
 if(!ctx || !ctx->tty) return false;
 return tty_size_valid(ctx->tty);
 }

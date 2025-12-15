@@ -119,10 +119,8 @@ config->render_glyphs= 0;
 config->screen_width= PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH;
 config->screen_height= PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT;
 config->enable_external_3d_view= PERSIST_CONFIG_DEFAULT_ENABLE_EXTERNAL_3D_VIEW;
-/* new defaults */
 config->seed= (uint32_t)PERSIST_CONFIG_DEFAULT_SEED;
 config->fov_degrees= (float)PERSIST_CONFIG_DEFAULT_FOV_DEGREES;
-/* show_minimap/show_stats removed (unused) */
 config->show_sprite_debug= PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG;
 config->active_player= PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER;
 config->num_players= PERSIST_CONFIG_DEFAULT_NUM_PLAYERS;
@@ -130,7 +128,6 @@ snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "Player");
 config->max_players= PERSIST_CONFIG_DEFAULT_MAX_PLAYERS;
 config->max_length= PERSIST_CONFIG_DEFAULT_MAX_LENGTH;
 config->max_food= PERSIST_CONFIG_DEFAULT_MAX_FOOD;
-/* new fields: textures, wall scale, key bindings */
 config->wall_height_scale= (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE;
 config->tail_height_scale= (float)PERSIST_CONFIG_DEFAULT_TAIL_SCALE;
 snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_WALL_TEXTURE);
@@ -221,7 +218,6 @@ continue;
 snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
 continue;
 } else if(strcmp(key, "key_up") == 0 || strcmp(key, "key_down") == 0 || strcmp(key, "key_left") == 0 || strcmp(key, "key_right") == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
-/* accept a single character binding */
 char c= value[0];
 if(strcmp(key, "key_up") == 0)
 config->key_up= c;
@@ -290,12 +286,8 @@ config->board_height= clamp_int((int)parsed_value, 10, 50);
 else if(strcmp(key, "tick_rate_ms") == 0)
 config->tick_rate_ms= clamp_int((int)parsed_value, 10, 1000);
 else if(strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0)
-/* Allow larger widths for SDL windows (pixels). Keep reasonable
-             * limits. */
 config->screen_width= clamp_int((int)parsed_value, 20, 4096);
 else if(strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0)
-/* Allow larger heights for SDL windows (pixels). Keep reasonable
-             * limits. */
 config->screen_height= clamp_int((int)parsed_value, 10, 2160);
 }
 fclose(fp);
@@ -314,11 +306,9 @@ if(fprintf(fp, "tick_rate_ms=%d\n", config->tick_rate_ms) < 0) goto write_fail;
 if(fprintf(fp, "render_glyphs=%s\n", (config->render_glyphs == 1) ? "ascii" : "utf8") < 0) goto write_fail;
 if(fprintf(fp, "screen_width=%d\n", config->screen_width) < 0) goto write_fail;
 if(fprintf(fp, "screen_height=%d\n", config->screen_height) < 0) goto write_fail;
-/* write whether external SDL 3D view should be started */
 if(fprintf(fp, "enable_external_3d_view=%s\n", (config->enable_external_3d_view ? "true" : "false")) < 0) goto write_fail;
 if(fprintf(fp, "seed=%u\n", (unsigned int)config->seed) < 0) goto write_fail;
 if(fprintf(fp, "fov_degrees=%.2f\n", config->fov_degrees) < 0) goto write_fail;
-/* show_minimap/show_stats removed (unused) */
 if(fprintf(fp, "show_sprite_debug=%s\n", config->show_sprite_debug ? "true" : "false") < 0) goto write_fail;
 if(fprintf(fp, "active_player=%d\n", config->active_player) < 0) goto write_fail;
 if(fprintf(fp, "num_players=%d\n", config->num_players) < 0) goto write_fail;
@@ -345,11 +335,7 @@ if(fclose(fp) != 0) {
 (void)unlink(temp_filename);
 return false;
 }
-/* If the existing file has identical contents to the new file, avoid
-     * touching it to preserve timestamps and comments. Compare sizes first as a
-     * fast path. */
 {
-/* temp file already flushed and closed above; proceed to compare */
 struct stat st_new;
 struct stat st_old;
 bool identical= false;
@@ -383,8 +369,6 @@ if(fold) fclose(fold);
 }
 }
 if(identical) {
-/* nothing changed; remove temp and return success without touching
-             * target */
 (void)unlink(temp_filename);
 return true;
 }

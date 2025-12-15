@@ -2,12 +2,12 @@ import { ChatClient } from "./chatClient.js";
 import { ChatStorage } from "./storage.js";
 import { ChatUI } from "./chatUI.js";
 
-const SERVER_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/net`;
+const SERVER_URL = `${location.protocol === "https:" ? "wss" : "ws"}:
 
 const ui = new ChatUI();
 const client = new ChatClient(SERVER_URL);
 
-// Initiera UI från localStorage
+
 (function initFromStorage() {
 	const userName = ChatStorage.getUserName();
 	if (userName) {
@@ -51,7 +51,7 @@ ui.onSessionClick = async (sessionId) => {
 	}
 };
 
-// Koppla UI-händelser
+
 ui.setHandlers({
 	onHost: async (userName, roomName) => {
 		try {
@@ -78,7 +78,7 @@ ui.setHandlers({
 
 			ui.updateOnlineList([...client.onlineUsers.values()], client.clientId);
 
-			// Ladda ev. lokal historik för samma session (om du hostat tidigare)
+			
 			const history = ChatStorage.loadMessages(result.sessionId);
 			history.forEach((m) => ui.addMessage(m));
 		} catch (err) {
@@ -111,7 +111,7 @@ ui.setHandlers({
 
 			ui.updateOnlineList([...client.onlineUsers.values()], client.clientId);
 
-			// Ladda lokal historik (per webbläsare)
+			
 			const history = ChatStorage.loadMessages(result.sessionId);
 			history.forEach((m) => ui.addMessage(m));
 		} catch (err) {
@@ -154,9 +154,9 @@ ui.setHandlers({
 	}
 });
 
-// Lyssna på inkommande meddelanden och events
+
 client.onMessage((msg) => {
-	// Undvik dubblett av egna meddelanden (vi ritar dem direkt lokalt i onSend)
+	
 	if (msg.mine) {
 		return;
 	}

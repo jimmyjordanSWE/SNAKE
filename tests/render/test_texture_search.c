@@ -28,19 +28,19 @@ static int write_test_bmp(const char* filename) {
     unsigned char* pixelData = (unsigned char*)calloc(1, dataSize);
     if(!pixelData) return 0;
     unsigned char colors[4][3] = {
-        {255,0,0}, /* red */
-        {0,255,0}, /* green */
-        {0,0,255}, /* blue */
-        {255,255,255} /* white */
+        {255,0,0}, 
+        {0,255,0}, 
+        {0,0,255}, 
+        {255,255,255} 
     };
     for(unsigned int y=0; y<height; y++){
         for(unsigned int x=0; x<width; x++){
             unsigned int idx = (y*rowSize) + x*3;
             unsigned char* c;
-            if(y==0 && x==0) c = colors[2]; /* bottom-left = blue */
-            else if(y==0 && x==1) c = colors[3]; /* bottom-right = white */
-            else if(y==1 && x==0) c = colors[0]; /* top-left = red */
-            else c = colors[1]; /* top-right = green */
+            if(y==0 && x==0) c = colors[2]; 
+            else if(y==0 && x==1) c = colors[3]; 
+            else if(y==1 && x==0) c = colors[0]; 
+            else c = colors[1]; 
             pixelData[idx+0] = c[2];
             pixelData[idx+1] = c[1];
             pixelData[idx+2] = c[0];
@@ -56,7 +56,7 @@ static int write_test_bmp(const char* filename) {
 }
 
 int main(void) {
-    /* Create a temp dir with structure: <tmp>/assets/wall.bmp and chdir into <tmp>/run and try to load "assets/wall.bmp" */
+    
     char tmpl[] = "/tmp/snake_test.XXXXXX";
     char* dir = mkdtemp(tmpl);
     if(!dir) { perror("mkdtemp"); return 1; }
@@ -68,17 +68,18 @@ int main(void) {
     strncat(bmp_path, "/wall.bmp", sizeof(bmp_path) - strlen(bmp_path) - 1);
     if(!write_test_bmp(bmp_path)) { fprintf(stderr, "failed write bmp\n"); return 1; }
 
-    /* chdir into run dir (child) and attempt to load "assets/wall.bmp" */
+    
     if(chdir(run_dir) != 0) { perror("chdir"); return 1; }
 
-    Texture3D tex = {0};
-    texture_init(&tex);
-    if(!texture_load_from_file(&tex, "assets/wall.bmp")) { fprintf(stderr, "texture_load_from_file failed to find fallback\n"); return 1; }
-    if(tex.img_w != 2 || tex.img_h != 2) { fprintf(stderr, "unexpected dims %d x %d\n", tex.img_w, tex.img_h); return 1; }
-    if(tex.pixels == NULL) { fprintf(stderr, "no pixels\n"); return 1; }
-    texture_free_image(&tex);
+    Texture3D* tex = texture_create();
+    if(!tex) { fprintf(stderr, "texture_create failed\n"); return 1; }
+    if(!texture_load_from_file(tex, "assets/wall.bmp")) { fprintf(stderr, "texture_load_from_file failed to find fallback\n"); texture_destroy(tex); return 1; }
+    if(texture_get_img_w(tex) != 2 || texture_get_img_h(tex) != 2) { fprintf(stderr, "unexpected dims %d x %d\n", texture_get_img_w(tex), texture_get_img_h(tex)); texture_destroy(tex); return 1; }
+    if(texture_get_pixels(tex) == NULL) { fprintf(stderr, "no pixels\n"); texture_destroy(tex); return 1; }
+    texture_free_image(tex);
+    texture_destroy(tex);
 
-    /* cleanup */
+    
     unlink(bmp_path);
     rmdir(assets_dir);
     rmdir(run_dir);

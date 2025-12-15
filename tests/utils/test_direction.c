@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    /* verify turning logic */
+    
     assert(snake_dir_turn_left(SNAKE_DIR_UP) == SNAKE_DIR_LEFT);
     assert(snake_dir_turn_left(SNAKE_DIR_DOWN) == SNAKE_DIR_RIGHT);
     assert(snake_dir_turn_left(SNAKE_DIR_LEFT) == SNAKE_DIR_DOWN);

@@ -1,4 +1,4 @@
-// js/storage.js
+
 
 const STORAGE_KEY = "canvas-chat-sessions-v1";
 const USER_KEY = "canvas-chat-user-name-v1";

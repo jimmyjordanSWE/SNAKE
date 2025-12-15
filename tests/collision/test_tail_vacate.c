@@ -28,7 +28,7 @@ int main(void) {
     GameState* s = game_test_get_state(g);
     s->status = GAME_STATUS_RUNNING;
 
-    /* Player 1: tail at (6,6) will vacate (not eating). */
+    
     PlayerState* p1 = &s->players[1];
     p1->active = true;
     p1->length = 3;
@@ -37,7 +37,7 @@ int main(void) {
     p1->body[2] = (SnakePoint){6, 6};
     p1->current_dir = SNAKE_DIR_UP;
 
-    /* Player 0 will move into (6,6) which is p1's tail and should be allowed. */
+    
     PlayerState* p0 = &s->players[0];
     p0->active = true;
     p0->length = 2;

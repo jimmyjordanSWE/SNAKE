@@ -2,8 +2,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #ifndef SNAKE_BOARD_DIMENSIONS_MOVED
-/* Board dimensions moved to runtime configuration (see .snake_config)
- * Use `persist_load_config` to read `board_width` and `board_height`. */
 #define SNAKE_BOARD_DIMENSIONS_MOVED 1
 #endif
 typedef struct {

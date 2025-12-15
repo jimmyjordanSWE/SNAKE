@@ -1,7 +1,4 @@
-/* stb_image - public domain single-file library for image loading
-   Minimal copy for this project: full original is maintained at https://github.com/nothings/stb
-   This file contains the public compressed header; the implementation is provided in stb_image.c
-*/
+
 #ifndef STB_IMAGE_H
 #define STB_IMAGE_H
 
@@ -16,4 +13,4 @@ extern void stbi_image_free(void *retval_from_stbi_load);
 }
 #endif
 
-#endif /* STB_IMAGE_H */
+#endif 

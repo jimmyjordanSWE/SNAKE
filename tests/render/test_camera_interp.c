@@ -25,26 +25,29 @@ static float angle_diff_abs(float a, float b) {
 }
 
 int main(void) {
-    Camera3D cam;
-    camera_init(&cam, 90.0f, 64, 1.0f);
-    /* Test mapping and interpolation for all direction transitions */
+    Camera3D* cam = camera_create(90.0f, 64, 1.0f);
+    if(!cam) return 2;
+    
     for (int from = SNAKE_DIR_UP; from <= SNAKE_DIR_RIGHT; ++from) {
         for (int to = SNAKE_DIR_UP; to <= SNAKE_DIR_RIGHT; ++to) {
-            cam.prev_angle = dir_to_angle(from);
-            cam.angle = dir_to_angle(to);
-            cam.update_interval = 1.0f;
-            cam.interp_time = 0.5f; /* halfway */
-            float ia = camera_get_interpolated_angle(&cam);
-            /* expected halfway between shortest arc */
-            float delta = cam.angle - cam.prev_angle;
+            camera_set_prev_angle(cam, dir_to_angle(from));
+            camera_set_angle(cam, dir_to_angle(to));
+            camera_set_update_interval(cam, 1.0f);
+            camera_set_interpolation_time(cam, 0.5f);
+            float ia = camera_get_interpolated_angle(cam);
+            
+            float prev_angle = dir_to_angle(from);
+            float angle = dir_to_angle(to);
+            float delta = angle - prev_angle;
             if (delta > (float)M_PI) delta -= 2.0f * (float)M_PI;
             if (delta < -(float)M_PI) delta += 2.0f * (float)M_PI;
-            float expected = cam.prev_angle + 0.5f * delta;
+            float expected = prev_angle + 0.5f * delta;
             expected = fmodf(expected, 2.0f * (float)M_PI);
             if (expected < 0) expected += 2.0f * (float)M_PI;
             float d = angle_diff_abs(ia, expected);
             assert(d < 1e-3f);
         }
     }
+    camera_destroy(cam);
     return 0;
 }

@@ -40,13 +40,13 @@ int main(void) {
     struct stat st_before;
     assert(stat(cfgfile, &st_before) == 0);
 
-    /* write again with identical config */
+    
     assert(persist_write_config(cfgfile, &cfg));
 
     struct stat st_after;
     assert(stat(cfgfile, &st_after) == 0);
 
-    /* mtime should be unchanged when writing identical content */
+    
     assert(st_before.st_mtime == st_after.st_mtime);
 
     unlink(cfgfile); free(cfgfile);

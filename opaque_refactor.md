@@ -1,5 +1,23 @@
  # Opaque Refactor Plan
 
+
+## Progress Log
+
+- [x] **All comments removed from codebase** (full pass complete)
+- [x] **Projection3D refactored to opaque type** (struct moved to C file, header updated, accessors in place, no direct field access remains)
+ - [x] **Camera3D refactored to opaque type** (struct moved to `src/render/camera.c`, header updated, constructors/destructors and accessors added; call sites and tests updated)
+- [x] **Texture3D refactored to opaque type** (struct moved to `src/render/texture.c`, header updated, constructors/destructors and accessors added; call sites and tests updated)
+- [x] **Const-correctness pass (conservative)** — Updated `display` and `tty` size query APIs to accept `const` contexts and adjusted implementations and call sites; test suite green.
+---
+
+MASTER RULE OVERIDE FOR THIS REFACTOR:
+- Disregard all tests. They will all be redone.
+- Remove ALL comments from code before starting. Make this a full pass of all files. (DONE)
+- Disregard "low risk". just go full speed.  Code is in github and i can easily restore.
+- ALL structs should be private. getters setter or similar solution should be used. Professional C99 style.
+- Code is formated for low token usage. Any code style is OK. (i run clang format for LLM or humans)
+
+
  Purpose
  - Provide an incremental, low-risk plan to convert public struct definitions into opaque types (hide their layout in C files) while keeping the codebase buildable and testable at every step.
 
@@ -8,13 +26,14 @@
  - Prefer non-breaking, incremental changes: add constructors/accessors before removing field accessors.
  - Keep small PODs (value objects used broadly, e.g., `SnakePoint`, `HighScore`) public; do not convert them unless there is a strong reason.
 
- Inventory & Priority (recommended order)
- 1. `render_3d_sprite` — Done (opaque, internal moved to `src/render/sprite.c`).
- 2. Candidates (medium effort):
-    - `Camera3D` (`include/snake/render_3d_camera.h`) — good candidate if you want to force callers to use camera APIs. Requires updating many tests and call sites. Priority: medium.
-    - `Projection3D` (`include/snake/render_3d_projection.h`) — moderate scope; used across rendering. Priority: medium.
-    - `Texture3D` (`include/snake/render_3d_texture.h`) — used in rendering; consider opaque if internal fields (pixels, img_w/img_h) should be hidden. Priority: low–medium.
- 3. Keep public (do not convert unless needed): `SnakePoint`, `HighScore`, `GameConfig`, small out-params like `WallProjection`.
+
+Inventory & Priority (recommended order)
+1. `render_3d_sprite` — Done (opaque, internal moved to `src/render/sprite.c`).
+2. `Projection3D` — Done (opaque, see above)
+3. Candidates (medium effort):
+  - `Camera3D` (`include/snake/render_3d_camera.h`) — good candidate if you want to force callers to use camera APIs. Requires updating many tests and call sites. Priority: medium.
+  - `Texture3D` (`include/snake/render_3d_texture.h`) — Done (opaque, see above)
+4. Keep public (do not convert unless needed): `SnakePoint`, `HighScore`, `GameConfig`, small out-params like `WallProjection`.
 
  Step-by-step refactor (repeat per module)
 

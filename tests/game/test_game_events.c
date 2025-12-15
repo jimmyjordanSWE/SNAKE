@@ -19,7 +19,7 @@ int main(void)
                       .max_food = 1};
     Game* g = game_create(&cfg, cfg.seed);
     if (!g) return 2;
-    /* Place player so it will eat the single food on next tick. */
+    
     GameState* s = game_test_get_state(g);
     s->players[0].active = true;
     s->players[0].length = 2;
@@ -31,8 +31,7 @@ int main(void)
     GameEvents ev = {0};
     game_step(g, &ev);
 
-    /* After stepping, player should have eaten, score incremented and
-     * food_respawned should be true because there was only one food. */
+    
     assert(s->players[0].score == 1);
     assert(ev.food_respawned == true);
 

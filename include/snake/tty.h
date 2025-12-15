@@ -7,7 +7,6 @@ struct ascii_pixel {
 uint16_t pixel;
 uint16_t color;
 } __attribute__((packed));
-/* Opaque tty context to encapsulate terminal implementation details. */
 typedef struct tty_context tty_context;
 tty_context* tty_open(const char* tty_path, int min_width, int min_height);
 void tty_close(tty_context* ctx);
@@ -18,18 +17,15 @@ void tty_flip(tty_context* ctx);
 void tty_force_redraw(tty_context* ctx);
 void tty_clear_back(tty_context* ctx);
 void tty_clear_front(tty_context* ctx);
-void tty_get_size(tty_context* ctx, int* width, int* height);
+void tty_get_size(const tty_context* ctx, int* width, int* height);
 bool tty_check_resize(tty_context* ctx);
 void tty_set_resize_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
 void tty_set_size_invalid_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
-bool tty_size_valid(tty_context* ctx);
-void tty_get_min_size(tty_context* ctx, int* min_width, int* min_height);
-/* Helpers for board layout and terminal heuristics */
+bool tty_size_valid(const tty_context* ctx);
+void tty_get_min_size(const tty_context* ctx, int* min_width, int* min_height);
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height);
 bool tty_size_sufficient_for_board(int term_width, int term_height, int board_width, int board_height);
-/* Test helper: simulate a SIGWINCH for resize handling. */
 void tty_simulate_winch(void);
-/* Test helper: override terminal size for deterministic unit tests. */
 void tty_set_test_size(int width, int height);
 void tty_clear_test_size(void);
 #define COLOR_MAKE(fg, bg) ((uint16_t)(((bg) << 4) | (fg)))

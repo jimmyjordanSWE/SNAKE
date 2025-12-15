@@ -7,8 +7,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-/* Forward declarations for functions defined later in this file (used by the
- * opaque `Game` wrappers defined near the top). */
 void game_init(GameState* game, int width, int height, const GameConfig* cfg);
 void game_free(GameState* game);
 void game_tick(GameState* game);
@@ -19,9 +17,6 @@ static bool game_state_player_is_active(const GameState* game, int player_index)
 static int game_state_player_current_score(const GameState* game, int player_index);
 static bool game_state_player_died_this_tick(const GameState* game, int player_index);
 static int game_state_player_score_at_death(const GameState* game, int player_index);
-/* Opaque Game wrapper around the existing `GameState` implementation. New
- * API prefers driving the simulation via `game_step()` which returns a small
- * `GameEvents` struct suitable for network serialization. */
 struct Game {
 GameState state;
 };
@@ -29,7 +24,6 @@ Game* game_create(const GameConfig* cfg, uint32_t seed_override) {
 if(!cfg) return NULL;
 Game* g= (Game*)malloc(sizeof(Game));
 if(!g) return NULL;
-/* copy config and optionally override seed */
 GameConfig cfg_copy= *cfg;
 if(seed_override != 0) cfg_copy.seed= seed_override;
 (void)memset(g, 0, sizeof(*g));
@@ -44,8 +38,6 @@ free(g);
 int game_enqueue_input(Game* g, int player_index, const InputState* in) {
 if(!g || !in) return -1;
 if(player_index < 0 || player_index >= g->state.max_players) return -1;
-/* apply simple input model: set queued direction and handle pause/restart
-     */
 PlayerState* player= &g->state.players[player_index];
 if(in->move_up) player->queued_dir= SNAKE_DIR_UP;
 if(in->move_down) player->queued_dir= SNAKE_DIR_DOWN;
@@ -60,11 +52,9 @@ return 0;
 void game_step(Game* g, GameEvents* out_events) {
 if(!g) return;
 if(out_events) (void)memset(out_events, 0, sizeof(*out_events));
-/* Reset diagnostic flag before stepping so we can observe it afterward. */
 g->state.last_food_respawned= false;
 game_tick(&g->state);
 if(out_events && g->state.last_food_respawned) out_events->food_respawned= true;
-/* Clear the diagnostic flag after reporting. */
 g->state.last_food_respawned= false;
 int num_players= game_state_get_num_players(&g->state);
 if(!out_events) return;
@@ -102,7 +92,6 @@ int game_player_score_at_death(const Game* g, int player_index) {
 if(!g) return 0;
 return game_state_player_score_at_death(&g->state, player_index);
 }
-/* Test helpers */
 void game_test_set_dimensions(Game* g, int width, int height) {
 if(!g) return;
 g->state.width= width;
@@ -125,7 +114,6 @@ GameState* game_test_get_state(Game* g) {
 if(!g) return NULL;
 return &g->state;
 }
-/* Module constants to avoid magic literals and improve testability. */
 #define SPAWN_MAX_ATTEMPTS 1000
 #define FOOD_RESPAWN_MIN 1
 #define FOOD_RESPAWN_MAX 3
@@ -236,7 +224,6 @@ break;
 if(!overlaps) {
 player->body[0]= head;
 player->body[1]= tail;
-/* initialize previous head for interpolation */
 player->prev_head_x= (float)head.x + 0.5f;
 player->prev_head_y= (float)head.y + 0.5f;
 return true;
@@ -258,7 +245,6 @@ if(game->num_players < 1) game->num_players= 1;
 game->max_players= cfg->max_players;
 game->max_length= cfg->max_length;
 game->max_food= cfg->max_food;
-/* allocate dynamic arrays */
 game->players= (PlayerState*)malloc(sizeof(PlayerState) * (size_t)game->max_players);
 if(!game->players) return;
 game->food= (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)game->max_food);
@@ -348,7 +334,6 @@ for(int i= 0; i < num_players; i++) {
 PlayerState* player= &game->players[i];
 if(player->needs_reset) (void)spawn_player(game, i);
 }
-/* If no players could be (re)spawned the game is over. */
 {
 int active_count= 0;
 for(int i= 0; i < num_players; i++)
@@ -361,7 +346,6 @@ PlayerState* player= &game->players[i];
 if(!player->active || player->length <= 0) continue;
 if(player->needs_reset) continue;
 SnakePoint current_head= player->body[0];
-/* record previous head position (centered) for interpolation */
 player->prev_head_x= (float)current_head.x + 0.5f;
 player->prev_head_y= (float)current_head.y + 0.5f;
 SnakePoint next_head= collision_next_head(current_head, player->current_dir);
@@ -403,7 +387,6 @@ static int game_state_player_score_at_death(const GameState* game, int player_in
 if(game == NULL || player_index < 0 || player_index >= game->max_players) return 0;
 return game->players[player_index].score_at_death;
 }
-/* Test helper: set `game` food positions deterministically for unit tests. */
 void game_set_food(GameState* game, const SnakePoint* food, int count) {
 if(!game || !food || count <= 0) return;
 if(count > game->max_food) count= game->max_food;

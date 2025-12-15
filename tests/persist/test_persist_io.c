@@ -21,12 +21,12 @@ int main(void) {
     int cnt = persist_read_scores(fname, out, 5);
     assert(cnt == 3);
     assert(strcmp(out[0].name, "alice") == 0);
-    /* append higher score should replace low score when full */
+    
     assert(persist_append_score(fname, "dave", 20));
     cnt = persist_read_scores(fname, out, 5);
     assert(cnt >= 1);
 
-    /* config write/read */
+    
     GameConfig cfg = {
         .board_width = 30,
         .board_height = 15,
@@ -37,7 +37,7 @@ int main(void) {
         .enable_external_3d_view = 1,
         .seed = 12345,
         .fov_degrees = 70.5f,
-        /* show_minimap/show_stats removed (unused) */
+        
         .show_sprite_debug = 1,
         .active_player = 0,
         .num_players = 2,
@@ -52,7 +52,7 @@ int main(void) {
         .key_down = 'k',
         .key_left = 'j',
         .key_right = 'l',
-        /* strafing removed - use key_left/key_right for turning */
+        
         .key_quit = 'x',
         .key_restart = 'n',
         .key_pause = 'm',

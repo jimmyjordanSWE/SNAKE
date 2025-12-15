@@ -12,15 +12,28 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-int snakegame_run(const GameConfig* config_in) {
+// new includes for allocation and booleans
+#include <stdlib.h>
+#include <stdbool.h>
+/* New pointer-style SnakeGame object used to separate init/run/cleanup. */
+struct SnakeGame {
+GameConfig cfg;
+Game* game;
+bool has_3d;
+};
+/* Allocate and initialize a SnakeGame instance. On error, returns NULL
+ * and sets *err_out to a non-zero code (2=render init fail, 3=game create fail,
+ * 4=input init fail, 1=invalid args/other). */
+SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
 int err= 0;
-if(!config_in) return 1;
-/* Make a local copy we can adjust */
+if(err_out) *err_out= 1; /* default to generic error */
+if(!config_in) return NULL;
+SnakeGame* s= (SnakeGame*)malloc(sizeof(*s));
+if(!s) return NULL;
 GameConfig cfg= *config_in;
 if(cfg.tick_rate_ms < 10) cfg.tick_rate_ms= 10;
 if(cfg.tick_rate_ms > 1000) cfg.tick_rate_ms= 1000;
 render_set_glyphs((cfg.render_glyphs == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
-/* apply key bindings from config */
 input_set_key_bindings(cfg.key_up, cfg.key_down, cfg.key_left, cfg.key_right, cfg.key_quit, cfg.key_restart, cfg.key_pause);
 const int board_width= cfg.board_width;
 const int board_height= cfg.board_height;
@@ -39,10 +52,6 @@ platform_sleep_ms(500);
 (void)platform_was_resized();
 }
 console_info("Terminal size OK (%dx%d). Starting game...\n", term_w, term_h);
-/* Determine minimum terminal render size. Prefer explicit
-     * `screen_width`/`screen_height` from config when external 3D view is
-     * disabled (these values are in character cells). Otherwise default to
-     * board-based minimums so UI elements fit. */
 int min_render_w= board_width + 10;
 int min_render_h= board_height + 5;
 if(!cfg.enable_external_3d_view) {
@@ -52,7 +61,7 @@ if(cfg.screen_height > min_render_h) min_render_h= cfg.screen_height;
 if(!render_init(min_render_w, min_render_h)) {
 console_error("Failed to initialize rendering\n");
 err= 2;
-goto out;
+goto out_err;
 }
 Game* game= game_create(&cfg, cfg.seed);
 if(!game) {
@@ -67,8 +76,7 @@ bool has_3d= false;
 if(cfg.enable_external_3d_view) {
 has_3d= render_3d_init(game_get_state(game), &config_3d);
 if(!has_3d)
-console_warn("Warning: external 3D view initialization failed, "
-             "continuing with 2D only\n");
+console_warn("Warning: external 3D view initialization failed, continuing with 2D only\n");
 else {
 render_3d_set_tick_rate_ms(cfg.tick_rate_ms);
 render_3d_draw(game_get_state(game), cfg.player_name, NULL, 0, 0.0f);
@@ -80,6 +88,33 @@ err= 4;
 goto cleanup_game;
 }
 render_draw_startup_screen(cfg.player_name, (int)sizeof(cfg.player_name));
+render_draw(game_get_state(game), cfg.player_name, NULL, 0);
+/* populate struct and return */
+s->cfg= cfg;
+s->game= game;
+s->has_3d= has_3d;
+if(err_out) *err_out= 0;
+return s;
+cleanup_game:
+if(game) game_destroy(game);
+cleanup_render:
+render_shutdown();
+out_err:
+if(err_out) *err_out= err ? err : 1;
+free(s);
+return NULL;
+}
+/* Run loop that operates on an initialized SnakeGame. The function
+ * performs the main loop and does cleanup of game/input/render state
+ * when finished; it does not free the SnakeGame pointer itself. */
+int snake_game_run(SnakeGame* s) {
+if(!s) return 1;
+int err= 0;
+Game* game= s->game;
+GameConfig cfg= s->cfg;
+const int board_width= cfg.board_width;
+const int board_height= cfg.board_height;
+bool has_3d= s->has_3d;
 int tick= 0;
 HighScore highscores[PERSIST_MAX_SCORES];
 int highscore_count= 0;
@@ -167,16 +202,24 @@ if(game_player_is_active(game, 0) && game_player_current_score(game, 0) > 0) {
 persist_append_score(".snake_scores", cfg.player_name, game_player_current_score(game, 0));
 render_note_session_score(cfg.player_name, game_player_current_score(game, 0));
 }
+if(game) {
 game_destroy(game);
+s->game= NULL;
+}
 input_shutdown();
 render_shutdown();
 if(has_3d) render_3d_shutdown();
 console_game_ran(tick);
-goto out;
-cleanup_game:
-if(game) game_destroy(game);
-cleanup_render:
-render_shutdown();
-out:
 return err;
+}
+/* Free the SnakeGame structure. If run() wasn't called or didn't clean up
+ * resources, this function will attempt to clean up remaining resources. */
+void snake_game_free(SnakeGame* s) {
+if(!s) return;
+if(s->game) game_destroy(s->game);
+/* best-effort shutdown in case run didn't happen */
+input_shutdown();
+render_shutdown();
+if(s->has_3d) render_3d_shutdown();
+free(s);
 }

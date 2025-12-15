@@ -2,17 +2,9 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-typedef struct {
-float x, y;
-float angle;
-float prev_x, prev_y, prev_angle;
-float fov_radians;
-int screen_width;
-float dir_x, dir_y;
-float plane_x, plane_y;
-float interp_time;
-float update_interval;
-} Camera3D;
+typedef struct Camera3D Camera3D;
+Camera3D* camera_create(float fov_degrees, int screen_width, float update_interval);
+void camera_destroy(Camera3D* camera);
 void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float update_interval);
 void camera_set_from_player(Camera3D* camera, int x, int y, int dir);
 void camera_update_interpolation(Camera3D* camera, float delta_time);
@@ -24,5 +16,16 @@ float camera_distance_to_point(const Camera3D* camera, float x, float y);
 bool camera_point_in_front(const Camera3D* camera, float x, float y);
 void camera_get_interpolated_position(const Camera3D* camera, float* x_out, float* y_out);
 float camera_get_interpolated_angle(const Camera3D* camera);
-/* update direction/plane vectors after changing angle */
 void camera_update_vectors(Camera3D* camera);
+/* Additional accessors to support opaque Camera3D */
+void camera_set_position(Camera3D* cam, float x, float y);
+void camera_set_angle(Camera3D* cam, float angle);
+void camera_set_prev_position(Camera3D* cam, float prev_x, float prev_y);
+void camera_set_prev_angle(Camera3D* cam, float prev_angle);
+void camera_set_update_interval(Camera3D* cam, float update_interval);
+float camera_get_fov_radians(const Camera3D* cam);
+void camera_get_dir(const Camera3D* cam, float* dx_out, float* dy_out);
+float camera_get_update_interval(const Camera3D* cam);
+float camera_get_interpolation_fraction(const Camera3D* cam);
+float camera_get_interp_time(const Camera3D* cam);
+void camera_get_position(const Camera3D* cam, float* x_out, float* y_out);

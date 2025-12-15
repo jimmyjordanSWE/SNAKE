@@ -13,9 +13,6 @@ static void sigwinch_handler(int sig) {
 (void)sig;
 winch_received= 1;
 }
-/* Internal definition of the tty context (kept private to the implementation)
- * This mirrors the previous public definition but hides internals from users.
- */
 struct tty_context {
 int tty_fd;
 struct termios orig_termios;
@@ -35,7 +32,6 @@ void (*on_resize)(struct tty_context* ctx, int old_width, int old_height, int ne
 void (*on_size_invalid)(struct tty_context* ctx, int current_width, int current_height, int min_width, int min_height, void* userdata);
 void* callback_userdata;
 };
-/* Test overrides (used by unit tests to avoid relying on ioctl). */
 static bool use_test_size= false;
 static int test_width= 0;
 static int test_height= 0;
@@ -45,7 +41,6 @@ test_width= width;
 test_height= height;
 }
 void tty_clear_test_size(void) { use_test_size= false; }
-/* Test helper to simulate SIGWINCH for unit tests. */
 void tty_simulate_winch(void) { winch_received= 1; }
 static int utf16_to_utf8(uint16_t utf16, char* utf8_out) {
 if(utf16 < 0x0080) {
@@ -63,12 +58,10 @@ return 3;
 }
 }
 static int utf16_surrogate_pair_to_utf8(uint16_t high, uint16_t low, char* out) {
-/* Validate the surrogate pair and convert to codepoint */
 if(high < 0xD800 || high > 0xDBFF || low < 0xDC00 || low > 0xDFFF) return 0;
 uint32_t high_t= (uint32_t)(high - 0xD800);
 uint32_t low_t= (uint32_t)(low - 0xDC00);
 uint32_t codepoint= 0x10000u + ((high_t << 10) | low_t);
-/* Encode to UTF-8 (4 bytes) */
 out[0]= (char)(0xF0 | ((codepoint >> 18) & 0x07));
 out[1]= (char)(0x80 | ((codepoint >> 12) & 0x3F));
 out[2]= (char)(0x80 | ((codepoint >> 6) & 0x3F));
@@ -238,15 +231,11 @@ for(int i= span_start; i < span_end; i++) {
 uint16_t ch= ctx->back[y * ctx->width + i].pixel;
 char utf8[4];
 int utf8_len= 0;
-/* Handle UTF-16 surrogate pairs if a high surrogate is
-                 * followed by a low surrogate in the buffer. In that case
-                 * emit a 4-byte UTF-8 sequence and skip the low surrogate.
-                 */
 if(ch >= 0xD800 && ch <= 0xDBFF && i + 1 < span_end) {
 uint16_t ch2= ctx->back[y * ctx->width + (i + 1)].pixel;
 if(ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
 utf8_len= utf16_surrogate_pair_to_utf8(ch, ch2, utf8);
-i++; /* skip low surrogate (consumed) */
+i++;
 }
 }
 if(utf8_len == 0) { utf8_len= utf16_to_utf8(ch, utf8); }
@@ -269,7 +258,7 @@ memset(ctx->front, 0, (size_t)ctx->width * (size_t)ctx->height * sizeof(struct a
 ctx->dirty= true;
 tty_flip(ctx);
 }
-void tty_get_size(tty_context* ctx, int* width, int* height) {
+void tty_get_size(const tty_context* ctx, int* width, int* height) {
 if(!ctx) return;
 if(width) *width= ctx->width;
 if(height) *height= ctx->height;
@@ -337,19 +326,15 @@ ctx->on_size_invalid= callback;
 ctx->callback_userdata= userdata;
 }
 }
-bool tty_size_valid(tty_context* ctx) {
+bool tty_size_valid(const tty_context* ctx) {
 if(!ctx) return false;
 return ctx->size_valid;
 }
-void tty_get_min_size(tty_context* ctx, int* min_width, int* min_height) {
+void tty_get_min_size(const tty_context* ctx, int* min_width, int* min_height) {
 if(!ctx) return;
 if(min_width) *min_width= ctx->min_width;
 if(min_height) *min_height= ctx->min_height;
 }
-/* Compute minimum render size for a board (matches previous logic from app)
- * Minimums are: field = board + 2; board+2 + 2 padding => board + 4
- * The external UI prefers slightly larger render area for headers, etc.
- */
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height) {
 if(min_width) *min_width= board_width + 4;
 if(min_height) *min_height= board_height + 4;
@@ -360,6 +345,6 @@ const int field_height= board_height + 2;
 int min_h= field_height + 2;
 int min_w= field_width + 2;
 (void)board_width;
-(void)board_height; /* silence unused in some build configs */
+(void)board_height;
 return term_width >= min_w && term_height >= min_h;
 }

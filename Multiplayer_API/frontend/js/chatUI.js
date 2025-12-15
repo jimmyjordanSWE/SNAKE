@@ -1,4 +1,4 @@
-// js/chatUI.js
+
 
 function formatTime(ts) {
 	const d = new Date(ts);
@@ -10,32 +10,32 @@ function formatTime(ts) {
 
 export class ChatUI {
 	constructor() {
-		// Inputs
+		
 		this.inputUserName = document.getElementById("user-name");
 		this.inputRoomName = document.getElementById("room-name");
 		this.inputRoomCode = document.getElementById("room-code");
 		this.inputMessage = document.getElementById("message-input");
 
-		// Buttons
+		
 		this.btnHost = document.getElementById("host-btn");
 		this.btnJoin = document.getElementById("join-btn");
 		this.btnLeave = document.getElementById("leave-btn");
 		this.btnSend = document.getElementById("send-btn");
 
-		// Forms / containers
+		
 		this.formMessage = document.getElementById("message-form");
 		this.messagesEl = document.getElementById("messages");
 		this.statusText = document.getElementById("status-text");
 		this.lastSessionEl = document.getElementById("last-session");
 		this.onlineList = document.getElementById("online-list");
 
-		// Header
+		
 		this.roomTitle = document.getElementById("chat-room-title");
 		this.roomSubtitle = document.getElementById("chat-room-subtitle");
 		this.roomCode = document.getElementById("chat-room-code");
 		this.roleLabel = document.getElementById("chat-role");
 
-		// Callbacks
+		
 		this._onHost = null;
 		this._onJoin = null;
 		this._onLeave = null;

@@ -26,10 +26,10 @@ int main(void)
         fprintf(stderr, "FAIL: game_create failed\n");
         return 1;
     }
-    /* Force an impossible respawn by shrinking board */
-    game_test_set_dimensions(g, 1, 1); /* spawn_player rejects width < 2 */
+    
+    game_test_set_dimensions(g, 1, 1); 
     game_test_set_num_players(g, 1);
-    /* Ensure no active players remain to trigger GAME_OVER. */
+    
     GameState* s = game_test_get_state(g);
     s->players[0].active = false;
     s->players[0].length = 0;

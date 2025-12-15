@@ -6,14 +6,7 @@ const float camera_height= 0.5f;
 float p= (float)(yy - horizon) / ((float)screen_height * 0.5f);
 float rowDist= pd;
 if(fabsf(p) > 1e-6f) {
-/* compute world z for this pixel assuming v will be derived by caller
-         */
-/* We can't determine z without v here; caller is expected to compute v
-         * and derive z if needed. To support simple checks, if
-         * wall_world_height is positive we assume caller wants the midpoint z
-         * for this yy:
-         */
-float v= 0.5f; /* midpoint fallback */
+float v= 0.5f;
 float z= (1.0f - v) * wall_world_height;
 rowDist= (camera_height - z) / p;
 if(!isfinite(rowDist) || rowDist <= 0.0f) rowDist= pd;

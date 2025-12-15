@@ -2,34 +2,37 @@
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_sdl.h"
 #include "snake/render_3d_sprite.h"
-
-/* Internal Sprite3D definition (kept in C file to avoid leaking internals
- * via headers). This matches the public forward-declaration in
- * `include/snake/render_3d_sprite.h` but keeps derived fields private. */
-struct Sprite3D
-{
-    /* Public fields */
-    float    world_x, world_y;
-    float    world_height;
-    float    pivot; /* 0.0 bottom .. 1.0 top */
-    bool     face_camera;
-    int      texture_id; /* -1 => solid color */
-    int      frame;
-    uint32_t color;
-
-    /* Derived / internal fields */
-    float perp_distance;
-    int   screen_x;
-    int   screen_w;
-    int   screen_h;
-    int   screen_y_top;
-    bool  visible;
+#include <stdlib.h>
+#include <stddef.h>
+struct Sprite3D {
+float world_x, world_y;
+float world_height;
+float pivot;
+bool face_camera;
+int texture_id;
+int frame;
+uint32_t color;
+float perp_distance;
+int screen_x;
+int screen_w;
+int screen_h;
+int screen_y_top;
+bool visible;
 };
+
+/* Internal definition of SpriteRenderer3D (opaque to public headers) */
+struct SpriteRenderer3D {
+    Sprite3D* sprites;
+    int max_sprites;
+    int count;
+    const Camera3D* camera;
+    const Projection3D* proj;
+};
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef TEST_SPRITE
-/* Minimal stubs used only when building the isolated sprite test binary. */
 float camera_get_interpolated_angle(const Camera3D* camera) {
 (void)camera;
 return 0.0f;
@@ -40,13 +43,12 @@ if(x_out) *x_out= 0.0f;
 if(y_out) *y_out= 0.0f;
 }
 void projection_project_wall_perp(const Projection3D* proj, float distance, float ray_angle, float cam_angle, WallProjection* result_out) {
-(void)proj;
 (void)distance;
 (void)ray_angle;
 (void)cam_angle;
 if(result_out) {
 result_out->wall_height= 1;
-result_out->draw_end= proj ? proj->horizon_y : 0;
+result_out->draw_end= proj ? (projection_get_screen_height(proj) / 2) : 0;
 result_out->draw_start= result_out->draw_end - 1;
 result_out->texture_scale= 1.0f;
 }
@@ -108,18 +110,16 @@ if(!sr || !sr->camera || !sr->proj) return;
 float cam_x, cam_y;
 camera_get_interpolated_position(sr->camera, &cam_x, &cam_y);
 float cam_angle= camera_get_interpolated_angle(sr->camera);
-float half_fov= sr->proj->fov_radians * 0.5f;
+float half_fov= projection_get_fov_radians(sr->proj) * 0.5f;
 for(int i= 0; i < sr->count; ++i) {
 Sprite3D* s= &sr->sprites[i];
 float dx= s->world_x - cam_x;
 float dy= s->world_y - cam_y;
 float dist= sqrtf(dx * dx + dy * dy);
 float angle_to_sprite= atan2f(dy, dx);
-/* normalize angle difference to [-PI, PI] */
 float delta= angle_to_sprite - cam_angle;
 while(delta > 3.14159265358979323846f) delta-= 2.0f * 3.14159265358979323846f;
 while(delta < -3.14159265358979323846f) delta+= 2.0f * 3.14159265358979323846f;
-/* reject behind camera or outside FOV */
 if(cosf(delta) <= 0.0f || fabsf(delta) > half_fov) {
 s->visible= false;
 continue;
@@ -136,12 +136,11 @@ if(screen_h <= 0) {
 s->visible= false;
 continue;
 }
-int screen_w= screen_h; /* square sprite for now */
-/* normalized screen x in [-1,1] */
+int screen_w= screen_h;
 float nx= delta / half_fov;
 if(nx < -1.0f) nx= -1.0f;
 if(nx > 1.0f) nx= 1.0f;
-int center_x= (int)((nx + 1.0f) * 0.5f * (float)sr->proj->screen_width + 0.5f);
+int center_x= (int)((nx + 1.0f) * 0.5f * (float)projection_get_screen_width(sr->proj) + 0.5f);
 int top= wp.draw_end - (int)((float)screen_h * (1.0f - s->pivot));
 s->perp_distance= perp;
 s->screen_x= center_x;
@@ -153,7 +152,6 @@ s->visible= true;
 }
 void sprite_sort_by_depth(SpriteRenderer3D* sr) {
 if(!sr) return;
-/* simple insertion sort by perp_distance descending (furthest first) */
 for(int i= 1; i < sr->count; ++i) {
 Sprite3D key= sr->sprites[i];
 int j= i - 1;
@@ -179,10 +177,6 @@ int y1= y0 + s->screen_h - 1;
 if(y0 < 0) y0= 0;
 if(y1 >= ctx->height) y1= ctx->height - 1;
 uint32_t col= s->color ? s->color : render_3d_sdl_color(0, 255, 0, 255);
-/* Draw solid-color sprites as filled circles (texture_id == -1) with
-         * per-column occlusion. Otherwise, fall back to column fill for
-         * textured sprites.
-         */
 if(s->texture_id == -1) {
 int center_x= s->screen_x;
 int center_y= s->screen_y_top + s->screen_h / 2;
@@ -201,15 +195,12 @@ for(int xx= bx0; xx <= bx1; ++xx) {
 int dx= xx - center_x;
 int dy= yy - center_y;
 if(dx * dx + dy * dy <= radius * radius) {
-/* occlusion per column */
 if(s->perp_distance < column_depths[xx]) { render_3d_sdl_set_pixel(ctx, xx, yy, col); }
 }
 }
 }
 } else {
 for(int x= x1; x <= x2; ++x) {
-/* occlusion check: only draw where sprite is closer than wall
-                 */
 if(s->perp_distance < column_depths[x]) { render_3d_sdl_draw_column(ctx, x, y0, y1, col); }
 }
 }
@@ -223,4 +214,26 @@ sr->max_sprites= 0;
 sr->count= 0;
 sr->camera= NULL;
 sr->proj= NULL;
+}
+
+/* public lifecycle functions for opaque SpriteRenderer3D */
+SpriteRenderer3D* sprite_create(int max_sprites, const Camera3D* camera, const Projection3D* proj) {
+    SpriteRenderer3D* sr = (SpriteRenderer3D*)calloc(1, sizeof(*sr));
+    if(!sr) return NULL;
+    sprite_init(sr, max_sprites, camera, proj);
+    return sr;
+}
+void sprite_destroy(SpriteRenderer3D* sr) {
+    if(!sr) return;
+    sprite_shutdown(sr);
+    free(sr);
+}
+int sprite_get_count(const SpriteRenderer3D* sr) { return sr ? sr->count : 0; }
+bool sprite_get_screen_info(const SpriteRenderer3D* sr, int idx, int* screen_x_out, int* screen_h_out, bool* visible_out) {
+if(!sr || idx < 0 || idx >= sr->count) return false;
+const Sprite3D* s= &sr->sprites[idx];
+if(visible_out) *visible_out= s->visible;
+if(screen_x_out) *screen_x_out= s->screen_x;
+if(screen_h_out) *screen_h_out= s->screen_h;
+return true;
 }

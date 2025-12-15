@@ -26,13 +26,13 @@ int main(void)
     s->players[0].current_dir = SNAKE_DIR_UP;
 
     InputState in = {0};
-    in.turn_right = true; /* from UP, turn_right -> RIGHT */
+    in.turn_right = true; 
     game_enqueue_input(g, 0, &in);
     GameEvents ev = {0};
     game_step(g, &ev);
 
     const GameState* st = game_get_state(g);
-    /* After a tick, current_dir should reflect the turn */
+    
     assert(st->players[0].current_dir == SNAKE_DIR_RIGHT);
 
     game_destroy(g);

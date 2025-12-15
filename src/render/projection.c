@@ -1,5 +1,20 @@
 #include "snake/render_3d_projection.h"
 #include <math.h>
+#include <stdlib.h>
+struct Projection3D {
+int screen_width;
+int screen_height;
+float fov_radians;
+int horizon_y;
+float wall_scale;
+};
+Projection3D* projection_create(int screen_width, int screen_height, float fov_radians, float wall_scale) {
+Projection3D* p= calloc(1, sizeof(*p));
+if(!p) return NULL;
+projection_init(p, screen_width, screen_height, fov_radians, wall_scale);
+return p;
+}
+void projection_destroy(Projection3D* proj) { free(proj); }
 void projection_init(Projection3D* proj, int screen_width, int screen_height, float fov_radians, float wall_scale) {
 if(!proj) return;
 proj->screen_width= screen_width;
@@ -12,7 +27,6 @@ void projection_project_wall(const Projection3D* proj, float distance, WallProje
 if(!proj || !result_out) return;
 if(distance <= 0.1f) distance= 0.1f;
 float wall_height= (float)proj->screen_height / (distance + 0.5f);
-/* Scale wall height for better visual impact - walls appear taller */
 wall_height*= (proj->wall_scale > 0.0f ? proj->wall_scale : 1.5f);
 if(wall_height > (float)proj->screen_height) wall_height= (float)proj->screen_height;
 result_out->wall_height= (int)wall_height;
@@ -33,9 +47,6 @@ if(horizon_y < 0) horizon_y= 0;
 if(horizon_y >= proj->screen_height) horizon_y= proj->screen_height - 1;
 proj->horizon_y= horizon_y;
 }
-/* Doom-style (perpendicular) helpers to remove fisheye: use raw ray distance
-   and the ray and camera angles to compute perpendicular distance before
-   projection. */
 void projection_project_wall_perp(const Projection3D* proj, float distance, float ray_angle, float cam_angle, WallProjection* out) {
 if(!proj || !out) return;
 float pd= distance * cosf(ray_angle - cam_angle);
@@ -48,3 +59,7 @@ float pd= distance * cosf(ray_angle - cam_angle);
 if(pd <= 0.1f) pd= 0.1f;
 return projection_world_distance_per_pixel(proj, pd);
 }
+int projection_get_screen_width(const Projection3D* proj) { return proj ? proj->screen_width : 0; }
+int projection_get_screen_height(const Projection3D* proj) { return proj ? proj->screen_height : 0; }
+float projection_get_fov_radians(const Projection3D* proj) { return proj ? proj->fov_radians : 0.0f; }
+float projection_get_wall_scale(const Projection3D* proj) { return proj ? proj->wall_scale : 1.0f; }

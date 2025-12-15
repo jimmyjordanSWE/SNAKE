@@ -4,12 +4,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-/* Simple binary format used for tests and for a basic transport:
- * - Input message: 1 byte flags
- * - GameState message: header + food + players metadata (not full body)
- * Functions are intentionally conservative and return 0/false on malformed
- * input.
- */
 size_t net_pack_input(const InputState* input, unsigned char* buf, size_t buf_size) {
 if(!input || !buf || buf_size < 1) return 0;
 unsigned char flags= 0;
@@ -39,7 +33,6 @@ return true;
 }
 size_t net_pack_game_state(const GameState* game, unsigned char* buf, size_t buf_size) {
 if(!game || !buf) return 0;
-/* header: width, height, rng_state, status, num_players, food_count */
 const size_t header_sz= 4 * 6;
 size_t needed= header_sz + (size_t)game->food_count * 8 + (size_t)game->num_players * 8;
 if(buf_size < needed) return 0;
@@ -105,7 +98,6 @@ out->food_count= (int)ntohl(v);
 p+= 4;
 size_t expected= 24 + (size_t)out->food_count * 8 + (size_t)out->num_players * 8;
 if(buf_size < expected) return false;
-/* allocate storage for unpacked arrays so callers can inspect them */
 if(out->food_count > 0) {
 out->max_food= out->food_count;
 out->food= (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)out->food_count);
@@ -154,7 +146,6 @@ out->food_count= 0;
 out->max_food= 0;
 }
 if(out->players) {
-/* Note: player bodies are not allocated by the unpacker */
 free(out->players);
 out->players= NULL;
 out->num_players= 0;

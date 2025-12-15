@@ -2,9 +2,21 @@
 #include "snake/types.h"
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+struct Camera3D {
+float x, y;
+float angle;
+float prev_x, prev_y, prev_angle;
+float fov_radians;
+int screen_width;
+float dir_x, dir_y;
+float plane_x, plane_y;
+float interp_time;
+float update_interval;
+};
 static float normalize_angle(float angle) {
 float result= fmodf(angle, 2.0f * (float)M_PI);
 if(result < 0.0f) result+= 2.0f * (float)M_PI;
@@ -29,6 +41,13 @@ float plane_len= tanf(half_fov);
 camera->plane_x= -sinf(camera->angle) * plane_len;
 camera->plane_y= cosf(camera->angle) * plane_len;
 }
+Camera3D* camera_create(float fov_degrees, int screen_width, float update_interval) {
+Camera3D* c= calloc(1, sizeof(*c));
+if(!c) return NULL;
+camera_init(c, fov_degrees, screen_width, update_interval);
+return c;
+}
+void camera_destroy(Camera3D* camera) { free(camera); }
 void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float update_interval) {
 if(!camera) return;
 memset(camera, 0, sizeof(Camera3D));
@@ -51,23 +70,15 @@ camera->prev_y= camera->y;
 camera->prev_angle= camera->angle;
 camera->x= (float)x + 0.5f;
 camera->y= (float)y + 0.5f;
-/* Map `SnakeDir` enum to world angles. Coordinate system:
-     *  - angle==0 -> +X (right)
-     *  - angle==pi/2 -> +Y (down)
-     *  - angle==pi -> -X (left)
-     *  - angle==3*pi/2 -> -Y (up)
-     * SnakeDir values: UP=0, DOWN=1, LEFT=2, RIGHT=3
-     */
 float angle;
 switch((int)dir) {
-case SNAKE_DIR_UP: angle= (float)M_PI * 1.5f; break; /* -Y */
-case SNAKE_DIR_DOWN: angle= (float)M_PI * 0.5f; break; /* +Y */
-case SNAKE_DIR_LEFT: angle= (float)M_PI; break; /* -X */
-case SNAKE_DIR_RIGHT: angle= 0.0f; break; /* +X */
+case SNAKE_DIR_UP: angle= (float)M_PI * 1.5f; break;
+case SNAKE_DIR_DOWN: angle= (float)M_PI * 0.5f; break;
+case SNAKE_DIR_LEFT: angle= (float)M_PI; break;
+case SNAKE_DIR_RIGHT: angle= 0.0f; break;
 default: angle= 0.0f; break;
 }
 camera->angle= normalize_angle(angle);
-/* start interpolation timer at 0 (will be advanced per-frame) */
 camera->interp_time= 0.0f;
 update_vectors(camera);
 }
@@ -86,16 +97,57 @@ camera->interp_time= camera->update_interval;
 else
 camera->interp_time= time;
 }
+void camera_set_position(Camera3D* cam, float x, float y) {
+if(!cam) return;
+cam->x= x;
+cam->y= y;
+}
+void camera_set_angle(Camera3D* cam, float angle) {
+if(!cam) return;
+cam->angle= normalize_angle(angle);
+update_vectors(cam);
+}
+void camera_set_prev_position(Camera3D* cam, float prev_x, float prev_y) {
+if(!cam) return;
+cam->prev_x= prev_x;
+cam->prev_y= prev_y;
+}
+void camera_set_prev_angle(Camera3D* cam, float prev_angle) {
+if(!cam) return;
+cam->prev_angle= normalize_angle(prev_angle);
+}
+void camera_set_update_interval(Camera3D* cam, float update_interval) {
+if(!cam) return;
+cam->update_interval= update_interval > 0.0f ? update_interval : 0.0f;
+}
+float camera_get_fov_radians(const Camera3D* cam) { return cam ? cam->fov_radians : 0.0f; }
+void camera_get_dir(const Camera3D* cam, float* dx_out, float* dy_out) {
+if(!cam) return;
+if(dx_out) *dx_out= cam->dir_x;
+if(dy_out) *dy_out= cam->dir_y;
+}
+float camera_get_update_interval(const Camera3D* cam) { return cam ? cam->update_interval : 0.0f; }
+float camera_get_interpolation_fraction(const Camera3D* cam) {
+if(!cam) return 0.0f;
+float t= 0.0f;
+if(cam->update_interval > 0.0f) {
+t= cam->interp_time / cam->update_interval;
+if(t < 0.0f) t= 0.0f;
+if(t > 1.0f) t= 1.0f;
+}
+return t;
+}
+float camera_get_interp_time(const Camera3D* cam) { return cam ? cam->interp_time : 0.0f; }
+void camera_get_position(const Camera3D* cam, float* x_out, float* y_out) {
+if(!cam || !x_out || !y_out) return;
+*x_out= cam->x;
+*y_out= cam->y;
+}
 void camera_get_ray_angle(const Camera3D* camera, int col, float* ray_angle_out) {
 if(!camera || !ray_angle_out) return;
-/* Perspective-correct mapping from screen column to ray angle.
-     * Using a linear angle offset exaggerates distortion near the edges of the
-     * FOV and makes floor texturing feel like it scrolls too fast.
-     */
 float interp_angle= camera_get_interpolated_angle(camera);
 float half_fov= camera->fov_radians * 0.5f;
 float tan_half= tanf(half_fov);
-/* cameraX in [-1,1], sample at pixel center */
 float cameraX= (2.0f * ((float)col + 0.5f) / (float)camera->screen_width) - 1.0f;
 float angle_offset= atanf(cameraX * tan_half);
 *ray_angle_out= interp_angle + angle_offset;

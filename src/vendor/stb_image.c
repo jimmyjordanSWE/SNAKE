@@ -1,12 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-/* Minimal implementation wrapper using the system libpng and libjpeg is not
-   provided. To keep this compact, we'll implement a tiny loader for BMP only
-   (sufficient for tests), and leave PNG support to stb_image if available on
-   the system (otherwise loading PNG will fail).
-
-   Implement a simple BMP loader here to avoid adding a large dependency.
-*/
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,7 +144,6 @@ return NULL;
 memcpy(plte, data, len);
 plte_len= len;
 } else if(strcmp(type, "tRNS") == 0) {
-/* tRNS for palette: alpha values for palette entries */
 trns= (unsigned char*)malloc(len);
 if(!trns) {
 free(data);
@@ -194,7 +186,7 @@ channels= 4;
 else if(color_type == 2)
 channels= 3;
 else if(color_type == 3)
-channels= 1; /* palette-indexed */
+channels= 1;
 else
 channels= 0;
 if(channels == 0) {
@@ -268,7 +260,7 @@ size_t in_idx= xpix * channels;
 size_t out_idx= (yrow * (size_t)width + xpix) * 4;
 if(color_type == 3) {
 unsigned char idx= recon[in_idx];
-if((size_t)idx * 3 + 2 >= plte_len) { /* corrupt palette */
+if((size_t)idx * 3 + 2 >= plte_len) {
 free(recon);
 free(decompressed);
 free(out);
@@ -317,7 +309,6 @@ return out;
 }
 unsigned char* stbi_load(char const* filename, int* x, int* y, int* channels_in_file, int desired_channels) {
 (void)desired_channels;
-/* try PNG first */
 unsigned char sig[8];
 FILE* f= fopen(filename, "rb");
 if(!f) return NULL;

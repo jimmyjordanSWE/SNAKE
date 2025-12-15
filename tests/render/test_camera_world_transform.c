@@ -16,31 +16,35 @@ static float dir_to_angle(int dir) {
     }
 }
 
-/* Ensure world->camera transform uses interpolated angle/position */
+
 int main(void) {
-    Camera3D cam;
-    camera_init(&cam, 90.0f, 64, 1.0f);
-    /* simulate a 180-degree turn from RIGHT -> LEFT */
-    cam.prev_angle = dir_to_angle(SNAKE_DIR_RIGHT);
-    cam.angle = dir_to_angle(SNAKE_DIR_LEFT);
-    cam.update_interval = 1.0f;
-    cam.interp_time = 0.5f; /* halfway */
-    /* expected halfway angle (shortest arc) */
-    float diff = cam.angle - cam.prev_angle;
+    Camera3D* cam = camera_create(90.0f, 64, 1.0f);
+    if(!cam) return 2;
+    
+    camera_set_prev_angle(cam, dir_to_angle(SNAKE_DIR_RIGHT));
+    camera_set_angle(cam, dir_to_angle(SNAKE_DIR_LEFT));
+    camera_set_update_interval(cam, 1.0f);
+    camera_set_interpolation_time(cam, 0.5f);
+
+    float prev_angle = dir_to_angle(SNAKE_DIR_RIGHT);
+    float angle = dir_to_angle(SNAKE_DIR_LEFT);
+    float diff = angle - prev_angle;
     if (diff > (float)M_PI) diff -= 2.0f * (float)M_PI;
     if (diff < -(float)M_PI) diff += 2.0f * (float)M_PI;
-    float expected = cam.prev_angle + 0.5f * diff;
+    float expected = prev_angle + 0.5f * diff;
 
-    /* place a point one unit in front along expected angle */
-    float world_x = cam.x + cosf(expected) * 1.0f;
-    float world_y = cam.y + sinf(expected) * 1.0f;
+    float cam_x, cam_y;
+    camera_get_position(cam, &cam_x, &cam_y);
+    float world_x = cam_x + cosf(expected) * 1.0f;
+    float world_y = cam_y + sinf(expected) * 1.0f;
 
     float cx, cy;
-    camera_world_to_camera(&cam, world_x, world_y, &cx, &cy);
-    /* point should be in front (positive cam-x) and near the center (cam-y approx 0) */
+    camera_world_to_camera(cam, world_x, world_y, &cx, &cy);
+    
     assert(cx > 0.0f);
     assert(fabsf(cy) < 0.01f);
-    /* camera_point_in_front should agree */
-    assert(camera_point_in_front(&cam, world_x, world_y));
+    
+    assert(camera_point_in_front(cam, world_x, world_y));
+    camera_destroy(cam);
     return 0;
 }

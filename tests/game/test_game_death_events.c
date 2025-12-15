@@ -22,7 +22,7 @@ int main(void)
     GameState* s = game_test_get_state(g);
     s->status = GAME_STATUS_RUNNING;
 
-    /* Setup head-swap scenario */
+    
     s->players[0].active = true;
     s->players[0].length = 2;
     s->players[0].body[0] = (SnakePoint){4, 5};
@@ -38,7 +38,7 @@ int main(void)
     GameEvents ev = {0};
     game_step(g, &ev);
 
-    /* Both should die in a head-swap */
+    
     assert(ev.died_count == 2);
     int found0 = 0, found1 = 0;
     for (int i = 0; i < ev.died_count; i++)

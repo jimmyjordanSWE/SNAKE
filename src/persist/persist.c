@@ -132,6 +132,7 @@ config->max_length = PERSIST_CONFIG_DEFAULT_MAX_LENGTH;
 config->max_food = PERSIST_CONFIG_DEFAULT_MAX_FOOD;
 /* new fields: textures, wall scale, key bindings */
 config->wall_height_scale = (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE;
+config->tail_height_scale = (float)PERSIST_CONFIG_DEFAULT_TAIL_SCALE;
 snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_WALL_TEXTURE);
 snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE);
 config->key_up = PERSIST_CONFIG_DEFAULT_KEY_UP;
@@ -207,6 +208,14 @@ else if(strcmp(key, "wall_height_scale") == 0) {
 	double dv = strtod(value, &endptr2);
 	if(errno != 0 || endptr2 == value) continue;
 	config->wall_height_scale = (float)dv;
+	continue;
+}
+else if(strcmp(key, "tail_height_scale") == 0) {
+	char* endptr2 = NULL;
+	errno = 0;
+	double dv = strtod(value, &endptr2);
+	if(errno != 0 || endptr2 == value) continue;
+	config->tail_height_scale = (float)dv;
 	continue;
 }
 else if(strcmp(key, "wall_texture") == 0) {

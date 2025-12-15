@@ -21,6 +21,7 @@
 #define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER 0
 #define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS 1
 #define PERSIST_CONFIG_DEFAULT_WALL_SCALE 1.50f
+#define PERSIST_CONFIG_DEFAULT_TAIL_SCALE 0.50f
 #define PERSIST_TEXTURE_PATH_MAX 128
 #define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE "assets/wall.png"
 #define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE "assets/floor.png"
@@ -57,6 +58,7 @@ int max_length;
 int max_food;
 /* 3D rendering tunables */
 float wall_height_scale;
+float tail_height_scale;
 char wall_texture[PERSIST_TEXTURE_PATH_MAX];
 char floor_texture[PERSIST_TEXTURE_PATH_MAX];
 /* key bindings (single ASCII char) */

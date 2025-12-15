@@ -40,6 +40,24 @@ bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_
     s->face_camera = face_camera;
     s->texture_id = texture_id;
     s->frame = frame;
+    s->color = render_3d_sdl_color(0, 255, 0, 255);
+    s->perp_distance = 0.0f;
+    s->screen_x = s->screen_w = s->screen_h = s->screen_y_top = 0;
+    s->visible = false;
+    return true;
+}
+
+bool sprite_add_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color) {
+    if (!sr || sr->count >= sr->max_sprites) return false;
+    Sprite3D* s = &sr->sprites[sr->count++];
+    s->world_x = world_x;
+    s->world_y = world_y;
+    s->world_height = world_height;
+    s->pivot = pivot;
+    s->face_camera = face_camera;
+    s->texture_id = texture_id;
+    s->frame = frame;
+    s->color = color;
     s->perp_distance = 0.0f;
     s->screen_x = s->screen_w = s->screen_h = s->screen_y_top = 0;
     s->visible = false;
@@ -117,11 +135,37 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
         int y1 = y0 + s->screen_h - 1;
         if (y0 < 0) y0 = 0;
         if (y1 >= ctx->height) y1 = ctx->height - 1;
-        uint32_t col = render_3d_sdl_color(0, 255, 0, 255);
-        for (int x = x1; x <= x2; ++x) {
-            /* occlusion check: only draw where sprite is closer than wall */
-            if (s->perp_distance < column_depths[x]) {
-                render_3d_sdl_draw_column(ctx, x, y0, y1, col);
+        uint32_t col = s->color ? s->color : render_3d_sdl_color(0, 255, 0, 255);
+        /* Draw solid-color sprites as filled circles (texture_id == -1) with per-column occlusion.
+         * Otherwise, fall back to column fill for textured sprites.
+         */
+        if (s->texture_id == -1) {
+            int center_x = s->screen_x;
+            int center_y = s->screen_y_top + s->screen_h / 2;
+            int radius = s->screen_w / 2;
+            if (radius <= 0) radius = 1;
+            int bx0 = center_x - radius; if (bx0 < 0) bx0 = 0;
+            int bx1 = center_x + radius; if (bx1 >= ctx->width) bx1 = ctx->width - 1;
+            int by0 = center_y - radius; if (by0 < 0) by0 = 0;
+            int by1 = center_y + radius; if (by1 >= ctx->height) by1 = ctx->height - 1;
+            for (int yy = by0; yy <= by1; ++yy) {
+                for (int xx = bx0; xx <= bx1; ++xx) {
+                    int dx = xx - center_x;
+                    int dy = yy - center_y;
+                    if (dx * dx + dy * dy <= radius * radius) {
+                        /* occlusion per column */
+                        if (s->perp_distance < column_depths[xx]) {
+                            render_3d_sdl_set_pixel(ctx, xx, yy, col);
+                        }
+                    }
+                }
+            }
+        } else {
+            for (int x = x1; x <= x2; ++x) {
+                /* occlusion check: only draw where sprite is closer than wall */
+                if (s->perp_distance < column_depths[x]) {
+                    render_3d_sdl_draw_column(ctx, x, y0, y1, col);
+                }
             }
         }
     }

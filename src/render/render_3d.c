@@ -39,6 +39,7 @@ g_render_3d.config.active_player= 0;
 g_render_3d.config.screen_width= 800;
 g_render_3d.config.screen_height= 600;
 	g_render_3d.config.wall_height_scale = (float)PERSIST_CONFIG_DEFAULT_WALL_SCALE;
+	g_render_3d.config.tail_height_scale = (float)PERSIST_CONFIG_DEFAULT_TAIL_SCALE;
 	g_render_3d.config.wall_texture_path[0] = '\0';
 	g_render_3d.config.floor_texture_path[0] = '\0';
 }
@@ -203,6 +204,28 @@ for(int p= 0; p < game_state->num_players; p++) {
 	float head_x = player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * t;
 	float head_y = player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * t;
 	sprite_add(&g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, (int)p, 0);
+}
+
+/* Render tail segments as short gray walls (sprites) for all players */
+for(int p = 0; p < game_state->num_players; p++) {
+	const PlayerState* player = &game_state->players[p];
+	if(!player->active || player->length <= 1) continue;
+	/* Start from 1 to skip head (0) */
+	for(int bi = 1; bi < player->length; bi++) {
+		float seg_x = (float)player->body[bi].x + 0.5f;
+		float seg_y = (float)player->body[bi].y + 0.5f;
+		/* use configured tail height (fraction of wall height) */
+		float tail_h = g_render_3d.config.tail_height_scale;
+		uint32_t gray = render_3d_sdl_color(128, 128, 128, 255);
+		sprite_add_color(&g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, gray);
+	}
+}
+/* Optional tail debug */
+{
+    const char* dbg_tail = getenv("SNAKE_DEBUG_TAIL");
+    if(dbg_tail && dbg_tail[0] == '1') {
+        fprintf(stderr, "[tail-dbg] sprite_count=%d\n", g_render_3d.sprite_renderer.count);
+    }
 }
 /* project, sort and draw using per-column occlusion */
 sprite_project_all(&g_render_3d.sprite_renderer);

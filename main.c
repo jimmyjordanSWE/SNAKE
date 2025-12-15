@@ -118,7 +118,7 @@ if(!render_init(min_render_w, min_render_h)) {
 }
 GameState game= {0};
     game_init(&game, board_width, board_height, &config);
-    Render3DConfig config_3d= {.active_player= config.active_player, .fov_degrees= config.fov_degrees, .show_sprite_debug= (config.show_sprite_debug != 0), .screen_width= config.screen_width, .screen_height= config.screen_height, .wall_height_scale = config.wall_height_scale};
+    Render3DConfig config_3d= {.active_player= config.active_player, .fov_degrees= config.fov_degrees, .show_sprite_debug= (config.show_sprite_debug != 0), .screen_width= config.screen_width, .screen_height= config.screen_height, .wall_height_scale = config.wall_height_scale, .tail_height_scale = config.tail_height_scale};
     /* copy optional texture paths into Render3D config (zero-terminated) */
     if(config.wall_texture[0]) snprintf(config_3d.wall_texture_path, (int)sizeof(config_3d.wall_texture_path), "%s", config.wall_texture);
     if(config.floor_texture[0]) snprintf(config_3d.floor_texture_path, (int)sizeof(config_3d.floor_texture_path), "%s", config.floor_texture);

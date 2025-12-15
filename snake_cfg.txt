@@ -1,7 +1,7 @@
 # Snake Game Configuration
 board_width=40
 board_height=20
-tick_rate_ms=500
+tick_rate_ms=100
 render_glyphs=utf8
 screen_width=1200
 screen_height=800
@@ -14,7 +14,7 @@ num_players=1
 player_name=Player
 max_players=2
 max_length=64
-max_food=4
+max_food=20
 wall_height_scale=1.0
 wall_texture=assets/wall.png
 floor_texture=assets/floor.png

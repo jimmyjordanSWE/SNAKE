@@ -9,8 +9,7 @@ float fov_degrees;
 int screen_width;
 int screen_height;
 /* optional asset paths and scaling */
-float wall_height_scale;
-char wall_texture_path[ PERSIST_TEXTURE_PATH_MAX ];
+float wall_height_scale;	float tail_height_scale;char wall_texture_path[ PERSIST_TEXTURE_PATH_MAX ];
 char floor_texture_path[ PERSIST_TEXTURE_PATH_MAX ];
 } Render3DConfig;
 bool render_3d_init(const GameState* game_state, const Render3DConfig* config);

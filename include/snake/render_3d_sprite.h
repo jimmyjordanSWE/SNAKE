@@ -15,6 +15,7 @@ typedef struct Sprite3D {
     bool face_camera;
     int texture_id; /* -1 => solid color */
     int frame;
+    uint32_t color;
     /* derived */
     float perp_distance;
     int screen_x;
@@ -35,6 +36,7 @@ typedef struct SpriteRenderer3D {
 void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, const Projection3D* proj);
 void sprite_clear(SpriteRenderer3D* sr);
 bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame);
+bool sprite_add_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
 void sprite_project_all(SpriteRenderer3D* sr);
 void sprite_sort_by_depth(SpriteRenderer3D* sr);
 void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_depths);

@@ -78,6 +78,8 @@ BIN := snakegame
 BIN_3D := snakegame_3d
 LOG_DIR := $(BUILD_ROOT)/logs
 TEST_DIR := $(BUILD_DIR)/tests
+# Unity test harness source
+UNITY_SRC := tests/vendor/unity.c
 
 # Include all source files including 3D rendering
 SRC_ALL := $(shell find src -name '*.c' -print)
@@ -160,15 +162,38 @@ test-utils:
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_rng && ./$(TEST_DIR)/test_bounds && ./$(TEST_DIR)/test_direction
 
+# Build and run Unity-style unit tests under tests/unit/
+.PHONY: test-unit
+test-unit:
+	@mkdir -p $(TEST_DIR)
+	@for src in $(shell find tests/unit -name '*.c' -print); do \
+		name=$$(basename $$src .c); \
+		bin=$(TEST_DIR)/$$name; \
+		# Only compile if binary missing or source is newer
+		if [ ! -f $$bin ] || [ $$src -nt $$bin ]; then \
+			echo "Building $$name"; \
+			$(CC) $(CPPFLAGS) -Itests/vendor $(CFLAGS) -o $$bin $$src $(UNITY_SRC) $(SRC_ALL) $(LDLIBS); \
+		else \
+			echo "Skipping $$name (up-to-date)"; \
+		fi; \
+	done
+	@echo "$(OK_MSG)"
+	@FAIL=0; for src in $(shell find tests/unit -name '*.c' -print); do \
+		name=$$(basename $$src .c); \
+		echo "Running $(TEST_DIR)/$$name"; $(TEST_DIR)/$$name || FAIL=1; \
+	done; if [ "$$FAIL" -ne 0 ]; then echo "Some tests failed"; exit 1; fi
+
 test-persist:
 	@mkdir -p $(TEST_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist tests/persist/test_persist_io.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_persist_write_idempotent tests/persist/test_persist_write_idempotent.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_opaque_lifecycle tests/persist/test_opaque_lifecycle.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_config_validation tests/persist/test_config_validation.c src/persist/persist.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_persist
 	./$(TEST_DIR)/test_persist_write_idempotent
 	./$(TEST_DIR)/test_opaque_lifecycle
+	./$(TEST_DIR)/test_config_validation
 
 test-net:
 	@mkdir -p $(TEST_DIR)
@@ -217,7 +242,7 @@ coverage:
 	@genhtml $(BUILD_DIR)/coverage/coverage.filtered.info --output-directory $(BUILD_DIR)/coverage/report || { echo "genhtml failed"; exit 1; }
 	@echo "Coverage report: $(BUILD_DIR)/coverage/report/index.html"
 .PHONY: test all build debug release valgrind gdb clean test-3d format-llm format-human
-test: test-input test-collision test-game test-utils test-persist test-net test-tty
+test: test-unit test-input test-collision test-game test-utils test-persist test-net test-tty
 
 $(BIN): $(OBJ)
 	@mkdir -p $(dir $@)

@@ -15,7 +15,9 @@ const GameState* game_state;
 Camera3D camera;
 Raycaster3D raycaster;
 Projection3D projector;
-Texture3D texture;
+Texture3D texture; /* fallback */
+Texture3D wall_texture;
+Texture3D floor_texture;
 SpriteRenderer3D sprite_renderer;
 SDL3DContext display;
 Render3DConfig config;
@@ -42,7 +44,18 @@ if(!render_3d_sdl_init(g_render_3d.config.screen_width, g_render_3d.config.scree
 camera_init(&g_render_3d.camera, g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
 raycast_init(&g_render_3d.raycaster, game_state->width, game_state->height, NULL);
 projection_init(&g_render_3d.projector, g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f);
+/* initialize textures */
 texture_init(&g_render_3d.texture);
+texture_init(&g_render_3d.wall_texture);
+texture_init(&g_render_3d.floor_texture);
+/* try to load assets/wall.png and assets/floor.png (optional)
+   Log a diagnostic if loading fails to help users notice missing assets. */
+if(!texture_load_from_file(&g_render_3d.wall_texture, "assets/wall.png")) {
+	fprintf(stderr, "render_3d_init: failed to load assets/wall.png (using procedural fallback)\n");
+}
+if(!texture_load_from_file(&g_render_3d.floor_texture, "assets/floor.png")) {
+	fprintf(stderr, "render_3d_init: failed to load assets/floor.png (using flat floor color)\n");
+}
 /* allocate per-column perpendicular depth buffer for sprite occlusion */
 g_render_3d.column_depths = calloc((size_t)g_render_3d.display.width, sizeof(float));
 sprite_init(&g_render_3d.sprite_renderer, 100, &g_render_3d.camera, &g_render_3d.projector);
@@ -65,6 +78,30 @@ camera_update_interpolation(&g_render_3d.camera, 1.0f / 60.0f);
 	uint32_t floor_color= 0xFF8B4513;
 	uint32_t ceiling_color= 0xFF4169E1;
 	int horizon= g_render_3d.display.height / 2;
+	/* Optional debug overlay: small texture samples when SNAKE_DEBUG_TEXTURES=1 */
+	const char* dbg = getenv("SNAKE_DEBUG_TEXTURES");
+	if(dbg && dbg[0] == '1') {
+		/* draw small 16x16 sample of wall texture at (8,8) and floor at (8,28) */
+		if(g_render_3d.wall_texture.pixels) {
+			for(int yy = 0; yy < 16; yy++) {
+				for(int xx = 0; xx < 16; xx++) {
+					uint32_t c = texture_sample(&g_render_3d.wall_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
+					if(8+xx >= 0 && 8+xx < g_render_3d.display.width && 8+yy >= 0 && 8+yy < g_render_3d.display.height)
+						g_render_3d.display.pixels[(8+yy) * g_render_3d.display.width + (8+xx)] = c;
+				}
+			}
+		}
+		if(g_render_3d.floor_texture.pixels) {
+			for(int yy = 0; yy < 16; yy++) {
+				for(int xx = 0; xx < 16; xx++) {
+					uint32_t c = texture_sample(&g_render_3d.floor_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
+					if(8+xx >= 0 && 8+xx < g_render_3d.display.width && 28+yy >= 0 && 28+yy < g_render_3d.display.height)
+						g_render_3d.display.pixels[(28+yy) * g_render_3d.display.width + (8+xx)] = c;
+				}
+			}
+		}
+		fprintf(stderr, "render_3d: debug texture overlay drawn\n");
+	}
 	/* use interpolated camera position & angle for rendering */
 	float interp_cam_x, interp_cam_y;
 	camera_get_interpolated_position(&g_render_3d.camera, &interp_cam_x, &interp_cam_y);
@@ -101,14 +138,54 @@ Texel texel;
 if(pd <= 0.1f) pd = 0.1f;
 /* record perpendicular depth for this screen column */
 if (g_render_3d.column_depths) g_render_3d.column_depths[x] = pd;
-texture_get_texel(&g_render_3d.texture, pd, hit.is_vertical, 0.0f, &texel);
-render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_start, proj.draw_end, texel.color);
-render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end + 1, g_render_3d.display.height - 1, floor_color);
+float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * (float)TEXTURE_SCALE;
+/* Draw textured wall column per-row to map V coordinate to wall height */
+int wall_h = proj.draw_end - proj.draw_start + 1;
+if(wall_h <= 0) wall_h = 1;
+/* fast column write: get base pointer */
+uint32_t* pix = g_render_3d.display.pixels;
+int w = g_render_3d.display.width;
+int h = g_render_3d.display.height;
+for(int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
+    float v = (float)(yy - proj.draw_start) / (float)wall_h; /* 0..1 */
+    float tex_v = v * (float)TEXTURE_SCALE;
+    uint32_t col = 0;
+    if(g_render_3d.wall_texture.pixels && g_render_3d.wall_texture.img_w > 0 && g_render_3d.wall_texture.img_h > 0) {
+        col = texture_sample(&g_render_3d.wall_texture, tex_coord, tex_v, true);
+    } else {
+        texture_get_texel(&g_render_3d.texture, pd, hit.is_vertical, tex_coord, &texel);
+        col = texel.color;
+    }
+    if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = col;
+}
+/* floor: perspective correct sampling per scanline */
+if(g_render_3d.floor_texture.pixels && g_render_3d.floor_texture.img_w > 0 && g_render_3d.floor_texture.img_h > 0) {
+    for(int yy = proj.draw_end + 1; yy < g_render_3d.display.height; yy++) {
+        float p = (float)(yy - horizon) / ((float)g_render_3d.display.height * 0.5f);
+        if(p <= 0.0f) p = 0.0001f;
+        const float camera_height = 0.5f;
+        float rowDist = camera_height / p;
+        /* move along the ray direction to world point */
+        float world_x = interp_cam_x + cosf(ray_angle) * rowDist;
+        float world_y = interp_cam_y + sinf(ray_angle) * rowDist;
+        float u = world_x * (float)TEXTURE_SCALE;
+        float v = world_y * (float)TEXTURE_SCALE;
+        uint32_t col = texture_sample(&g_render_3d.floor_texture, u, v, true);
+        if(g_render_3d.display.pixels && x >= 0 && x < g_render_3d.display.width && yy >= 0 && yy < g_render_3d.display.height) g_render_3d.display.pixels[yy * g_render_3d.display.width + x] = col;
+    }
+} else {
+    render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end + 1, g_render_3d.display.height - 1, floor_color);
+}
 } else {
 /* no hit -> mark as infinite distance so sprites are never occluded */
 if (g_render_3d.column_depths) g_render_3d.column_depths[x] = INFINITY;
 render_3d_sdl_draw_column(&g_render_3d.display, x, 0, horizon - 1, ceiling_color);
-render_3d_sdl_draw_column(&g_render_3d.display, x, horizon, g_render_3d.display.height - 1, floor_color);
+uint32_t col_floor = floor_color;
+if(g_render_3d.floor_texture.pixels && g_render_3d.floor_texture.img_w > 0 && g_render_3d.floor_texture.img_h > 0) {
+    float u = ((float)x + 0.5f) / (float)g_render_3d.display.width * (float)TEXTURE_SCALE;
+    col_floor = texture_sample(&g_render_3d.floor_texture, u, 0.5f, true);
+}
+render_3d_sdl_draw_column(&g_render_3d.display, x, horizon, g_render_3d.display.height - 1, col_floor);
 }
 }
 /* collect sprites for this frame */
@@ -151,6 +228,9 @@ if (g_render_3d.column_depths) {
 }
 /* clean up sprite renderer storage */
 sprite_shutdown(&g_render_3d.sprite_renderer);
+/* free textures */
+texture_free_image(&g_render_3d.wall_texture);
+texture_free_image(&g_render_3d.floor_texture);
 g_render_3d.initialized= false;
 g_render_3d.game_state= NULL;
 }

@@ -11,6 +11,8 @@ void projection_project_wall(const Projection3D* proj, float distance, WallProje
 if(!proj || !result_out) return;
 if(distance <= 0.1f) distance= 0.1f;
 float wall_height= (float)proj->screen_height / (distance + 0.5f);
+/* Scale wall height for better visual impact - walls appear taller */
+wall_height *= 1.5f;
 if(wall_height > (float)proj->screen_height) wall_height= (float)proj->screen_height;
 result_out->wall_height= (int)wall_height;
 	int center= proj->horizon_y;

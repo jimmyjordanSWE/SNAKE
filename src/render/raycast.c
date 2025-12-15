@@ -53,6 +53,13 @@ return false;
 }
 float raycast_get_texture_coord(const RayHit* hit, bool is_vertical) {
 if(!hit) return 0.0f;
-(void)is_vertical;
-return (hit->hit_x + hit->hit_y) * 0.5f;
+/* For vertical faces (hit on a vertical grid line), the texture
+ * coordinate is determined by the fractional part of the Y coordinate.
+ * For horizontal faces, use the fractional part of the X coordinate.
+ * Return a value in [0,1).
+ */
+float coord = is_vertical ? hit->hit_y : hit->hit_x;
+float frac = coord - floorf(coord);
+if(frac < 0.0f) frac += 1.0f;
+return frac;
 }

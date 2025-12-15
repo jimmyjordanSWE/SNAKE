@@ -94,7 +94,7 @@ goto done;
 }
 GameState game= {0};
 game_init(&game, FIXED_BOARD_WIDTH, FIXED_BOARD_HEIGHT, 42);
-Render3DConfig config_3d= {.active_player= 0, .fov_degrees= 90.0f, .show_minimap= false, .show_stats= false, .screen_width= 800, .screen_height= 600};
+Render3DConfig config_3d= {.active_player= 0, .fov_degrees= 90.0f, .show_minimap= false, .show_stats= false, .show_sprite_debug= false, .screen_width= 800, .screen_height= 600};
 bool has_3d= render_3d_init(&game, &config_3d);
 if(!has_3d)
 fprintf(stderr,

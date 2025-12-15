@@ -33,7 +33,7 @@ ifeq ($(WERROR),1)
 WARNINGS += -Werror
 endif
 LDFLAGS_BASE ?=
-LDLIBS ?= $(shell pkg-config --libs sdl2) -lm
+LDLIBS ?= $(shell pkg-config --libs sdl2) -lm -lz
 
 DEBUG_FLAGS ?= -O0 -g3
 RELEASE_FLAGS ?= -O3 -DNDEBUG
@@ -165,11 +165,19 @@ test-render:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_interp tests/render/test_camera_interp.c src/render/camera.c $(LDLIBS) || true
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_world_transform tests/render/test_camera_world_transform.c src/render/camera.c $(LDLIBS) || true
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_camera_angles tests/render/test_camera_angles.c src/render/camera.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture tests/render/test_texture.c src/render/texture.c src/vendor/stb_image.c src/render/raycast.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_file tests/render/test_texture_file.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_search tests/render/test_texture_search.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_texture_assets tests/render/test_texture_assets.c src/render/texture.c src/vendor/stb_image.c $(LDLIBS) || true
 	@echo "$(OK_MSG)"
 	./test_camera_orient || true
 	./test_camera_interp || true
 	./test_camera_world_transform || true
 	./test_camera_angles || true
+	./test_texture || true
+	./test_texture_file || true
+	./test_texture_search || true
+	./test_texture_assets
 .PHONY: test all build debug release valgrind gdb clean test-3d format-llm format-human
 test: test-input test-collision test-game test-utils test-persist test-net test-tty
 

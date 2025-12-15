@@ -1,0 +1,5 @@
+Terminal size OK (120x40). Starting game...
+texture_load_from_file: failed to load 'assets/wall.png' (tried various paths)
+render_3d_init: failed to load assets/wall.png (using procedural fallback)
+texture_load_from_file: failed to load 'assets/floor.png' (tried various paths)
+render_3d_init: failed to load assets/floor.png (using flat floor color)

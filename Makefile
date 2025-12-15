@@ -69,8 +69,8 @@ $(error Unknown CONFIG '$(CONFIG)'. Use CONFIG=debug-asan|release|valgrind)
 endif
 
 OBJ_DIR := $(BUILD_DIR)/obj
-BIN := snake
-BIN_3D := snake_3d
+BIN := snakegame
+BIN_3D := snakegame_3d
 LOG_DIR := $(BUILD_ROOT)/logs
 
 # Include all source files including 3D rendering
@@ -102,13 +102,13 @@ release:
 valgrind:
 	@$(MAKE) CONFIG=valgrind $(PREBUILD) build
 	@mkdir -p $(LOG_DIR)
-	@$(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./snake \
+	@$(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./$(BIN) \
 		|| { echo "error: valgrind found issues (see $(LOG_DIR)/valgrind.log)"; tail -n 80 "$(LOG_DIR)/valgrind.log"; exit 1; }
 	@echo "$(OK_MSG)"
 
 gdb:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
-	gdb ./snake
+	gdb ./$(BIN)
 
 test-3d:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) $(BIN_3D)
@@ -157,7 +157,7 @@ test-persist:
 	./test_persist_write_idempotent
 
 test-net:
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o test_net_pack tests/net/test_net_pack.c src/net/net.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c $(LDLIBS)
 	@echo "$(OK_MSG)"
 	./test_net_pack
 

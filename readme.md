@@ -21,10 +21,10 @@ Terminal Snake project designed to meet the course requirements (C/C++) and the 
 
 ## Run
 
-- Debug binary: `./snake`
-- Release build: `CONFIG=release WERROR=0 make && ./snake`
+- Debug binary: `./snakegame`
+- Release build: `CONFIG=release WERROR=0 make && ./snakegame`
 
-**Note:** Binary is located at `./snake` in the project root (Dec 13, 2025 update)
+**Note:** Binary is located at `./snakegame` in the project root (Dec 13, 2025 update)
 
 ## Documentation
 

@@ -1,10 +1,10 @@
 # Snake Game Configuration
 board_width=40
 board_height=20
-tick_rate_ms=250
+tick_rate_ms=500
 render_glyphs=utf8
-screen_width=800
-screen_height=600
+screen_width=1200
+screen_height=800
 enable_external_3d_view=true
 seed=42
 fov_degrees=90.00
@@ -15,7 +15,7 @@ player_name=Player
 max_players=2
 max_length=64
 max_food=4
-wall_height_scale=2.00
+wall_height_scale=1.0
 wall_texture=assets/wall.png
 floor_texture=assets/floor.png
 key_left=a

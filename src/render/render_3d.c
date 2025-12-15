@@ -9,6 +9,7 @@
 #include "snake/types.h"
 #include <stdio.h>
 #include <stdlib.h>
+
 typedef enum { RENDER_MODE_2D= 0, RENDER_MODE_3D, RENDER_MODE_COUNT } RenderMode;
 typedef struct {
 const GameState* game_state;
@@ -171,36 +172,17 @@ for(int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
     }
     if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = col;
 }
-/* floor: perspective correct sampling per scanline */
-if(g_render_3d.floor_texture.pixels && g_render_3d.floor_texture.img_w > 0 && g_render_3d.floor_texture.img_h > 0) {
-    for(int yy = proj.draw_end + 1; yy < g_render_3d.display.height; yy++) {
-        float p = (float)(yy - horizon) / ((float)g_render_3d.display.height * 0.5f);
-        if(p <= 0.0f) p = 0.0001f;
-        const float camera_height = 0.5f;
-        float rowDist = camera_height / p;
-        /* move along the ray direction to world point */
-        float world_x = interp_cam_x + cosf(ray_angle) * rowDist;
-        float world_y = interp_cam_y + sinf(ray_angle) * rowDist;
-        float u = world_x * (float)TEXTURE_SCALE;
-        float v = world_y * (float)TEXTURE_SCALE;
-        uint32_t col = texture_sample(&g_render_3d.floor_texture, u, v, true);
-        if(g_render_3d.display.pixels && x >= 0 && x < g_render_3d.display.width && yy >= 0 && yy < g_render_3d.display.height) g_render_3d.display.pixels[yy * g_render_3d.display.width + x] = col;
-    }
-} else {
-    render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end + 1, g_render_3d.display.height - 1, floor_color);
-}
+/* floor: Draw solid brown color below walls */
+render_3d_sdl_draw_column(&g_render_3d.display, x, proj.draw_end, g_render_3d.display.height - 1, floor_color);
 } else {
 /* no hit -> mark as infinite distance so sprites are never occluded */
 if (g_render_3d.column_depths) g_render_3d.column_depths[x] = INFINITY;
 render_3d_sdl_draw_column(&g_render_3d.display, x, 0, horizon - 1, ceiling_color);
-uint32_t col_floor = floor_color;
-if(g_render_3d.floor_texture.pixels && g_render_3d.floor_texture.img_w > 0 && g_render_3d.floor_texture.img_h > 0) {
-    float u = ((float)x + 0.5f) / (float)g_render_3d.display.width * (float)TEXTURE_SCALE;
-    col_floor = texture_sample(&g_render_3d.floor_texture, u, 0.5f, true);
-}
-render_3d_sdl_draw_column(&g_render_3d.display, x, horizon, g_render_3d.display.height - 1, col_floor);
+/* Draw floor in solid brown below horizon */
+render_3d_sdl_draw_column(&g_render_3d.display, x, horizon, g_render_3d.display.height - 1, floor_color);
 }
 }
+
 /* collect sprites for this frame */
 sprite_clear(&g_render_3d.sprite_renderer);
 for(int i= 0; i < game_state->food_count; i++) {

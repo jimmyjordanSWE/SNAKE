@@ -2,6 +2,7 @@
 #include "snake/render_3d_camera.h"
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_sprite.h"
+#include "snake/persist.h"
 #include "snake/types.h"
 #include <stdlib.h>
 

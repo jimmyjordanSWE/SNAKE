@@ -91,10 +91,17 @@ camera->interp_time= time;
 }
 void camera_get_ray_angle(const Camera3D* camera, int col, float* ray_angle_out) {
 if(!camera || !ray_angle_out) return;
-float col_normalized= ((float)col - (float)camera->screen_width / 2.0f) / (float)camera->screen_width;
-float angle_offset= col_normalized * camera->fov_radians;
-float interp_angle= camera_get_interpolated_angle(camera);
-*ray_angle_out= interp_angle + angle_offset;
+	/* Perspective-correct mapping from screen column to ray angle.
+	 * Using a linear angle offset exaggerates distortion near the edges of the FOV
+	 * and makes floor texturing feel like it scrolls too fast.
+	 */
+	float interp_angle= camera_get_interpolated_angle(camera);
+	float half_fov = camera->fov_radians * 0.5f;
+	float tan_half = tanf(half_fov);
+	/* cameraX in [-1,1], sample at pixel center */
+	float cameraX = (2.0f * ((float)col + 0.5f) / (float)camera->screen_width) - 1.0f;
+	float angle_offset = atanf(cameraX * tan_half);
+	*ray_angle_out= interp_angle + angle_offset;
 }
 void camera_world_to_camera(const Camera3D* camera, float world_x, float world_y, float* cam_x_out, float* cam_y_out) {
 if(!camera || !cam_x_out || !cam_y_out) return;

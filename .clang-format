@@ -1,67 +1,32 @@
----
 BasedOnStyle: LLVM
 
 # Indentation
 IndentWidth: 4
 TabWidth: 4
-UseTab: false
-ContinuationIndentWidth: 4
+UseTab: Never
 
-# Line length
-ColumnLimit: 80
-
-# Braces - readable style
-BreakBeforeBraces: Allman
-AllowShortFunctionsOnASingleLine: None
+# Braces
+BreakBeforeBraces: Attach   # function/if/for/while { on the same line
+AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
 
 # Pointer alignment
-PointerAlignment: Left
-DerivePointerAlignment: false
+PointerAlignment: Left       # int *ptr
+DerivePointerAlignment: false # Moved this up for consistency
 
-# Function parameters - readable wrapping
-BinPackParameters: false
-BinPackArguments: false
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowAllArgumentsOnNextLine: true
-AlignAfterOpenBracket: Align
+# Function parameters and Line Wrapping
+BinPackParameters: false      # try to keep parameters on one line
+AllowAllParametersOfDeclarationOnNextLine: false
+ColumnLimit: 120              # Set max line width to 50 (This overrides the '0' you had before)
 
-# Spacing
-SpacesBeforeTrailingComments: 2
+# Spaces
+SpacesBeforeTrailingComments: 1
 SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-SpacesInAngles: false
 
-# Alignment
-AlignConsecutiveAssignments: Consecutive
-AlignConsecutiveDeclarations: Consecutive
-AlignConsecutiveMacros: Consecutive
-AlignEscapedNewlines: Left
-AlignOperands: Align
-AlignTrailingComments: true
-
-# Operator breaking
-BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeTernaryOperators: true
-
-# Empty lines
-MaxEmptyLinesToKeep: 2
-KeepEmptyLinesAtTheStartOfBlocks: true
-
-# Other
-ReflowComments: true
-SortIncludes: CaseSensitive
-IndentCaseLabels: true
-IndentCaseBlocks: false
-IndentGotoLabels: true
-IndentPPDirectives: AfterHash
-
-# Breaking
-AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: false
-BreakStringLiterals: true
+# Multi-line blocks
+BreakBeforeBinaryOperators: None    # keep expressions readable
+AllowAllArgumentsOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false

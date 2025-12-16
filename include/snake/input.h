@@ -1,8 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>
-typedef struct
-{
+typedef struct {
     bool quit, restart, pause_toggle, view_toggle;
     bool any_key;
     bool move_up, move_down, move_left, move_right;

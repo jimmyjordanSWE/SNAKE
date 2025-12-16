@@ -8,17 +8,14 @@ int main(void)
 
 {
     GameConfig* config = NULL;
-    if (persist_load_config("snake_cfg.txt", &config))
-    {
+    if (persist_load_config("snake_cfg.txt", &config)) {
         console_info("Loaded configuration from snake_cfg.txt\n");
-    }
-    else
-    {
+    } else {
         console_info("No config file found; using defaults\n");
         config = game_config_create();
     }
-    int        init_err = 0;
-    SnakeGame* game     = snake_game_new(config, &init_err);
+    int init_err = 0;
+    SnakeGame* game = snake_game_new(config, &init_err);
     if (config)
         game_config_destroy(config);
     if (!game)

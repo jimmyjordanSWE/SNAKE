@@ -17,7 +17,6 @@ bool camera_point_in_front(const Camera3D* camera, float x, float y);
 void camera_get_interpolated_position(const Camera3D* camera, float* x_out, float* y_out);
 float camera_get_interpolated_angle(const Camera3D* camera);
 void camera_update_vectors(Camera3D* camera);
-/* Additional accessors to support opaque Camera3D */
 void camera_set_position(Camera3D* cam, float x, float y);
 void camera_set_angle(Camera3D* cam, float angle);
 void camera_set_prev_position(Camera3D* cam, float prev_x, float prev_y);

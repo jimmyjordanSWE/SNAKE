@@ -20,3 +20,14 @@ void render_3d_set_tick_rate_ms(int ms);
 void render_3d_set_active_player(int player_index);
 void render_3d_set_fov(float fov_degrees);
 void render_3d_shutdown(void);
+
+/* Console overlays rendered in the 3D view */
+void render_3d_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
+void render_3d_draw_congrats_overlay(int score, const char* name_entered);
+
+/*
+ * Compute the minimap cell size in pixels given a display size and map
+ * dimensions. This is useful for testing minimap scaling independently of
+ * the SDL display code.
+ */
+int render_3d_compute_minimap_cell_px(int display_w, int display_h, int map_w, int map_h);

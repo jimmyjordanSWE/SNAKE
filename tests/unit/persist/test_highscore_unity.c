@@ -25,7 +25,7 @@ void test_highscore_name_truncate(void) {
     longname[250] = '\0';
     HighScore* hs = highscore_create(longname, 1);
     const char* name = highscore_get_name(hs);
-    /* name should be non-empty and not longer than PERSIST_NAME_MAX-1 */
+    
     TEST_ASSERT_TRUE_MSG(name != NULL, "name should not be NULL");
     TEST_ASSERT_TRUE_MSG((int)strlen(name) < PERSIST_NAME_MAX, "name should be truncated to PERSIST_NAME_MAX-1");
     highscore_destroy(hs);

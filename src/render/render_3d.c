@@ -7,11 +7,13 @@
 #include "snake/render_3d_sprite.h"
 #include "snake/render_3d_texture.h"
 #include "snake/types.h"
+#include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 typedef enum { RENDER_MODE_2D= 0, RENDER_MODE_3D, RENDER_MODE_COUNT } RenderMode;
 typedef struct {
 const GameState* game_state;
@@ -26,7 +28,7 @@ SDL3DContext* display;
 Render3DConfig config;
 bool initialized;
 float* column_depths;
-} Render3DContext; 
+} Render3DContext;
 static Render3DContext g_render_3d= {0};
 static void render_3d_log(const char* fmt, ...) {
 char buf[512];
@@ -63,11 +65,7 @@ if(map_w <= 0 || map_h <= 0) {
 render_3d_log("minimap: map size invalid %dx%d\n", map_w, map_h);
 return;
 }
-int max_dim= map_w > map_h ? map_w : map_h;
-int base_size= render_3d_sdl_get_width(r->display) < render_3d_sdl_get_height(r->display) ? render_3d_sdl_get_width(r->display) / 5 : render_3d_sdl_get_height(r->display) / 5;
-if(base_size < 64) base_size= 64;
-int cell_px= base_size / max_dim;
-if(cell_px < 1) cell_px= 1;
+int cell_px = render_3d_compute_minimap_cell_px(render_3d_sdl_get_width(r->display), render_3d_sdl_get_height(r->display), map_w, map_h);
 int map_px_w= cell_px * map_w;
 int map_px_h= cell_px * map_h;
 int padding= 8;
@@ -78,8 +76,8 @@ if(y0 < padding) y0= padding;
 const char* dbg_minimap_early= getenv("SNAKE_DEBUG_MINIMAP");
 if(dbg_minimap_early && dbg_minimap_early[0] == '1') {
 render_3d_log("minimap: called gs=%p map=%dx%d display=%dx%d x0=%d "
-              "y0=%d cell_px=%d base_size=%d\n",
-    (void*)gs, map_w, map_h, render_3d_sdl_get_width(r->display), render_3d_sdl_get_height(r->display), x0, y0, cell_px, base_size);
+              "y0=%d cell_px=%d\n",
+    (void*)gs, map_w, map_h, render_3d_sdl_get_width(r->display), render_3d_sdl_get_height(r->display), x0, y0, cell_px);
 }
 uint32_t bg= render_3d_sdl_color(0, 0, 0, 200);
 for(int yy= 0; yy < map_px_h; yy++) {
@@ -145,6 +143,157 @@ render_3d_sdl_draw_filled_circle(r->display, tx, ty, tr, tail_col);
 }
 }
 }
+
+/*
+ * Minimal 5x7 bitmap font renderer (uppercase + digits + space + !)
+ * Each glyph is 5 pixels wide and 7 pixels tall. Stored as 7 bytes (one per row)
+ * with the least significant 5 bits used (LSB = leftmost pixel).
+ */
+static const uint8_t font5x7_A_Z[][7] = {
+    /* A */ {0x0E,0x11,0x11,0x1F,0x11,0x11,0x11},
+    /* B */ {0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E},
+    /* C */ {0x0E,0x11,0x10,0x10,0x10,0x11,0x0E},
+    /* D */ {0x1C,0x12,0x11,0x11,0x11,0x12,0x1C},
+    /* E */ {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F},
+    /* F */ {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10},
+    /* G */ {0x0E,0x11,0x10,0x17,0x11,0x11,0x0F},
+    /* H */ {0x11,0x11,0x11,0x1F,0x11,0x11,0x11},
+    /* I */ {0x0E,0x04,0x04,0x04,0x04,0x04,0x0E},
+    /* J */ {0x07,0x02,0x02,0x02,0x02,0x12,0x0C},
+    /* K */ {0x11,0x12,0x14,0x18,0x14,0x12,0x11},
+    /* L */ {0x10,0x10,0x10,0x10,0x10,0x10,0x1F},
+    /* M */ {0x11,0x1B,0x15,0x15,0x11,0x11,0x11},
+    /* N */ {0x11,0x19,0x15,0x13,0x11,0x11,0x11},
+    /* O */ {0x0E,0x11,0x11,0x11,0x11,0x11,0x0E},
+    /* P */ {0x1E,0x11,0x11,0x1E,0x10,0x10,0x10},
+    /* Q */ {0x0E,0x11,0x11,0x11,0x15,0x12,0x0D},
+    /* R */ {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11},
+    /* S */ {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E},
+    /* T */ {0x1F,0x04,0x04,0x04,0x04,0x04,0x04},
+    /* U */ {0x11,0x11,0x11,0x11,0x11,0x11,0x0E},
+    /* V */ {0x11,0x11,0x11,0x11,0x11,0x0A,0x04},
+    /* W */ {0x11,0x11,0x11,0x15,0x15,0x0A,0x11},
+    /* X */ {0x11,0x11,0x0A,0x04,0x0A,0x11,0x11},
+    /* Y */ {0x11,0x11,0x11,0x0A,0x04,0x04,0x04},
+    /* Z */ {0x1F,0x01,0x02,0x04,0x08,0x10,0x1F},
+};
+static const uint8_t font5x7_digits[][7] = {
+    /* 0 */ {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E},
+    /* 1 */ {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E},
+    /* 2 */ {0x0E,0x11,0x01,0x02,0x04,0x08,0x1F},
+    /* 3 */ {0x0E,0x11,0x01,0x06,0x01,0x11,0x0E},
+    /* 4 */ {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02},
+    /* 5 */ {0x1F,0x10,0x1E,0x01,0x01,0x11,0x0E},
+    /* 6 */ {0x06,0x08,0x10,0x1E,0x11,0x11,0x0E},
+    /* 7 */ {0x1F,0x01,0x02,0x04,0x08,0x08,0x08},
+    /* 8 */ {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E},
+    /* 9 */ {0x0E,0x11,0x11,0x0F,0x01,0x02,0x0C},
+};
+static const uint8_t font5x7_exclaim[7] = {0x04,0x04,0x04,0x04,0x04,0x00,0x04};
+
+static void render_3d_draw_char(SDL3DContext* disp, int x, int y, char c, uint32_t col, int scale) {
+    if(!disp) return;
+    if(c == ' ') return; /* skip space */
+    const uint8_t* glyph = NULL;
+    if(c >= 'A' && c <= 'Z') {
+        glyph = font5x7_A_Z[c - 'A'];
+    } else if(c >= '0' && c <= '9') {
+        glyph = font5x7_digits[c - '0'];
+    } else if(c == '!') {
+        glyph = font5x7_exclaim;
+    } else {
+        return; /* unsupported */
+    }
+    for(int row = 0; row < 7; row++) {
+        uint8_t bits = glyph[row];
+        for(int colbit = 0; colbit < 5; colbit++) {
+            if(bits & (1 << (4 - colbit))) {
+                int px = x + colbit * scale;
+                int py = y + row * scale;
+                for(int yy = 0; yy < scale; yy++) for(int xx = 0; xx < scale; xx++) render_3d_sdl_blend_pixel(disp, px + xx, py + yy, col);
+            }
+        }
+    }
+}
+
+static void render_3d_draw_text_centered(SDL3DContext* disp, int y, const char* text, uint32_t col, int scale) {
+    if(!disp || !text) return;
+    int char_w = 5 * scale;
+    int spacing = scale * 2;
+    int text_px_w = (int)strlen(text) * (char_w + spacing) - spacing;
+    int x = (render_3d_sdl_get_width(disp) - text_px_w) / 2;
+    for(const char* p = text; *p; ++p) {
+        char c = (char)toupper((unsigned char)*p);
+        render_3d_draw_char(disp, x, y, c, col, scale);
+        x += char_w + spacing;
+    }
+}
+
+void render_3d_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt) {
+    (void)anim_frame;
+    (void)game;
+    if(!g_render_3d.initialized || !g_render_3d.display) return;
+    SDL3DContext* d = g_render_3d.display;
+    /* semi-transparent box */
+    int w = render_3d_sdl_get_width(d) / 2;
+    int h = render_3d_sdl_get_height(d) / 4;
+    int x = (render_3d_sdl_get_width(d) - w) / 2;
+    int y = (render_3d_sdl_get_height(d) - h) / 2;
+    uint32_t bg = render_3d_sdl_color(0, 0, 0, 200);
+    for(int yy = 0; yy < h; yy++) for(int xx = 0; xx < w; xx++) render_3d_sdl_blend_pixel(d, x + xx, y + yy, bg);
+    int ly = y + 8;
+    render_3d_draw_text_centered(d, ly, "YOU DIED", render_3d_sdl_color(255,255,255,255), 4);
+    /* add an empty line (gap equal to previous line height) */
+    ly += 4 * 7 + 4 * 7;
+    if(show_prompt) {
+        render_3d_draw_text_centered(d, ly, "PRESS ANY KEY TO RESTART", render_3d_sdl_color(160,255,160,255), 2);
+        /* add an empty line equal to the previous small line height */
+        ly += 2 * 7 + 2 * 7;
+        render_3d_draw_text_centered(d, ly, "OR Q TO QUIT", render_3d_sdl_color(160,255,160,255), 2);
+    }
+    /* Present so overlay is visible immediately */
+    (void)render_3d_sdl_present(d);
+}
+
+void render_3d_draw_congrats_overlay(int score, const char* name_entered) {
+    if(!g_render_3d.initialized || !g_render_3d.display) return;
+    SDL3DContext* d = g_render_3d.display;
+    int w = render_3d_sdl_get_width(d) * 2 / 3;
+    int h = render_3d_sdl_get_height(d) / 3;
+    int x = (render_3d_sdl_get_width(d) - w) / 2;
+    int y = (render_3d_sdl_get_height(d) - h) / 2;
+    uint32_t bg = render_3d_sdl_color(0, 0, 0, 200);
+    for(int yy = 0; yy < h; yy++) for(int xx = 0; xx < w; xx++) render_3d_sdl_blend_pixel(d, x + xx, y + yy, bg);
+    int ly = y + 6;
+    render_3d_draw_text_centered(d, ly, "CONGRATULATIONS!", render_3d_sdl_color(255,255,0,255), 3);
+    /* empty line gap */
+    ly += 3 * 7 + 3 * 7;
+    char buf[64]; snprintf(buf, sizeof(buf), "SCORE: %d", score);
+    render_3d_draw_text_centered(d, ly, buf, render_3d_sdl_color(200,200,255,255), 2);
+    /* empty line gap */
+    ly += 2 * 7 + 2 * 7;
+    if(name_entered && name_entered[0]) {
+        char nb[32]; snprintf(nb, sizeof(nb), "NAME: %.*s", 8, name_entered);
+        render_3d_draw_text_centered(d, ly, nb, render_3d_sdl_color(160,255,160,255), 2);
+    } else {
+        render_3d_draw_text_centered(d, ly, "ENTER A SHORT NAME", render_3d_sdl_color(160,255,160,255), 2);
+    }
+    /* Present the overlay now */
+    (void)render_3d_sdl_present(d);
+}
+
+int render_3d_compute_minimap_cell_px(int d_w, int d_h, int m_w, int m_h) {
+    if(d_w <= 0 || d_h <= 0 || m_w <= 0 || m_h <= 0) return 0;
+    int max_dim = m_w > m_h ? m_w : m_h;
+    int smaller = d_w < d_h ? d_w : d_h;
+    /* target minimap occupies ~40% of the smaller display dimension */
+    int target = (smaller * 40) / 100;
+    if(target < 160) target = 160; /* ensure reasonable visibility for large maps */
+    int cell_px = target / max_dim;
+    if(cell_px < 2) cell_px = 2; /* prefer at least 2px per cell for readability */
+    return cell_px;
+} 
+
 bool render_3d_init(const GameState* game_state, const Render3DConfig* config) {
 if(g_render_3d.initialized) return true;
 if(!game_state) return false;
@@ -163,11 +312,11 @@ g_render_3d.config.wall_texture_path[0]= '\0';
 g_render_3d.config.floor_texture_path[0]= '\0';
 }
 fprintf(stderr, "render_3d_init: requested size %dx%d\n", g_render_3d.config.screen_width, g_render_3d.config.screen_height);
-g_render_3d.display = render_3d_sdl_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height);
+g_render_3d.display= render_3d_sdl_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height);
 if(!g_render_3d.display) return false;
 g_render_3d.camera= camera_create(g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
 if(!g_render_3d.camera) return false;
-g_render_3d.raycaster = raycaster_create(game_state->width, game_state->height, NULL);
+g_render_3d.raycaster= raycaster_create(game_state->width, game_state->height, NULL);
 g_render_3d.projector= projection_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.fov_degrees * 3.14159265359f / 180.0f, g_render_3d.config.wall_height_scale);
 g_render_3d.texture= texture_create();
 g_render_3d.wall_texture= texture_create();
@@ -193,7 +342,7 @@ if(!texture_load_from_file(g_render_3d.floor_texture, g_render_3d.config.floor_t
 if(!texture_load_from_file(g_render_3d.floor_texture, PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE)) { fprintf(stderr, "render_3d_init: failed to load %s (using flat floor color)\n", PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE); }
 }
 g_render_3d.column_depths= calloc((size_t)render_3d_sdl_get_width(g_render_3d.display), sizeof(float));
-g_render_3d.sprite_renderer = sprite_create(100, g_render_3d.camera, g_render_3d.projector);
+g_render_3d.sprite_renderer= sprite_create(100, g_render_3d.camera, g_render_3d.projector);
 g_render_3d.initialized= true;
 return true;
 }
@@ -339,13 +488,13 @@ if(camera_get_interp_time(g_render_3d.camera) > camera_get_update_interval(g_ren
 void render_3d_shutdown(void) {
 if(!g_render_3d.initialized) return;
 render_3d_sdl_destroy(g_render_3d.display);
-g_render_3d.display = NULL;
+g_render_3d.display= NULL;
 if(g_render_3d.column_depths) {
 free(g_render_3d.column_depths);
 g_render_3d.column_depths= NULL;
 }
 sprite_destroy(g_render_3d.sprite_renderer);
-g_render_3d.sprite_renderer = NULL;
+g_render_3d.sprite_renderer= NULL;
 if(g_render_3d.wall_texture) {
 texture_destroy(g_render_3d.wall_texture);
 g_render_3d.wall_texture= NULL;
@@ -359,16 +508,16 @@ texture_destroy(g_render_3d.texture);
 g_render_3d.texture= NULL;
 }
 if(g_render_3d.projector) {
-    projection_destroy(g_render_3d.projector);
-    g_render_3d.projector= NULL;
+projection_destroy(g_render_3d.projector);
+g_render_3d.projector= NULL;
 }
 if(g_render_3d.raycaster) {
-    raycaster_destroy(g_render_3d.raycaster);
-    g_render_3d.raycaster= NULL;
+raycaster_destroy(g_render_3d.raycaster);
+g_render_3d.raycaster= NULL;
 }
 if(g_render_3d.camera) {
-    camera_destroy(g_render_3d.camera);
-    g_render_3d.camera= NULL;
+camera_destroy(g_render_3d.camera);
+g_render_3d.camera= NULL;
 }
 g_render_3d.initialized= false;
 g_render_3d.game_state= NULL;

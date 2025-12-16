@@ -24,14 +24,11 @@ Game* game_create(const GameConfig* cfg, uint32_t seed_override) {
 if(!cfg) return NULL;
 Game* g= (Game*)malloc(sizeof(Game));
 if(!g) return NULL;
-int bw = 0, bh = 0;
+int bw= 0, bh= 0;
 game_config_get_board_size(cfg, &bw, &bh);
 (void)memset(g, 0, sizeof(*g));
 game_init(&g->state, bw, bh, cfg);
-if(seed_override != 0) {
-    /* Override the RNG seed if requested */
-    snake_rng_seed(&g->state.rng_state, seed_override);
-}
+if(seed_override != 0) { snake_rng_seed(&g->state.rng_state, seed_override); }
 return g;
 }
 void game_destroy(Game* g) {

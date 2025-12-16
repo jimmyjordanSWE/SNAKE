@@ -56,7 +56,7 @@ int main(void) {
 
     char* cfgfile = make_temp_file();
     assert(persist_write_config(cfgfile, cfg));
-    /* debug: print written config */
+    
     {
         FILE* f = fopen(cfgfile, "r");
         if(f) {

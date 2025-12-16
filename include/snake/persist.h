@@ -3,9 +3,9 @@
 #include <stdint.h>
 #define PERSIST_MAX_SCORES 10
 #define PERSIST_NAME_MAX 32
-#define PERSIST_CONFIG_DEFAULT_WIDTH 40
-#define PERSIST_CONFIG_DEFAULT_HEIGHT 20
-#define PERSIST_CONFIG_DEFAULT_TICK_MS 100
+#define PERSIST_CONFIG_DEFAULT_WIDTH 80
+#define PERSIST_CONFIG_DEFAULT_HEIGHT 80
+#define PERSIST_CONFIG_DEFAULT_TICK_MS 80
 #define PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH 60
 #define PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT 24
 #define PERSIST_CONFIG_DEFAULT_MAX_PLAYERS 2
@@ -31,22 +31,17 @@
 #define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
 #define PERSIST_PLAYER_NAME_MAX 32
 typedef struct HighScore HighScore;
-/* HighScore API */
 HighScore* highscore_create(const char* name, int score);
 void highscore_destroy(HighScore* hs);
 const char* highscore_get_name(const HighScore* hs);
 int highscore_get_score(const HighScore* hs);
 void highscore_set_name(HighScore* hs, const char* name);
 void highscore_set_score(HighScore* hs, int score);
-
-/* Persistence helpers for high scores */
 int persist_read_scores(const char* filename, HighScore*** out_scores);
 bool persist_write_scores(const char* filename, HighScore** scores, int count);
 bool persist_append_score(const char* filename, const char* name, int score);
 void persist_free_scores(HighScore** scores, int count);
-
 typedef struct GameConfig GameConfig;
-/* GameConfig lifecycle and accessors */
 GameConfig* game_config_create(void);
 void game_config_destroy(GameConfig* cfg);
 void game_config_set_board_size(GameConfig* cfg, int w, int h);
@@ -95,12 +90,9 @@ void game_config_set_key_restart(GameConfig* cfg, char c);
 char game_config_get_key_restart(const GameConfig* cfg);
 void game_config_set_key_pause(GameConfig* cfg, char c);
 char game_config_get_key_pause(const GameConfig* cfg);
-
 void game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
 int game_config_get_enable_external_3d_view(const GameConfig* cfg);
-
 void game_config_set_active_player(GameConfig* cfg, int v);
 int game_config_get_active_player(const GameConfig* cfg);
-
 bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);

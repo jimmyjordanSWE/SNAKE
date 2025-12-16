@@ -4,6 +4,7 @@
 #include "snake/input.h"
 #include "snake/persist.h"
 #include "snake/platform.h"
+#include "snake/render_3d.h"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #include <ctype.h>
@@ -15,8 +16,8 @@ static DisplayContext* g_display= NULL;
 static RenderGlyphs g_glyphs= RENDER_GLYPHS_UTF8;
 static int last_score_count= -1;
 typedef struct {
-    char name[PERSIST_NAME_MAX];
-    int score;
+char name[PERSIST_NAME_MAX];
+int score;
 } DisplayScore;
 static DisplayScore last_scores[PERSIST_MAX_SCORES];
 #define SESSION_MAX_SCORES 32
@@ -27,18 +28,18 @@ if(glyphs != RENDER_GLYPHS_ASCII) glyphs= RENDER_GLYPHS_UTF8;
 g_glyphs= glyphs;
 }
 static bool is_session_score_from_display(const DisplayScore* s) {
-    if(!s) return false;
-    for(int i= 0; i < g_session_score_count; i++)
-        if(g_session_scores[i].score == s->score && strcmp(g_session_scores[i].name, s->name) == 0) return true;
-    return false;
+if(!s) return false;
+for(int i= 0; i < g_session_score_count; i++)
+if(g_session_scores[i].score == s->score && strcmp(g_session_scores[i].name, s->name) == 0) return true;
+return false;
 }
 static bool is_session_score(const HighScore* s) {
-    if(!s) return false;
-    const char* name = highscore_get_name(s);
-    int score = highscore_get_score(s);
-    for(int i= 0; i < g_session_score_count; i++)
-        if(g_session_scores[i].score == score && strcmp(g_session_scores[i].name, name) == 0) return true;
-    return false;
+if(!s) return false;
+const char* name= highscore_get_name(s);
+int score= highscore_get_score(s);
+for(int i= 0; i < g_session_score_count; i++)
+if(g_session_scores[i].score == score && strcmp(g_session_scores[i].name, name) == 0) return true;
+return false;
 }
 static uint16_t gradient_color_for_rank(int rank, int total) {
 (void)total;
@@ -55,11 +56,11 @@ if(rank >= palette_len) rank= palette_len - 1;
 return palette[rank];
 }
 static int compare_display_scores_desc(const void* a, const void* b) {
-    const DisplayScore* sa = (const DisplayScore*)a;
-    const DisplayScore* sb = (const DisplayScore*)b;
-    if(sa->score > sb->score) return -1;
-    if(sa->score < sb->score) return 1;
-    return strcmp(sa->name, sb->name);
+const DisplayScore* sa= (const DisplayScore*)a;
+const DisplayScore* sb= (const DisplayScore*)b;
+if(sa->score > sb->score) return -1;
+if(sa->score < sb->score) return 1;
+return strcmp(sa->name, sb->name);
 }
 bool render_init(int min_width, int min_height) {
 if(min_width < 20) min_width= 20;
@@ -267,142 +268,150 @@ draw_string(field_x + field_width + 2, field_y + p * 2, score_str, color);
 if(!scores) score_count= 0;
 if(score_count < 0) score_count= 0;
 if(score_count > PERSIST_MAX_SCORES) score_count= PERSIST_MAX_SCORES;
-
 DisplayScore display_scores[PERSIST_MAX_SCORES + SNAKE_MAX_PLAYERS];
 int display_count= 0;
 for(int i= 0; i < score_count && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); i++) {
-    if(!scores || !scores[i]) continue;
-    snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.31s", highscore_get_name(scores[i]));
-    display_scores[display_count].score = highscore_get_score(scores[i]);
-    display_count++;
+if(!scores || !scores[i]) continue;
+snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.31s", highscore_get_name(scores[i]));
+display_scores[display_count].score= highscore_get_score(scores[i]);
+display_count++;
 }
 for(int p= 0; p < game->num_players && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); p++) {
-    if(!game->players[p].active) continue;
-    if(game->players[p].score <= 0) continue;
-    if(p == 0 && player_name != NULL)
-        snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%s (live)", player_name);
-    else
-        snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "P%d (live)", p + 1);
-    display_scores[display_count].score = game->players[p].score;
-    display_count++;
+if(!game->players[p].active) continue;
+if(game->players[p].score <= 0) continue;
+if(p == 0 && player_name != NULL)
+snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%s (live)", player_name);
+else
+snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "P%d (live)", p + 1);
+display_scores[display_count].score= game->players[p].score;
+display_count++;
 }
 if(display_count > 1) qsort(display_scores, (size_t)display_count, sizeof(DisplayScore), compare_display_scores_desc);
 int max_display= (display_count > 5) ? 5 : display_count;
 bool scores_changed= (score_count != last_score_count);
 if(!scores_changed && score_count > 0 && scores) {
-    for(int i= 0; i < score_count; i++) {
-        if(last_scores[i].score != highscore_get_score(scores[i]) || strcmp(last_scores[i].name, highscore_get_name(scores[i])) != 0) {
-            scores_changed= true;
-            break;
-        }
-    }
+for(int i= 0; i < score_count; i++) {
+if(last_scores[i].score != highscore_get_score(scores[i]) || strcmp(last_scores[i].name, highscore_get_name(scores[i])) != 0) {
+scores_changed= true;
+break;
+}
+}
 }
 if(scores_changed && scores) {
-    last_score_count= score_count;
-    for(int i= 0; i < score_count && i < PERSIST_MAX_SCORES; i++) {
-        snprintf(last_scores[i].name, sizeof(last_scores[i].name), "%.31s", highscore_get_name(scores[i]));
-        last_scores[i].score = highscore_get_score(scores[i]);
-    }
-    invalidate_front_buffer(g_display);
+last_score_count= score_count;
+for(int i= 0; i < score_count && i < PERSIST_MAX_SCORES; i++) {
+snprintf(last_scores[i].name, sizeof(last_scores[i].name), "%.31s", highscore_get_name(scores[i]));
+last_scores[i].score= highscore_get_score(scores[i]);
+}
+invalidate_front_buffer(g_display);
 }
 int hiscore_y= field_y + 5;
 draw_string(field_x + field_width + 2, hiscore_y, "High Scores:", DISPLAY_COLOR_WHITE);
 if(max_display > 0) {
-    for(int i= 0; i < max_display && hiscore_y + i + 1 < display_height; i++) {
-        char hiscore_str[80];
-        int written= snprintf(hiscore_str, sizeof(hiscore_str), "%d. ", i + 1);
-        if(written > 0 && written < (int)sizeof(hiscore_str)) snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
-        uint16_t fg= gradient_color_for_rank(i, max_display);
-        if(is_session_score_from_display(&display_scores[i]) || strstr(display_scores[i].name, "(live)") != NULL) fg= DISPLAY_COLOR_BRIGHT_GREEN;
-        draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, fg);
-    }
+for(int i= 0; i < max_display && hiscore_y + i + 1 < display_height; i++) {
+char hiscore_str[80];
+int written= snprintf(hiscore_str, sizeof(hiscore_str), "%d. ", i + 1);
+if(written > 0 && written < (int)sizeof(hiscore_str)) snprintf(hiscore_str + written, sizeof(hiscore_str) - (size_t)written, "%.15s: %d", display_scores[i].name, display_scores[i].score);
+uint16_t fg= gradient_color_for_rank(i, max_display);
+if(is_session_score_from_display(&display_scores[i]) || strstr(display_scores[i].name, "(live)") != NULL) fg= DISPLAY_COLOR_BRIGHT_GREEN;
+draw_string(field_x + field_width + 2, hiscore_y + i + 1, hiscore_str, fg);
+}
 } else {
-    draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", DISPLAY_COLOR_CYAN);
+draw_string(field_x + field_width + 2, hiscore_y + 1, "(none yet)", DISPLAY_COLOR_CYAN);
 }
 if(display_height > field_y + field_height + 1) draw_string(1, field_y + field_height + 1, "Q: Quit", DISPLAY_COLOR_WHITE);
 display_present(g_display);
 }
 void render_draw_startup_screen(char* player_name_out, int max_len) {
-if(!g_display || !player_name_out || max_len <= 0) return;
-int display_width= 0, display_height= 0;
-display_get_size(g_display, &display_width, &display_height);
-char name_input[32]= {0};
-int input_pos= 0;
-bool name_confirmed= false;
-while(!name_confirmed) {
-display_clear(g_display);
-int y= 1;
-draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
-draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "   S N A K E", DISPLAY_COLOR_BRIGHT_GREEN);
-draw_centered_string(y++, "      THE LEGEND", DISPLAY_COLOR_BRIGHT_GREEN);
-draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
-y++;
-draw_centered_string(y++, "A Game of Hunger & Growth", DISPLAY_COLOR_CYAN);
-draw_centered_string(y++, "Navigate. Consume. Dominate.", DISPLAY_COLOR_CYAN);
-y++;
-draw_centered_string(y++, "ENTER YOUR LEGEND'S NAME", DISPLAY_COLOR_BRIGHT_YELLOW);
-draw_centered_string(y++, "(max 31 characters)", DISPLAY_COLOR_CYAN);
-y++;
-int box_width= 35;
-int box_x= (display_width - box_width) / 2;
-if(box_x < 1) box_x= 1;
-draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
-for(int i= 0; i < box_width - 2; i++) display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK);
-draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
-y++;
-draw_string(box_x, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
-draw_string(box_x + 2, y, name_input, DISPLAY_COLOR_BRIGHT_GREEN);
-if(input_pos < 30) draw_string(box_x + 2 + input_pos, y, "_", DISPLAY_COLOR_BRIGHT_YELLOW);
-draw_string(box_x + box_width - 1, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
-y++;
-draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
-for(int i= 0; i < box_width - 2; i++) display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK);
-draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
-y+= 2;
-draw_centered_string(y++, "MASTER THE CONTROLS", DISPLAY_COLOR_BRIGHT_YELLOW);
-draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "  ^  Arrow Keys = Navigate", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "< v >", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
-draw_centered_string(y++, "P = Pause   R = Restart   Q = Quit", DISPLAY_COLOR_WHITE);
-y++;
-draw_centered_string(y++, "Type name above, press ENTER to start", DISPLAY_COLOR_CYAN);
-display_present(g_display);
-platform_sleep_ms(20);
-unsigned char buf[32];
-ssize_t nread= read(STDIN_FILENO, buf, sizeof(buf));
-if(nread > 0) {
-for(ssize_t i= 0; i < nread; i++) {
-unsigned char c= buf[i];
-if(c == '\n' || c == '\r') {
-name_confirmed= true;
-break;
-} else if(c == 8 || c == 127) {
-if(input_pos > 0) {
-input_pos--;
-name_input[input_pos]= '\0';
+    /* Non-blocking startup: set a short default player name and show a brief splash. */
+    if(!g_display || !player_name_out || max_len <= 0) return;
+    int display_width= 0, display_height= 0;
+    display_get_size(g_display, &display_width, &display_height);
+    display_clear(g_display);
+    int y= 1;
+    draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
+    draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+    draw_centered_string(y++, "   S N A K E", DISPLAY_COLOR_BRIGHT_GREEN);
+    draw_centered_string(y++, "      THE LEGEND", DISPLAY_COLOR_BRIGHT_GREEN);
+    draw_centered_string(y++, "", DISPLAY_COLOR_WHITE);
+    draw_centered_string(y++, "========================================", DISPLAY_COLOR_BRIGHT_YELLOW);
+    y++;
+    draw_centered_string(y++, "A Game of Hunger & Growth", DISPLAY_COLOR_CYAN);
+    draw_centered_string(y++, "Navigate. Consume. Dominate.", DISPLAY_COLOR_CYAN);
+    display_present(g_display);
+    /* Keep splash on screen briefly, but do not block for name input. */
+    platform_sleep_ms(600);
+    /* Default player name per new feature */
+    if(max_len > 0) snprintf(player_name_out, (size_t)max_len, "You");
 }
-} else if(c >= 32 && c < 127) {
-if(input_pos < 30) {
-name_input[input_pos]= (char)c;
-input_pos++;
-name_input[input_pos]= '\0';
-}
-}
-}
-}
-}
-char* start= name_input;
-while(*start && isspace((unsigned char)*start)) start++;
-char* end= start + strlen(start);
-while(end > start && isspace((unsigned char)end[-1])) end--;
-*end= '\0';
-if(strlen(start) > 0 && strlen(start) < (size_t)max_len - 1)
-snprintf(player_name_out, (size_t)max_len, "%s", start);
-else
-snprintf(player_name_out, (size_t)max_len, "Player");
+
+void render_prompt_for_highscore_name(char* player_name_out, int max_len, int score) {
+    if(!g_display || !player_name_out || max_len <= 0) return;
+    /* Cap max_len to the required 8+NUL for highscore names */
+    if(max_len > 9) max_len = 9;
+    char name_input[9] = {0};
+    int input_pos = 0;
+    bool name_confirmed = false;
+    while(!name_confirmed) {
+        display_clear(g_display);
+        int y = 1;
+        draw_centered_string(y++, "CONGRATULATIONS!", DISPLAY_COLOR_BRIGHT_GREEN);
+        draw_centered_string(y++, "You made the high score list!", DISPLAY_COLOR_BRIGHT_YELLOW);
+        char score_str[32];
+        snprintf(score_str, sizeof(score_str), "Score: %d", score);
+        draw_centered_string(y++, score_str, DISPLAY_COLOR_CYAN);
+        y++;
+        draw_centered_string(y++, "ENTER A SHORT NAME (max 8 chars)", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+        int box_width = 20;
+        int display_width = 0, display_height = 0;
+        display_get_size(g_display, &display_width, &display_height);
+        int box_x = (display_width - box_width) / 2;
+        if(box_x < 1) box_x = 1;
+        draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        for(int i = 0; i < box_width - 2; i++) display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK);
+        draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+        draw_string(box_x, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_string(box_x + 2, y, name_input, DISPLAY_COLOR_BRIGHT_GREEN);
+        if(input_pos < 8) draw_string(box_x + 2 + input_pos, y, "_", DISPLAY_COLOR_BRIGHT_YELLOW);
+        draw_string(box_x + box_width - 1, y, "|", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y++;
+        draw_string(box_x, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        for(int i = 0; i < box_width - 2; i++) display_put_char(g_display, box_x + 1 + i, y, '-', DISPLAY_COLOR_BRIGHT_YELLOW, DISPLAY_COLOR_BLACK);
+        draw_string(box_x + box_width - 1, y, "+", DISPLAY_COLOR_BRIGHT_YELLOW);
+        y+=2;
+        draw_centered_string(y++, "Press ENTER to confirm, leave blank to use default", DISPLAY_COLOR_WHITE);
+        /* mirror to 3D if available */
+        if(name_input[0]) render_3d_draw_congrats_overlay(score, name_input);
+        else render_3d_draw_congrats_overlay(score, NULL);
+        display_present(g_display);
+        platform_sleep_ms(20);
+        unsigned char buf[16];
+        ssize_t nread = read(STDIN_FILENO, buf, sizeof(buf));
+        if(nread > 0) {
+            for(ssize_t i = 0; i < nread; i++) {
+                unsigned char c = buf[i];
+                if(c == '\n' || c == '\r') {
+                    name_confirmed = true;
+                    break;
+                } else if(c == 8 || c == 127) {
+                    if(input_pos > 0) { input_pos--; name_input[input_pos] = '\0'; }
+                } else if(c >= 32 && c < 127) {
+                    if(input_pos < 8) { name_input[input_pos] = (char)c; input_pos++; name_input[input_pos] = '\0'; }
+                }
+            }
+        }
+    }
+    char* start = name_input;
+    while(*start && isspace((unsigned char)*start)) start++;
+    char* end = start + strlen(start);
+    while(end > start && isspace((unsigned char)end[-1])) end--;
+    *end = '\0';
+    if(strlen(start) > 0 && strlen(start) < (size_t)max_len)
+        snprintf(player_name_out, (size_t)max_len, "%s", start);
+    else
+        snprintf(player_name_out, (size_t)max_len, "You");
 }
 static void fill_rect(int x, int y, int width, int height, uint16_t fg_color, uint16_t bg_color, uint16_t ch) {
 if(!g_display) return;

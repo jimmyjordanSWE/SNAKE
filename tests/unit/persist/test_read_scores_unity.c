@@ -17,17 +17,17 @@ static char* make_temp_file(void) {
 void test_read_scores_malformed_lines(void) {
     char* fname = make_temp_file();
     FILE* f = fopen(fname, "w");
-    /* valid */ fprintf(f, "alice 10\n");
-    /* missing score */ fprintf(f, "bob\n");
-    /* non-numeric */ fprintf(f, "carol twelve\n");
-    /* negative */ fprintf(f, "dave -5\n");
-    /* too long name */ fprintf(f, "this_name_is_way_too_long_for_the_limit_and_should_be_ignored 3\n");
-    /* valid */ fprintf(f, "eve 7\n");
+     fprintf(f, "alice 10\n");
+     fprintf(f, "bob\n");
+     fprintf(f, "carol twelve\n");
+     fprintf(f, "dave -5\n");
+     fprintf(f, "this_name_is_way_too_long_for_the_limit_and_should_be_ignored 3\n");
+     fprintf(f, "eve 7\n");
     fclose(f);
 
     HighScore** out = NULL;
     int cnt = persist_read_scores(fname, &out);
-    /* only alice and eve should be accepted */
+    
     TEST_ASSERT_EQUAL_INT(2, cnt);
     TEST_ASSERT_EQUAL_STRING("alice", highscore_get_name(out[0]));
     TEST_ASSERT_EQUAL_INT(10, highscore_get_score(out[0]));

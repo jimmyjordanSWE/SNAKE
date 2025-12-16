@@ -5,19 +5,26 @@
 #include "snake/persist.h"
 #include "unity.h"
 
-/* test prototypes */
+
 static void test_write_and_read_scores(void);
 static void test_append_score_and_limit(void);
 static void test_config_io_and_parsing(void);
 static void test_config_clamping_and_booleans(void);
 static void test_unknown_keys_ignored(void);
 static void test_missing_file_defaults(void);
+static void test_default_player_name(void);
 
 static char* make_temp_file(void) {
     char* template = strdup("/tmp/snake_test_unity_XXXXXX");
     int fd = mkstemp(template);
     if (fd >= 0) close(fd);
     return template;
+}
+
+void test_default_player_name(void) {
+    GameConfig* cfg = game_config_create();
+    TEST_ASSERT_EQUAL_STRING("You", game_config_get_player_name(cfg));
+    game_config_destroy(cfg);
 }
 
 void test_write_and_read_scores(void) {
@@ -39,7 +46,7 @@ void test_append_score_and_limit(void) {
     for(int i=0;i<5;i++) scores[i] = highscore_create("x", i);
     TEST_ASSERT_TRUE_MSG(persist_write_scores(fname, scores, 5), "write 5 scores");
     for(int i=0;i<5;i++) highscore_destroy(scores[i]);
-    /* append high score that should be inserted */
+    
     TEST_ASSERT_TRUE_MSG(persist_append_score(fname, "winner", 100), "append should succeed and insert");
     HighScore** out = NULL;
     int cnt = persist_read_scores(fname, &out);
@@ -158,5 +165,6 @@ int main(void) {
     RUN_TEST(test_config_clamping_and_booleans);
     RUN_TEST(test_unknown_keys_ignored);
     RUN_TEST(test_missing_file_defaults);
+    RUN_TEST(test_default_player_name);
     return UnityEnd();
 }

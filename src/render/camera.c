@@ -1,8 +1,8 @@
 #include "snake/render_3d_camera.h"
 #include "snake/types.h"
 #include <math.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -211,12 +211,11 @@ if(t > 1.0f) t= 1.0f;
 *y_out= camera->prev_y + (camera->y - camera->prev_y) * t;
 }
 float camera_get_interpolated_angle(const Camera3D* camera) {
-    if(!camera) return 0.0f;
-    /* If interpolation is disabled or not started, return the current angle */
-    if(camera->update_interval <= 0.0f) return camera->angle;
-    float t = camera->interp_time / camera->update_interval;
-    if(t < 0.0f) t = 0.0f;
-    if(t > 1.0f) t = 1.0f;
-    if(t <= 0.0f) return camera->angle;
-    return interpolate_angle(camera->prev_angle, camera->angle, t);
+if(!camera) return 0.0f;
+if(camera->update_interval <= 0.0f) return camera->angle;
+float t= camera->interp_time / camera->update_interval;
+if(t < 0.0f) t= 0.0f;
+if(t > 1.0f) t= 1.0f;
+if(t <= 0.0f) return camera->angle;
+return interpolate_angle(camera->prev_angle, camera->angle, t);
 }

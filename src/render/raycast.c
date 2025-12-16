@@ -3,25 +3,21 @@
 #include <math.h>
 #include <stdlib.h>
 #define PI 3.14159265359f
-
 struct Raycaster3D {
-    int board_width;
-    int board_height;
-    const uint8_t* board;
+int board_width;
+int board_height;
+const uint8_t* board;
 };
-
 Raycaster3D* raycaster_create(int width, int height, const uint8_t* board) {
-    Raycaster3D* r = (Raycaster3D*)calloc(1, sizeof(*r));
-    if(!r) return NULL;
-    raycast_init(r, width, height, board);
-    return r;
+Raycaster3D* r= (Raycaster3D*)calloc(1, sizeof(*r));
+if(!r) return NULL;
+raycast_init(r, width, height, board);
+return r;
 }
 void raycaster_destroy(Raycaster3D* rc) {
-    if(!rc) return;
-    /* nothing to free inside currently */
-    free(rc);
+if(!rc) return;
+free(rc);
 }
-
 void raycast_init(Raycaster3D* rc, int width, int height, const uint8_t* board) {
 if(!rc) return;
 rc->board_width= width;
@@ -75,4 +71,4 @@ float coord= is_vertical ? hit->hit_y : hit->hit_x;
 float frac= coord - floorf(coord);
 if(frac < 0.0f) frac+= 1.0f;
 return frac;
-} 
+}

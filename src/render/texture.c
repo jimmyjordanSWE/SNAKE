@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-/* Internal definition of the opaque Texture3D */
 struct Texture3D {
 uint32_t shade_colors[TEXTURE_MAX_SHADES];
 uint32_t side_colors[2][TEXTURE_MAX_SHADES];

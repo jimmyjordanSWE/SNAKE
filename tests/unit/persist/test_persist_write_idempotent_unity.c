@@ -18,7 +18,7 @@ void test_write_config_idempotent(void) {
     game_config_set_player_name(cfg, "idtest");
     char* fname = make_temp_file();
     TEST_ASSERT_TRUE_MSG(persist_write_config(fname, cfg), "first write should succeed");
-    /* second write should detect identical and return true */
+    
     TEST_ASSERT_TRUE_MSG(persist_write_config(fname, cfg), "second write (idempotent) should succeed");
     unlink(fname); free(fname);
     game_config_destroy(cfg);

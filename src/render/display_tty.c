@@ -32,7 +32,6 @@ if(width) *width= 0;
 if(height) *height= 0;
 return;
 }
-/* tty_get_size accepts non-const tty_context* but we only query size */
 tty_get_size(ctx->tty, width, height);
 }
 bool display_size_valid(const DisplayContext* ctx) {

@@ -2,8 +2,8 @@
 #include "snake/render_3d_projection.h"
 #include "snake/render_3d_sdl.h"
 #include "snake/render_3d_sprite.h"
-#include <stdlib.h>
 #include <stddef.h>
+#include <stdlib.h>
 struct Sprite3D {
 float world_x, world_y;
 float world_height;
@@ -19,16 +19,13 @@ int screen_h;
 int screen_y_top;
 bool visible;
 };
-
-/* Internal definition of SpriteRenderer3D (opaque to public headers) */
 struct SpriteRenderer3D {
-    Sprite3D* sprites;
-    int max_sprites;
-    int count;
-    const Camera3D* camera;
-    const Projection3D* proj;
+Sprite3D* sprites;
+int max_sprites;
+int count;
+const Camera3D* camera;
+const Projection3D* proj;
 };
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -215,18 +212,16 @@ sr->count= 0;
 sr->camera= NULL;
 sr->proj= NULL;
 }
-
-/* public lifecycle functions for opaque SpriteRenderer3D */
 SpriteRenderer3D* sprite_create(int max_sprites, const Camera3D* camera, const Projection3D* proj) {
-    SpriteRenderer3D* sr = (SpriteRenderer3D*)calloc(1, sizeof(*sr));
-    if(!sr) return NULL;
-    sprite_init(sr, max_sprites, camera, proj);
-    return sr;
+SpriteRenderer3D* sr= (SpriteRenderer3D*)calloc(1, sizeof(*sr));
+if(!sr) return NULL;
+sprite_init(sr, max_sprites, camera, proj);
+return sr;
 }
 void sprite_destroy(SpriteRenderer3D* sr) {
-    if(!sr) return;
-    sprite_shutdown(sr);
-    free(sr);
+if(!sr) return;
+sprite_shutdown(sr);
+free(sr);
 }
 int sprite_get_count(const SpriteRenderer3D* sr) { return sr ? sr->count : 0; }
 bool sprite_get_screen_info(const SpriteRenderer3D* sr, int idx, int* screen_x_out, int* screen_h_out, bool* visible_out) {

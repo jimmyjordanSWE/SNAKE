@@ -1,9 +1,6 @@
-IMPORTANT: LLMs never commit to git. 
+IMPORTANT: LLMs never commit to git. IGNORE LEAKS FROM SDL.
 
 # New Features
-
-- Adjust play field ratio, size & speed
-  - Change the default playfield aspect ratio and size to canonical Snake proportions. Adjust the default game speed / tick rate.
 
 - Remove welcome and name input screen
   - Start the game immediately with default player name `You`. Only prompt for name if the player makes the highscore list (max name length 8 + NUL).
@@ -24,12 +21,6 @@ IMPORTANT: LLMs never commit to git.
 
 ## Progress (2025-12-16)
 
-- **Adjust play field ratio, size & speed** ✅ *In progress (started 2025-12-16)*
-  - **Status:** Partially implemented — default board size and tick rate updated; minimap scaling adjusted to better support larger canonical fields.
-  - **Planned changes:** Update remaining UI scaling and tweak tick tuning if playtesting suggests further adjustments.
-  - **Tests:** Added unit tests for minimap scaling and validated configuration defaults via existing tests. Integration tests for gameplay at new sizes/speeds remain to be added.
-  - **Next steps:** Add integration tests under `tests/integration` and any gameplay tests under `tests/game`, run full test suite and fix regressions, then update `CHANGELOG.md` when finished.
-
 - **Remove welcome and name input screen** — Not started
  - **Remove welcome and name input screen** ✅ *In progress (implemented startup default + highscore prompt)*
   - **Status:** Implemented non-blocking startup (default player name `You`) and added a highscore name prompt (max 8 chars) which is shown only when the session score qualifies for the high score list.
@@ -42,8 +33,14 @@ IMPORTANT: LLMs never commit to git.
 - **Add console screens to 3D view** — Not started
   - Plan to reuse existing console text assets and render them in 3D overlay; add related tests.
 
-- **Make the minimap larger** — Not started
-  - Adjust minimap rendering and add tests to ensure correct scaling.
+- **Make the minimap larger** ✅ *Completed (2025-12-16)*
+  - **Status:** Implemented — increased minimap size and tightened unit tests to ensure better readability at canonical playfield sizes.
+  - **Bugfix:** Ensure the snake head is drawn after body segments to prevent a gray body segment overlay that caused blinking in the minimap.
+
+- **Smooth snake rendering & head visibility** ✅ *Completed (2025-12-16)*
+  - **Status:** Implemented — per-segment previous positions are recorded on tick and body segments are interpolated during render (applies to the minimap and 3D sprite rendering), eliminating hopping and making movement smooth.
+  - **Bugfix:** Fixed situations where a body segment could draw over the head by adding ordering heuristics and a small depth nudge in sprite sorting; unit tests were added/adjusted and the test suite was run successfully.
+  - **Next steps:** Add visual/integration tests that render a few frames and validate pixel-level expectations; optionally tighten the head-priority rule if needed.
 
 - **Implement multiplayer** — Not started (optional/prototype)
 

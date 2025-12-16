@@ -13,9 +13,12 @@ void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, 
 void sprite_clear(SpriteRenderer3D* sr);
 bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame);
 bool sprite_add_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
+bool sprite_add_rect_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
 void sprite_project_all(SpriteRenderer3D* sr);
 void sprite_sort_by_depth(SpriteRenderer3D* sr);
 void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_depths);
 void sprite_shutdown(SpriteRenderer3D* sr);
 bool sprite_get_screen_info(const SpriteRenderer3D* sr, int idx, int* screen_x_out, int* screen_h_out, bool* visible_out);
 int sprite_get_count(const SpriteRenderer3D* sr);
+/* Test helper: retrieve sprite texture id at index (not for production use) */
+int sprite_get_texture_id(const SpriteRenderer3D* sr, int idx, int* texture_id_out);

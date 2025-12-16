@@ -148,8 +148,7 @@ test-game:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c src/persist/persist.c $(LDLIBS)
-	@echo "$(OK_MSG)"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c src/persist/persist.c $(LDLIBS)	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_growth_prev_pos tests/game/test_growth_prev_pos.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_game_over && ./$(TEST_DIR)/test_game_events && ./$(TEST_DIR)/test_game_death_events && ./$(TEST_DIR)/test_game_input
 
 

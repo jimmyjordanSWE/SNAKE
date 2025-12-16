@@ -2,6 +2,10 @@
 #include "snake/game.h"
 #include "snake/persist.h"
 #include <stdbool.h>
+
+/* Forward-declare the SDL3DContext type so tests can reference it without
+   including the SDL-specific header in other modules. */
+struct SDL3DContext;
 typedef struct {
 int active_player;
 float fov_degrees;
@@ -24,6 +28,8 @@ void render_3d_shutdown(void);
 /* Console overlays rendered in the 3D view */
 void render_3d_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
 void render_3d_draw_congrats_overlay(int score, const char* name_entered);
+/* Test helper: draw only the minimap into a provided SDL3DContext */
+void render_3d_draw_minimap_into(struct SDL3DContext* ctx, const GameState* gs);
 
 /*
  * Compute the minimap cell size in pixels given a display size and map

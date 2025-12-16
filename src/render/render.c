@@ -183,19 +183,15 @@ b.down= true;
 else if(a.down)
 b.up= true;
 }
+/* Use a simple circular glyph for body segments on minimap for a cleaner look. */
 SegmentLinks links= {
     .up= a.up || b.up,
     .down= a.down || b.down,
     .left= a.left || b.left,
     .right= a.right || b.right,
 };
-if(links.left && links.right && !links.up && !links.down) return DISPLAY_CHAR_BOX_H;
-if(links.up && links.down && !links.left && !links.right) return DISPLAY_CHAR_BOX_V;
-if(links.up && links.right) return DISPLAY_CHAR_BOX_BL;
-if(links.up && links.left) return DISPLAY_CHAR_BOX_BR;
-if(links.down && links.right) return DISPLAY_CHAR_BOX_TL;
-if(links.down && links.left) return DISPLAY_CHAR_BOX_TR;
-return (uint16_t)'o';
+/* Render body segments as circles instead of box-drawing characters */
+return DISPLAY_CHAR_CIRCLE;
 }
 static uint16_t glyph_for_segment_ascii(const SnakePoint* body, int length, int idx) {
 if(!body || length <= 0 || idx < 0 || idx >= length) return (uint16_t)'o';
@@ -221,9 +217,7 @@ SegmentLinks links= {
     .left= a.left || b.left,
     .right= a.right || b.right,
 };
-if(links.left && links.right && !links.up && !links.down) return (uint16_t)'-';
-if(links.up && links.down && !links.left && !links.right) return (uint16_t)'|';
-if((links.up && links.right) || (links.up && links.left) || (links.down && links.right) || (links.down && links.left)) return (uint16_t)'+';
+/* Render body segments as a simple 'o' to approximate circles in ASCII mode */
 return (uint16_t)'o';
 }
 static uint16_t glyph_for_segment(const SnakePoint* body, int length, int idx) {

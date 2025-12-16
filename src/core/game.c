@@ -165,11 +165,27 @@ game->last_food_respawned= true;
 }
 static void player_move(PlayerState* player, SnakePoint next_head, bool grow) {
 if(player == NULL || !player->active || player->length <= 0) return;
+        /* Record previous segment positions for interpolation/rendering */
+        if(player->prev_segment_x && player->prev_segment_y) {
+                for(int i = 0; i < player->length; ++i) {
+                        player->prev_segment_x[i] = (float)player->body[i].x + 0.5f;
+                        player->prev_segment_y[i] = (float)player->body[i].y + 0.5f;
+                }
+        }
 bool actual_grow= grow && player->length < player->max_length;
 int last= actual_grow ? player->length : (player->length - 1);
 for(int i= last; i > 0; i--) player->body[i]= player->body[i - 1];
 player->body[0]= next_head;
-if(actual_grow) player->length++;
+/* If we grew this tick, ensure the newly-created tail segment's previous
+ * interpolated position matches its current position so it doesn't animate
+ * in from off-screen — it should remain in place for one tick. */
+if(actual_grow) {
+    if(player->prev_segment_x && player->prev_segment_y) {
+        player->prev_segment_x[last] = (float)player->body[last].x + 0.5f;
+        player->prev_segment_y[last] = (float)player->body[last].y + 0.5f;
+    }
+    player->length++;
+}
 }
 static SnakeDir opposite_dir(SnakeDir dir) {
 switch(dir) {
@@ -227,6 +243,14 @@ player->body[0]= head;
 player->body[1]= tail;
 player->prev_head_x= (float)head.x + 0.5f;
 player->prev_head_y= (float)head.y + 0.5f;
+                /* Initialize previous-segment positions for smooth interpolation */
+                if(player->prev_segment_x && player->prev_segment_y) {
+                        player->prev_segment_x[0] = (float)player->body[0].x + 0.5f;
+                        player->prev_segment_y[0] = (float)player->body[0].y + 0.5f;
+                        player->prev_segment_x[1] = (float)player->body[1].x + 0.5f;
+                        player->prev_segment_y[1] = (float)player->body[1].y + 0.5f;
+                        for(int k = 2; k < player->max_length; ++k) { player->prev_segment_x[k] = 0.0f; player->prev_segment_y[k] = 0.0f; }
+                }
 return true;
 }
 }
@@ -263,10 +287,13 @@ game->players[i].needs_reset= false;
 game->players[i].length= 0;
 game->players[i].max_length= game->max_length;
 game->players[i].body= (SnakePoint*)malloc(sizeof(SnakePoint) * (size_t)game->max_length);
+        game->players[i].prev_segment_x = (float*)malloc(sizeof(float) * (size_t)game->max_length);
+        game->players[i].prev_segment_y = (float*)malloc(sizeof(float) * (size_t)game->max_length);
 if(!game->players[i].body) {
 for(int j= 0; j < i; j++) free(game->players[j].body);
-free(game->food);
-free(game->players);
+            for(int j= 0; j < i; j++) { free(game->players[j].prev_segment_x); free(game->players[j].prev_segment_y); }
+            free(game->food);
+            free(game->players);
 game->players= NULL;
 game->food= NULL;
 return;
@@ -278,8 +305,9 @@ food_respawn(game);
 void game_free(GameState* game) {
 if(!game) return;
 if(game->players) {
-for(int i= 0; i < game->max_players; i++) free(game->players[i].body);
-free(game->players);
+        for(int i= 0; i < game->max_players; i++) free(game->players[i].body);
+        for(int i= 0; i < game->max_players; i++) { free(game->players[i].prev_segment_x); free(game->players[i].prev_segment_y); }
+        free(game->players);
 game->players= NULL;
 }
 if(game->food) {

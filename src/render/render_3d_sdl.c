@@ -149,6 +149,23 @@ if(dx * dx + dy * dy <= radius * radius) render_3d_sdl_blend_pixel(ctx, x, y, co
 }
 }
 }
+
+void render_3d_sdl_draw_filled_rect(SDL3DContext* ctx, int x, int y, int w_rect, int h_rect, uint32_t col) {
+	if(!ctx || !ctx->pixels || w_rect <= 0 || h_rect <= 0) return;
+	int x0 = x;
+	int y0 = y;
+	int x1 = x + w_rect - 1;
+	int y1 = y + h_rect - 1;
+	if(x0 < 0) x0 = 0;
+	if(y0 < 0) y0 = 0;
+	if(x1 >= ctx->width) x1 = ctx->width - 1;
+	if(y1 >= ctx->height) y1 = ctx->height - 1;
+	for(int yy = y0; yy <= y1; ++yy) {
+		for(int xx = x0; xx <= x1; ++xx) {
+			render_3d_sdl_blend_pixel(ctx, xx, yy, col);
+		}
+	}
+}
 void render_3d_sdl_clear(SDL3DContext* ctx, uint32_t col) {
 if(!ctx || !ctx->pixels) return;
 int total= ctx->width * ctx->height;

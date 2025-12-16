@@ -114,34 +114,59 @@ render_3d_sdl_draw_filled_circle(r->display, fx, fy, radius, food_col);
 }
 uint32_t player_cols[3]= {render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255)};
 uint32_t tail_col= render_3d_sdl_color(128, 128, 128, 255);
-for(int p= 0; p < gs->num_players; p++) {
-const PlayerState* pl= &gs->players[p];
-if(!pl->active || pl->length <= 0) continue;
-float t= camera_get_interpolation_fraction(r->camera);
-float head_x= pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * t;
-float head_y= pl->prev_head_y + (((float)pl->body[0].y + 0.5f) - pl->prev_head_y) * t;
-int hx= x0 + (int)(head_x * (float)cell_px + 0.5f);
-int hy= y0 + (int)(head_y * (float)cell_px + 0.5f);
-int hr= cell_px > 2 ? (cell_px / 2) : 1;
-uint32_t pcol= player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
-render_3d_sdl_draw_filled_circle(r->display, hx, hy, hr, pcol);
-int dir_off_x= 0, dir_off_y= 0;
-int off= (cell_px / 2) + 1;
-switch(pl->current_dir) {
-case SNAKE_DIR_UP: dir_off_y= -off; break;
-case SNAKE_DIR_DOWN: dir_off_y= off; break;
-case SNAKE_DIR_LEFT: dir_off_x= -off; break;
-case SNAKE_DIR_RIGHT: dir_off_x= off; break;
-default: break;
+    for(int p= 0; p < gs->num_players; p++) {
+        const PlayerState* pl= &gs->players[p];
+        if(!pl->active || pl->length <= 0) continue;
+        /* Draw body segments first so the head is rendered on top. Interpolate
+         * segment positions from their previous positions to avoid hopping. */
+        for(int bi= 1; bi < pl->length; bi++) {
+            float seg_x_f, seg_y_f;
+            float t = camera_get_interpolation_fraction(r->camera);
+            if(pl->prev_segment_x && pl->prev_segment_y) {
+                seg_x_f = pl->prev_segment_x[bi] + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment_x[bi]) * t;
+                seg_y_f = pl->prev_segment_y[bi] + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment_y[bi]) * t;
+            } else {
+                seg_x_f = (float)pl->body[bi].x + 0.5f;
+                seg_y_f = (float)pl->body[bi].y + 0.5f;
+            }
+            int tx= x0 + (int)(seg_x_f * (float)cell_px + 0.5f);
+            int ty= y0 + (int)(seg_y_f * (float)cell_px + 0.5f);
+            int bw = cell_px > 2 ? (cell_px * 3 / 4) : 1;
+            /* Draw segment as a circle centered (more pleasant on minimap) */
+            int radius = bw / 2; /* keep radius similar to previous rectangle half-width */
+            if(radius <= 0) radius = 1;
+            render_3d_sdl_draw_filled_circle(r->display, tx, ty, radius, tail_col);
+            /* Connections between segments removed to keep minimap segments as circles only */
+            (void)bi; /* suppress unused warning if any */
+        }
+        /* Then draw the interpolated head so it appears above any overlapping body */
+        float t= camera_get_interpolation_fraction(r->camera);
+        float head_x= pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * t;
+        float head_y= pl->prev_head_y + (((float)pl->body[0].y + 0.5f) - pl->prev_head_y) * t;
+        int hx= x0 + (int)(head_x * (float)cell_px + 0.5f);
+        int hy= y0 + (int)(head_y * (float)cell_px + 0.5f);
+        int hr= cell_px > 2 ? (cell_px / 2) : 1;
+        uint32_t pcol= player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
+        render_3d_sdl_draw_filled_circle(r->display, hx, hy, hr, pcol);
+        int dir_off_x= 0, dir_off_y= 0;
+        int off= (cell_px / 2) + 1;
+        switch(pl->current_dir) {
+        case SNAKE_DIR_UP: dir_off_y= -off; break;
+        case SNAKE_DIR_DOWN: dir_off_y= off; break;
+        case SNAKE_DIR_LEFT: dir_off_x= -off; break;
+        case SNAKE_DIR_RIGHT: dir_off_x= off; break;
+        default: break;
+        }
+        render_3d_sdl_draw_filled_circle(r->display, hx + dir_off_x, hy + dir_off_y, hr > 1 ? hr / 2 : 1, pcol);
+    }
 }
-render_3d_sdl_draw_filled_circle(r->display, hx + dir_off_x, hy + dir_off_y, hr > 1 ? hr / 2 : 1, pcol);
-for(int bi= 1; bi < pl->length; bi++) {
-int tx= x0 + pl->body[bi].x * cell_px + cell_px / 2;
-int ty= y0 + pl->body[bi].y * cell_px + cell_px / 2;
-int tr= cell_px > 2 ? (cell_px / 3) : 1;
-render_3d_sdl_draw_filled_circle(r->display, tx, ty, tr, tail_col);
-}
-}
+
+/* Public helper for tests: render a minimap into the given SDL context. */
+void render_3d_draw_minimap_into(struct SDL3DContext* ctx, const GameState* gs) {
+    Render3DContext tmp = {0};
+    tmp.display = ctx;
+    tmp.game_state = gs;
+    render_3d_draw_minimap(&tmp);
 }
 
 /*
@@ -286,11 +311,11 @@ int render_3d_compute_minimap_cell_px(int d_w, int d_h, int m_w, int m_h) {
     if(d_w <= 0 || d_h <= 0 || m_w <= 0 || m_h <= 0) return 0;
     int max_dim = m_w > m_h ? m_w : m_h;
     int smaller = d_w < d_h ? d_w : d_h;
-    /* target minimap occupies ~40% of the smaller display dimension */
-    int target = (smaller * 40) / 100;
+    /* target minimap occupies ~50% of the smaller display dimension for improved readability */
+    int target = (smaller * 50) / 100;
     if(target < 160) target = 160; /* ensure reasonable visibility for large maps */
     int cell_px = target / max_dim;
-    if(cell_px < 2) cell_px = 2; /* prefer at least 2px per cell for readability */
+    if(cell_px < 3) cell_px = 3; /* prefer at least 3px per cell for readability */
     return cell_px;
 } 
 
@@ -435,25 +460,37 @@ render_3d_sdl_draw_column(g_render_3d.display, x, horizon, render_3d_sdl_get_hei
 }
 }
 sprite_clear(g_render_3d.sprite_renderer);
-for(int i= 0; i < game_state->food_count; i++) { sprite_add(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f, (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, (int)i, 0); }
+for(int i= 0; i < game_state->food_count; i++) { uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255); sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f, (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col); }
 for(int p= 0; p < game_state->num_players; p++) {
-if(p == g_render_3d.config.active_player) continue;
-const PlayerState* player= &game_state->players[p];
-if(!player->active || player->length == 0) continue;
-float t= camera_get_interpolation_fraction(g_render_3d.camera);
-float head_x= player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * t;
-float head_y= player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * t;
-sprite_add(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, (int)p, 0);
+    if(p == g_render_3d.config.active_player) continue;
+    const PlayerState* player= &game_state->players[p];
+    if(!player->active || player->length == 0) continue;
+    float t= camera_get_interpolation_fraction(g_render_3d.camera);
+    float head_x= player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * t;
+    float head_y= player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * t;
+    uint32_t player_cols[3] = { render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255) };
+    uint32_t pcol = player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
+    /* Draw head as a colored circle sprite (texture not sampled yet). Use
+     * texture_id = -1 so it follows the circle-rendering path instead of
+     * drawing a solid textured column (which previously showed as a green
+     * square when textures were not used). */
+    sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
 }
 for(int p= 0; p < game_state->num_players; p++) {
 const PlayerState* player= &game_state->players[p];
 if(!player->active || player->length <= 1) continue;
 for(int bi= 1; bi < player->length; bi++) {
-float seg_x= (float)player->body[bi].x + 0.5f;
-float seg_y= (float)player->body[bi].y + 0.5f;
+    float t = camera_get_interpolation_fraction(g_render_3d.camera);
+    float seg_x = (float)player->body[bi].x + 0.5f;
+    float seg_y = (float)player->body[bi].y + 0.5f;
+    if(player->prev_segment_x && player->prev_segment_y) {
+        seg_x = player->prev_segment_x[bi] + (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * t;
+        seg_y = player->prev_segment_y[bi] + (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * t;
+    }
 float tail_h= g_render_3d.config.tail_height_scale;
 uint32_t gray= render_3d_sdl_color(128, 128, 128, 255);
-sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, gray);
+    /* Draw body segment as circle (previously used rect -> square). */
+    sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, gray);
 }
 }
 {
@@ -505,7 +542,7 @@ g_render_3d.floor_texture= NULL;
 }
 if(g_render_3d.texture) {
 texture_destroy(g_render_3d.texture);
-g_render_3d.texture= NULL;
+    g_render_3d.texture= NULL;
 }
 if(g_render_3d.projector) {
 projection_destroy(g_render_3d.projector);

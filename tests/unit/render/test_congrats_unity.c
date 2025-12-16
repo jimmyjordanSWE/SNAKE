@@ -1,4 +1,5 @@
 #include "snake/render_3d.h"
+#include "snake/game_internal.h" /* bring in full GameState definition for tests */
 #include "unity.h"
 
 static void test_render_3d_congrats_overlay(void) {
@@ -11,7 +12,7 @@ static void test_render_3d_congrats_overlay(void) {
     cfg.screen_height = 150;
 
     /* init should succeed (it falls back on missing textures) */
-    TEST_ASSERT_TRUE(render_3d_init(&gs, &cfg));
+    TEST_ASSERT_TRUE_MSG(render_3d_init(&gs, &cfg), "render_3d_init failed");
 
     /* Call congrats overlay with and without a name */
     render_3d_draw_congrats_overlay(123, NULL);

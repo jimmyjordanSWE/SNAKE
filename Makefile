@@ -36,7 +36,7 @@ ifeq ($(WERROR),1)
 WARNINGS += -Werror
 endif
 LDFLAGS_BASE ?=
-LDLIBS ?= $(shell pkg-config --libs sdl2) -lm -lz
+LDLIBS ?= $(shell pkg-config --libs sdl2) -lm -lz -ldl
 
 DEBUG_FLAGS ?= -O0 -g3
 RELEASE_FLAGS ?= -O3 -DNDEBUG

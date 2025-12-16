@@ -1,114 +1,115 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
-#define PERSIST_MAX_SCORES 10
-#define PERSIST_NAME_MAX 9
-#define PERSIST_CONFIG_DEFAULT_WIDTH 18
-#define PERSIST_CONFIG_DEFAULT_HEIGHT 18
-#define PERSIST_CONFIG_DEFAULT_TICK_MS 250
-#define PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH 60
+#define PERSIST_MAX_SCORES                   10
+#define PERSIST_NAME_MAX                     9
+#define PERSIST_CONFIG_DEFAULT_WIDTH         18
+#define PERSIST_CONFIG_DEFAULT_HEIGHT        18
+#define PERSIST_CONFIG_DEFAULT_TICK_MS       250
+#define PERSIST_CONFIG_DEFAULT_SCREEN_WIDTH  60
 #define PERSIST_CONFIG_DEFAULT_SCREEN_HEIGHT 24
-#define PERSIST_CONFIG_DEFAULT_MAX_PLAYERS 2
-#define PERSIST_CONFIG_DEFAULT_MAX_LENGTH 1024
-#define PERSIST_CONFIG_DEFAULT_MAX_FOOD 3
-#define PERSIST_CONFIG_DEFAULT_SEED 42
+#define PERSIST_CONFIG_DEFAULT_MAX_PLAYERS   2
+#define PERSIST_CONFIG_DEFAULT_MAX_LENGTH    1024
+#define PERSIST_CONFIG_DEFAULT_MAX_FOOD      3
+#define PERSIST_CONFIG_DEFAULT_SEED          42
 
-/* Bounds used for clamping in parsing — prefer named macros in tests instead of literals */
-#define PERSIST_CONFIG_MIN_BOARD_WIDTH 20
-#define PERSIST_CONFIG_MAX_BOARD_WIDTH 100
-#define PERSIST_CONFIG_MIN_BOARD_HEIGHT 10
-#define PERSIST_CONFIG_MAX_BOARD_HEIGHT 100
-#define PERSIST_CONFIG_MIN_TICK_MS 10
-#define PERSIST_CONFIG_MAX_TICK_MS 1000
-#define PERSIST_CONFIG_MIN_SCREEN_WIDTH 20
-#define PERSIST_CONFIG_MAX_SCREEN_WIDTH 4096
-#define PERSIST_CONFIG_MIN_SCREEN_HEIGHT 10
-#define PERSIST_CONFIG_MAX_SCREEN_HEIGHT 2160
-#define PERSIST_CONFIG_DEFAULT_FOV_DEGREES 90.0f
-#define PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG 0
-#define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER 0
-#define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS 1
+/* Bounds used for clamping in parsing — prefer named macros in tests instead of
+ * literals */
+#define PERSIST_CONFIG_MIN_BOARD_WIDTH                 20
+#define PERSIST_CONFIG_MAX_BOARD_WIDTH                 100
+#define PERSIST_CONFIG_MIN_BOARD_HEIGHT                10
+#define PERSIST_CONFIG_MAX_BOARD_HEIGHT                100
+#define PERSIST_CONFIG_MIN_TICK_MS                     10
+#define PERSIST_CONFIG_MAX_TICK_MS                     1000
+#define PERSIST_CONFIG_MIN_SCREEN_WIDTH                20
+#define PERSIST_CONFIG_MAX_SCREEN_WIDTH                4096
+#define PERSIST_CONFIG_MIN_SCREEN_HEIGHT               10
+#define PERSIST_CONFIG_MAX_SCREEN_HEIGHT               2160
+#define PERSIST_CONFIG_DEFAULT_FOV_DEGREES             90.0f
+#define PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG       0
+#define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER           0
+#define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS             1
 #define PERSIST_CONFIG_DEFAULT_ENABLE_EXTERNAL_3D_VIEW 1
-#define PERSIST_CONFIG_DEFAULT_WALL_SCALE 1.50f
-#define PERSIST_CONFIG_DEFAULT_TAIL_SCALE 0.50f
-#define PERSIST_TEXTURE_PATH_MAX 128
-#define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE "assets/wall.png"
-#define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE "assets/floor.png"
-#define PERSIST_CONFIG_DEFAULT_KEY_UP 'w'
-#define PERSIST_CONFIG_DEFAULT_KEY_DOWN 's'
-#define PERSIST_CONFIG_DEFAULT_KEY_LEFT 'a'
-#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT 'd'
-#define PERSIST_CONFIG_DEFAULT_KEY_QUIT 'q'
-#define PERSIST_CONFIG_DEFAULT_KEY_RESTART 'r'
-#define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
-#define PERSIST_PLAYER_NAME_MAX 32
+#define PERSIST_CONFIG_DEFAULT_WALL_SCALE              1.50f
+#define PERSIST_CONFIG_DEFAULT_TAIL_SCALE              0.50f
+#define PERSIST_TEXTURE_PATH_MAX                       128
+#define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE            "assets/wall.png"
+#define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE           "assets/floor.png"
+#define PERSIST_CONFIG_DEFAULT_KEY_UP                  'w'
+#define PERSIST_CONFIG_DEFAULT_KEY_DOWN                's'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT                'a'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT               'd'
+#define PERSIST_CONFIG_DEFAULT_KEY_QUIT                'q'
+#define PERSIST_CONFIG_DEFAULT_KEY_RESTART             'r'
+#define PERSIST_CONFIG_DEFAULT_KEY_PAUSE               'p'
+#define PERSIST_PLAYER_NAME_MAX                        32
 typedef struct HighScore HighScore;
-HighScore* highscore_create(const char* name, int score);
-void highscore_destroy(HighScore* hs);
-const char* highscore_get_name(const HighScore* hs);
-int highscore_get_score(const HighScore* hs);
-void highscore_set_name(HighScore* hs, const char* name);
-void highscore_set_score(HighScore* hs, int score);
-int persist_read_scores(const char* filename, HighScore*** out_scores);
+HighScore*               highscore_create(const char* name, int score);
+void                     highscore_destroy(HighScore* hs);
+const char*              highscore_get_name(const HighScore* hs);
+int                      highscore_get_score(const HighScore* hs);
+void                     highscore_set_name(HighScore* hs, const char* name);
+void                     highscore_set_score(HighScore* hs, int score);
+int  persist_read_scores(const char* filename, HighScore*** out_scores);
 bool persist_write_scores(const char* filename, HighScore** scores, int count);
 bool persist_append_score(const char* filename, const char* name, int score);
 void persist_free_scores(HighScore** scores, int count);
 typedef struct GameConfig GameConfig;
-GameConfig* game_config_create(void);
-void game_config_destroy(GameConfig* cfg);
+GameConfig*               game_config_create(void);
+void                      game_config_destroy(GameConfig* cfg);
 void game_config_set_board_size(GameConfig* cfg, int w, int h);
 void game_config_get_board_size(const GameConfig* cfg, int* w_out, int* h_out);
 void game_config_set_tick_rate_ms(GameConfig* cfg, int ms);
-int game_config_get_tick_rate_ms(const GameConfig* cfg);
+int  game_config_get_tick_rate_ms(const GameConfig* cfg);
 void game_config_set_screen_size(GameConfig* cfg, int w, int h);
 void game_config_get_screen_size(const GameConfig* cfg, int* w_out, int* h_out);
 void game_config_set_seed(GameConfig* cfg, uint32_t seed);
-uint32_t game_config_get_seed(const GameConfig* cfg);
-void game_config_set_fov_degrees(GameConfig* cfg, float fov);
-float game_config_get_fov_degrees(const GameConfig* cfg);
-void game_config_set_player_name(GameConfig* cfg, const char* name);
+uint32_t    game_config_get_seed(const GameConfig* cfg);
+void        game_config_set_fov_degrees(GameConfig* cfg, float fov);
+float       game_config_get_fov_degrees(const GameConfig* cfg);
+void        game_config_set_player_name(GameConfig* cfg, const char* name);
 const char* game_config_get_player_name(const GameConfig* cfg);
-void game_config_set_render_glyphs(GameConfig* cfg, int v);
-int game_config_get_render_glyphs(const GameConfig* cfg);
-void game_config_set_show_sprite_debug(GameConfig* cfg, int v);
-int game_config_get_show_sprite_debug(const GameConfig* cfg);
-void game_config_set_num_players(GameConfig* cfg, int n);
-int game_config_get_num_players(const GameConfig* cfg);
-void game_config_set_max_players(GameConfig* cfg, int n);
-int game_config_get_max_players(const GameConfig* cfg);
-void game_config_set_max_length(GameConfig* cfg, int v);
-int game_config_get_max_length(const GameConfig* cfg);
-void game_config_set_max_food(GameConfig* cfg, int v);
-int game_config_get_max_food(const GameConfig* cfg);
-void game_config_set_wall_height_scale(GameConfig* cfg, float v);
-float game_config_get_wall_height_scale(const GameConfig* cfg);
-void game_config_set_tail_height_scale(GameConfig* cfg, float v);
-float game_config_get_tail_height_scale(const GameConfig* cfg);
-void game_config_set_wall_texture(GameConfig* cfg, const char* path);
+void        game_config_set_render_glyphs(GameConfig* cfg, int v);
+int         game_config_get_render_glyphs(const GameConfig* cfg);
+void        game_config_set_show_sprite_debug(GameConfig* cfg, int v);
+int         game_config_get_show_sprite_debug(const GameConfig* cfg);
+void        game_config_set_num_players(GameConfig* cfg, int n);
+int         game_config_get_num_players(const GameConfig* cfg);
+void        game_config_set_max_players(GameConfig* cfg, int n);
+int         game_config_get_max_players(const GameConfig* cfg);
+void        game_config_set_max_length(GameConfig* cfg, int v);
+int         game_config_get_max_length(const GameConfig* cfg);
+void        game_config_set_max_food(GameConfig* cfg, int v);
+int         game_config_get_max_food(const GameConfig* cfg);
+void        game_config_set_wall_height_scale(GameConfig* cfg, float v);
+float       game_config_get_wall_height_scale(const GameConfig* cfg);
+void        game_config_set_tail_height_scale(GameConfig* cfg, float v);
+float       game_config_get_tail_height_scale(const GameConfig* cfg);
+void        game_config_set_wall_texture(GameConfig* cfg, const char* path);
 const char* game_config_get_wall_texture(const GameConfig* cfg);
-void game_config_set_floor_texture(GameConfig* cfg, const char* path);
+void        game_config_set_floor_texture(GameConfig* cfg, const char* path);
 const char* game_config_get_floor_texture(const GameConfig* cfg);
-void game_config_set_key_up(GameConfig* cfg, char c);
-char game_config_get_key_up(const GameConfig* cfg);
-void game_config_set_key_down(GameConfig* cfg, char c);
-char game_config_get_key_down(const GameConfig* cfg);
-void game_config_set_key_left(GameConfig* cfg, char c);
-char game_config_get_key_left(const GameConfig* cfg);
-void game_config_set_key_right(GameConfig* cfg, char c);
-char game_config_get_key_right(const GameConfig* cfg);
-void game_config_set_key_quit(GameConfig* cfg, char c);
-char game_config_get_key_quit(const GameConfig* cfg);
-void game_config_set_key_restart(GameConfig* cfg, char c);
-char game_config_get_key_restart(const GameConfig* cfg);
-void game_config_set_key_pause(GameConfig* cfg, char c);
-char game_config_get_key_pause(const GameConfig* cfg);
-void game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
-int game_config_get_enable_external_3d_view(const GameConfig* cfg);
-void game_config_set_active_player(GameConfig* cfg, int v);
-int game_config_get_active_player(const GameConfig* cfg);
-bool persist_load_config(const char* filename, GameConfig** out_config);
+void        game_config_set_key_up(GameConfig* cfg, char c);
+char        game_config_get_key_up(const GameConfig* cfg);
+void        game_config_set_key_down(GameConfig* cfg, char c);
+char        game_config_get_key_down(const GameConfig* cfg);
+void        game_config_set_key_left(GameConfig* cfg, char c);
+char        game_config_get_key_left(const GameConfig* cfg);
+void        game_config_set_key_right(GameConfig* cfg, char c);
+char        game_config_get_key_right(const GameConfig* cfg);
+void        game_config_set_key_quit(GameConfig* cfg, char c);
+char        game_config_get_key_quit(const GameConfig* cfg);
+void        game_config_set_key_restart(GameConfig* cfg, char c);
+char        game_config_get_key_restart(const GameConfig* cfg);
+void        game_config_set_key_pause(GameConfig* cfg, char c);
+char        game_config_get_key_pause(const GameConfig* cfg);
+void        game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
+int         game_config_get_enable_external_3d_view(const GameConfig* cfg);
+void        game_config_set_active_player(GameConfig* cfg, int v);
+int         game_config_get_active_player(const GameConfig* cfg);
+bool        persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);
 
-/* Return true if the named config file contains one or more keys that are not recognized by the parser.
- * Returns false for unreadable or missing files. */
+/* Return true if the named config file contains one or more keys that are not
+ * recognized by the parser. Returns false for unreadable or missing files. */
 bool persist_config_has_unknown_keys(const char* filename);

@@ -5,7 +5,7 @@
       "name": "Debug Snake (gdb)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/snake",
+      "program": "${workspaceFolder}/snakegame",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

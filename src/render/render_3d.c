@@ -359,12 +359,16 @@ texture_destroy(g_render_3d.texture);
 g_render_3d.texture= NULL;
 }
 if(g_render_3d.projector) {
-projection_destroy(g_render_3d.projector);
-g_render_3d.projector= NULL;
+    projection_destroy(g_render_3d.projector);
+    g_render_3d.projector= NULL;
+}
+if(g_render_3d.raycaster) {
+    raycaster_destroy(g_render_3d.raycaster);
+    g_render_3d.raycaster= NULL;
 }
 if(g_render_3d.camera) {
-camera_destroy(g_render_3d.camera);
-g_render_3d.camera= NULL;
+    camera_destroy(g_render_3d.camera);
+    g_render_3d.camera= NULL;
 }
 g_render_3d.initialized= false;
 g_render_3d.game_state= NULL;

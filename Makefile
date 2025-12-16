@@ -110,7 +110,7 @@ release:
 valgrind:
 	@$(MAKE) CONFIG=valgrind $(PREBUILD) build
 	@mkdir -p $(LOG_DIR)
-	@$(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./$(BIN) \
+	@SDL_VIDEODRIVER=dummy $(VALGRIND) $(VALGRIND_ARGS) --quiet --log-file="$(LOG_DIR)/valgrind.log" ./$(BIN) \
 		|| { echo "error: valgrind found issues (see $(LOG_DIR)/valgrind.log)"; tail -n 80 "$(LOG_DIR)/valgrind.log"; exit 1; }
 	@echo "$(OK_MSG)"
 
@@ -166,21 +166,20 @@ test-utils:
 .PHONY: test-unit
 test-unit:
 	@mkdir -p $(TEST_DIR)
-	@for src in $(shell find tests/unit -name '*.c' -print); do \
-		name=$$(basename $$src .c); \
+	@find tests/unit -type f -name "*.c" -print0 | xargs -0 -n1 -I {} sh -c '\
+		src="{}"; \
+		name=$$(basename "$$src" .c); \
 		bin=$(TEST_DIR)/$$name; \
-		# Only compile if binary missing or source is newer
-		if [ ! -f $$bin ] || [ $$src -nt $$bin ]; then \
+		if [ ! -f "$$bin" ] || [ "$$src" -nt "$$bin" ]; then \
 			echo "Building $$name"; \
-			$(CC) $(CPPFLAGS) -Itests/vendor $(CFLAGS) -o $$bin $$src $(UNITY_SRC) $(SRC_ALL) $(LDLIBS); \
+			$(CC) $(CPPFLAGS) -Itests/vendor $(CFLAGS) -o "$$bin" "$$src" $(UNITY_SRC) $(SRC_ALL) $(LDLIBS); \
 		else \
 			echo "Skipping $$name (up-to-date)"; \
-		fi; \
-	done
+		fi'
 	@echo "$(OK_MSG)"
-	@FAIL=0; for src in $(shell find tests/unit -name '*.c' -print); do \
-		name=$$(basename $$src .c); \
-		echo "Running $(TEST_DIR)/$$name"; $(TEST_DIR)/$$name || FAIL=1; \
+	@FAIL=0; find tests/unit -type f -name "*.c" -print | while IFS= read -r src; do \
+		name=$$(basename "$$src" .c); \
+		echo "Running $(TEST_DIR)/$$name"; "$(TEST_DIR)/$$name" || FAIL=1; \
 	done; if [ "$$FAIL" -ne 0 ]; then echo "Some tests failed"; exit 1; fi
 
 test-persist:

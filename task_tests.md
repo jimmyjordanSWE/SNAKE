@@ -12,6 +12,11 @@ This file tracks the test-related tasks, progress, and notes for the project. Up
 
 1. **Run full test suite & collect failures** (completed)
    - Status: initial `make test` run completed; later `make test` found one unrelated failing test (`test_camera_angles`) when running full test matrix.
+   - Update: Fixed `test_camera_angles` by returning the current camera angle when interpolation time is zero; re-ran render and module-specific tests and they passed locally. Also fixed the `test-unit` Makefile recipe (now uses a robust `find | xargs` approach) so the full `make test` runs successfully locally.
+   - Valgrind: ran `make valgrind`; Valgrind reported memory issues. Fixes implemented:
+  - Added `raycaster_destroy` in `render_3d_shutdown` to free the raycaster allocation created by `raycaster_create` (resolved a project-level leak).
+  - Adjusted the `valgrind` Makefile target to run Valgrind with `SDL_VIDEODRIVER=dummy` to avoid loading GLX/Mesa (this prevented large GLX-related leaks from appearing under Valgrind on CI/dev machines).
+  - After these changes, remaining Valgrind output shows only small **still reachable** allocations in `libdbus`/`SDL2` (likely system-level and acceptable). Next: add a CI valgrind step that sets `SDL_VIDEODRIVER=dummy` (or use a suppression file) and document the result.
    - Next: investigate flaky failing tests (e.g. `test_camera_angles`), then run valgrind and coverage.
 
 2. **Standardize tests layout** (in-progress)
@@ -25,6 +30,7 @@ This file tracks the test-related tasks, progress, and notes for the project. Up
 5. **Makefile improvements** (in-progress)
    - Progress: Added `UNITY_SRC := tests/vendor/unity.c`, added `test-unit` to build and run unit tests; adjusted unit runner to only execute `tests/unit/*` tests to avoid running flaky integration/render tests automatically.
    - Next: add `make test-all` and a CI script that runs `test-unit` then optionally runs integration/render tests under controlled environments (with flags to skip flaky ones).  
+   - Note: Investigate and fix `test-unit` recipe shell issue that can cause `make test` to fail on some environments when the command line gets long.
 - Note: `test-unit` now only recompiles unit tests when their source files are newer than the binary (saves time when iterating).
 
 2. **Standardize tests layout** (not-started)

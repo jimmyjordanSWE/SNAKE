@@ -336,7 +336,7 @@ g_render_3d.config.tail_height_scale= (float)PERSIST_CONFIG_DEFAULT_TAIL_SCALE;
 g_render_3d.config.wall_texture_path[0]= '\0';
 g_render_3d.config.floor_texture_path[0]= '\0';
 }
-fprintf(stderr, "render_3d_init: requested size %dx%d\n", g_render_3d.config.screen_width, g_render_3d.config.screen_height);
+
 g_render_3d.display= render_3d_sdl_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height);
 if(!g_render_3d.display) return false;
 g_render_3d.camera= camera_create(g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
@@ -452,12 +452,72 @@ col= texel.color;
 }
 if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x]= col;
 }
-render_3d_sdl_draw_column(g_render_3d.display, x, proj.draw_end, render_3d_sdl_get_height(g_render_3d.display) - 1, floor_color);
-} else {
-if(g_render_3d.column_depths) g_render_3d.column_depths[x]= INFINITY;
-render_3d_sdl_draw_column(g_render_3d.display, x, 0, horizon - 1, ceiling_color);
-render_3d_sdl_draw_column(g_render_3d.display, x, horizon, render_3d_sdl_get_height(g_render_3d.display) - 1, floor_color);
-}
+    /* Draw textured floor below the wall (if available). Compute world
+     * coordinates per-row so texture aligns with walls and remains
+     * stable while the camera moves. Falls back to flat color if no
+     * floor texture is present. */
+    int fh0 = proj.draw_end + 1;
+    int fh1 = render_3d_sdl_get_height(g_render_3d.display) - 1;
+    if(fh0 <= fh1) {
+        if(texture_has_image(g_render_3d.floor_texture)) {
+            for(int yy = fh0; yy <= fh1; yy++) {
+                /* p is the normalized distance from horizon (positive below) */
+                float p = (float)(yy - horizon) / ((float)render_3d_sdl_get_height(g_render_3d.display) * 0.5f);
+                if(fabsf(p) < 1e-6f) continue;
+                const float camera_height = 0.5f;
+                float rowDist = camera_height / p;
+                if(!isfinite(rowDist) || rowDist <= 0.0f) continue;
+                float world_x = interp_cam_x + cosf(ray_angle) * rowDist;
+                float world_y = interp_cam_y + sinf(ray_angle) * rowDist;
+                /* Skip sampling when world position is outside the map bounds to
+                 * avoid drawing floor beyond the playable area. */
+                if(g_render_3d.game_state) {
+                    if(world_x < 0.0f || world_x >= (float)g_render_3d.game_state->width || world_y < 0.0f || world_y >= (float)g_render_3d.game_state->height) {
+                        if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = floor_color;
+                        continue;
+                    }
+                }
+                /* Map world coords to texture space. Multiply by TEXTURE_SCALE
+                 * so each world unit corresponds to a tile of texture pixels. */
+                float u = world_x * (float)TEXTURE_SCALE;
+                float v = world_y * (float)TEXTURE_SCALE;
+                uint32_t col = texture_sample(g_render_3d.floor_texture, u, v, true);
+                if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = col;
+            }
+        } else {
+            render_3d_sdl_draw_column(g_render_3d.display, x, fh0, fh1, floor_color);
+        }
+    } else {
+        if(g_render_3d.column_depths) g_render_3d.column_depths[x]= INFINITY;
+        render_3d_sdl_draw_column(g_render_3d.display, x, 0, horizon - 1, ceiling_color);
+        int fh0b = horizon;
+        int fh1b = render_3d_sdl_get_height(g_render_3d.display) - 1;
+        if(fh0b <= fh1b) {
+            if(texture_has_image(g_render_3d.floor_texture)) {
+                for(int yy = fh0b; yy <= fh1b; yy++) {
+                    float p = (float)(yy - horizon) / ((float)render_3d_sdl_get_height(g_render_3d.display) * 0.5f);
+                    if(fabsf(p) < 1e-6f) continue;
+                    const float camera_height = 0.5f;
+                    float rowDist = camera_height / p;
+                    if(!isfinite(rowDist) || rowDist <= 0.0f) continue;
+                    float world_x = interp_cam_x + cosf(ray_angle) * rowDist;
+                    float world_y = interp_cam_y + sinf(ray_angle) * rowDist;
+                    if(g_render_3d.game_state) {
+                        if(world_x < 0.0f || world_x >= (float)g_render_3d.game_state->width || world_y < 0.0f || world_y >= (float)g_render_3d.game_state->height) {
+                            if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = floor_color;
+                            continue;
+                        }
+                    }
+                    float u = world_x * (float)TEXTURE_SCALE;
+                    float v = world_y * (float)TEXTURE_SCALE;
+                    uint32_t col = texture_sample(g_render_3d.floor_texture, u, v, true);
+                    if(pix && x >= 0 && x < w && yy >= 0 && yy < h) pix[yy * w + x] = col;
+                }
+            } else {
+                render_3d_sdl_draw_column(g_render_3d.display, x, fh0b, fh1b, floor_color);
+            }
+        }
+    }
 }
 sprite_clear(g_render_3d.sprite_renderer);
 for(int i= 0; i < game_state->food_count; i++) { uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255); sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f, (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col); }
@@ -503,12 +563,17 @@ sprite_draw(g_render_3d.sprite_renderer, g_render_3d.display, g_render_3d.column
 render_3d_draw_minimap(&g_render_3d);
 if(!render_3d_sdl_present(g_render_3d.display)) {}
 }
+}
+void render_3d_set_active_player(int player_index) __attribute__((used));
 void render_3d_set_active_player(int player_index) {
-if(g_render_3d.initialized) g_render_3d.config.active_player= player_index;
+    if(g_render_3d.initialized) g_render_3d.config.active_player= player_index;
 }
+void render_3d_set_fov(float fov_degrees) __attribute__((used));
 void render_3d_set_fov(float fov_degrees) {
-if(g_render_3d.initialized) g_render_3d.config.fov_degrees= fov_degrees;
+    if(g_render_3d.initialized) g_render_3d.config.fov_degrees= fov_degrees;
 }
+
+struct SDL3DContext* render_3d_get_display(void) { return g_render_3d.display; }
 void render_3d_on_tick(const GameState* game_state) {
 if(!g_render_3d.initialized || !game_state) return;
 if(g_render_3d.config.active_player < game_state->num_players) {

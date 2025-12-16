@@ -4,7 +4,7 @@ SHELL := /bin/bash
 # Quiet, readable output by default.
 MAKEFLAGS += --no-print-directory
 # Use all available CPU cores for parallel builds by default.
-NPROC ?= $(shell nproc)
+NPROC := $(shell nproc)
 MAKEFLAGS += -j$(NPROC)
 
 CC ?= gcc

@@ -78,16 +78,16 @@ memcpy(tex->shade_colors, colors, TEXTURE_MAX_SHADES * sizeof(uint32_t));
 bool texture_load_from_file(Texture3D* tex, const char* filename) {
 if(!tex || !filename) return false;
 int w= 0, h= 0, channels= 0;
-const char* try_path= NULL;
+
 unsigned char* data= NULL;
 const int max_parent_depth= 6;
 char buf[1024];
 data= stbi_load(filename, &w, &h, &channels, 4);
-if(data) { try_path= filename; }
+if(data) { /* loaded from given filename */ }
 if(!data) {
 if((size_t)snprintf(buf, sizeof(buf), "./%s", filename) < sizeof(buf)) {
-data= stbi_load(buf, &w, &h, &channels, 4);
-if(data) try_path= buf;
+    data= stbi_load(buf, &w, &h, &channels, 4);
+    if(data) { /* loaded from ./filename */ }
 }
 }
 if(!data) {
@@ -99,8 +99,8 @@ exe_path[len]= '\0';
 char* last= strrchr(exe_path, '/');
 if(last) *last= '\0';
 if((size_t)snprintf(buf, sizeof(buf), "%s/%s", exe_path, filename) < sizeof(buf)) {
-data= stbi_load(buf, &w, &h, &channels, 4);
-if(data) try_path= buf;
+    data= stbi_load(buf, &w, &h, &channels, 4);
+    if(data) { /* loaded from exe_path */ }
 }
 }
 }
@@ -116,7 +116,7 @@ buf[used]= '\0';
 if(used + strlen(filename) + 1 >= sizeof(buf)) break;
 strcat(buf, filename);
 data= stbi_load(buf, &w, &h, &channels, 4);
-if(data) try_path= buf;
+if(data) { /* loaded from parent candidate path */ }
 }
 if(!data) {
 const char* base= strrchr(filename, '/');
@@ -125,7 +125,7 @@ base++;
 else
 base= filename;
 data= stbi_load(base, &w, &h, &channels, 4);
-if(data) try_path= base;
+if(data) { /* loaded from basename fallback */ }
 }
 if(!data) {
 fprintf(stderr,
@@ -165,7 +165,7 @@ fprintf(stderr, "  '%s' -> %s\n", base, f ? "exists" : "missing");
 if(f) fclose(f);
 return false;
 }
-if(try_path) { fprintf(stderr, "texture_load_from_file: loaded '%s' (resolved '%s')\n", filename, try_path); }
+
 if(tex->pixels) free(tex->pixels);
 tex->img_w= w;
 tex->img_h= h;

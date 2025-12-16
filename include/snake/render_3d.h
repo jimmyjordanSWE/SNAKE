@@ -23,6 +23,8 @@ void render_3d_on_tick(const GameState* game_state);
 void render_3d_set_tick_rate_ms(int ms);
 void render_3d_set_active_player(int player_index);
 void render_3d_set_fov(float fov_degrees);
+/* Test helper: return the internal SDL display context (may be NULL). */
+struct SDL3DContext* render_3d_get_display(void);
 void render_3d_shutdown(void);
 
 /* Console overlays rendered in the 3D view */

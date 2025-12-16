@@ -12,6 +12,18 @@
 #define PERSIST_CONFIG_DEFAULT_MAX_LENGTH 1024
 #define PERSIST_CONFIG_DEFAULT_MAX_FOOD 3
 #define PERSIST_CONFIG_DEFAULT_SEED 42
+
+/* Bounds used for clamping in parsing — prefer named macros in tests instead of literals */
+#define PERSIST_CONFIG_MIN_BOARD_WIDTH 20
+#define PERSIST_CONFIG_MAX_BOARD_WIDTH 100
+#define PERSIST_CONFIG_MIN_BOARD_HEIGHT 10
+#define PERSIST_CONFIG_MAX_BOARD_HEIGHT 100
+#define PERSIST_CONFIG_MIN_TICK_MS 10
+#define PERSIST_CONFIG_MAX_TICK_MS 1000
+#define PERSIST_CONFIG_MIN_SCREEN_WIDTH 20
+#define PERSIST_CONFIG_MAX_SCREEN_WIDTH 4096
+#define PERSIST_CONFIG_MIN_SCREEN_HEIGHT 10
+#define PERSIST_CONFIG_MAX_SCREEN_HEIGHT 2160
 #define PERSIST_CONFIG_DEFAULT_FOV_DEGREES 90.0f
 #define PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG 0
 #define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER 0
@@ -96,3 +108,7 @@ void game_config_set_active_player(GameConfig* cfg, int v);
 int game_config_get_active_player(const GameConfig* cfg);
 bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);
+
+/* Return true if the named config file contains one or more keys that are not recognized by the parser.
+ * Returns false for unreadable or missing files. */
+bool persist_config_has_unknown_keys(const char* filename);

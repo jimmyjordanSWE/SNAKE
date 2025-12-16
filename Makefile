@@ -3,6 +3,9 @@ SHELL := /bin/bash
 
 # Quiet, readable output by default.
 MAKEFLAGS += --no-print-directory
+# Use all available CPU cores for parallel builds by default.
+NPROC ?= $(shell nproc)
+MAKEFLAGS += -j$(NPROC)
 
 CC ?= gcc
 
@@ -148,7 +151,9 @@ test-game:
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_over tests/game/test_game_over.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_events tests/game/test_game_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_death_events tests/game/test_game_death_events.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c src/persist/persist.c $(LDLIBS)	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_growth_prev_pos tests/game/test_growth_prev_pos.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)	@echo "$(OK_MSG)"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_game_input tests/game/test_game_input.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/input/input.c src/persist/persist.c $(LDLIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $(TEST_DIR)/test_growth_prev_pos tests/game/test_growth_prev_pos.c src/core/game.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c $(LDLIBS)
+	@echo "$(OK_MSG)"
 	./$(TEST_DIR)/test_game_over && ./$(TEST_DIR)/test_game_events && ./$(TEST_DIR)/test_game_death_events && ./$(TEST_DIR)/test_game_input
 
 
@@ -164,8 +169,7 @@ test-utils:
 .PHONY: test-unit
 test-unit:
 	@mkdir -p $(TEST_DIR)
-	@find tests/unit -type f -name "*.c" -print0 | xargs -0 -n1 -I {} sh -c '\
-		src="{}"; \
+	@find tests/unit -type f -name "*.c" -print0 | while IFS= read -r -d '' src; do \
 		name=$$(basename "$$src" .c); \
 		bin=$(TEST_DIR)/$$name; \
 		if [ ! -f "$$bin" ] || [ "$$src" -nt "$$bin" ]; then \
@@ -173,12 +177,22 @@ test-unit:
 			$(CC) $(CPPFLAGS) -Itests/vendor $(CFLAGS) -o "$$bin" "$$src" $(UNITY_SRC) $(SRC_ALL) $(LDLIBS); \
 		else \
 			echo "Skipping $$name (up-to-date)"; \
-		fi'
+		fi; \
+	done
 	@echo "$(OK_MSG)"
-	@FAIL=0; find tests/unit -type f -name "*.c" -print | while IFS= read -r src; do \
+	@FAIL=0; RUNS=0; PASSED=0; while IFS= read -r src; do \
 		name=$$(basename "$$src" .c); \
-		echo "Running $(TEST_DIR)/$$name"; "$(TEST_DIR)/$$name" || FAIL=1; \
-	done; if [ "$$FAIL" -ne 0 ]; then echo "Some tests failed"; exit 1; fi
+		bin="$(TEST_DIR)/$$name"; \
+		echo "Running $$bin"; \
+		RUNS=$$((RUNS+1)); \
+		if "$$bin"; then \
+			PASSED=$$((PASSED+1)); \
+		else \
+			FAIL=1; \
+		fi; \
+	done < <(find tests/unit -type f -name "*.c" -print); \
+	echo "$$PASSED tests passed out of $$RUNS run"; \
+	if [ "$$FAIL" -ne 0 ]; then echo "Some tests failed"; exit 1; fi
 
 test-persist:
 	@mkdir -p $(TEST_DIR)

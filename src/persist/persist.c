@@ -617,3 +617,57 @@ fclose(fp);
 (void)unlink(temp_filename);
 return false;
 }
+
+/* Helper: return true if the key is recognized by the config parser */
+static bool is_known_config_key(const char* key) {
+    if(key == NULL || *key == '\0') return false;
+    if(strcmp(key, "render_glyphs") == 0 || strcmp(key, "glyphs") == 0 || strcmp(key, "charset") == 0) return true;
+    if(strcmp(key, "enable_external_3d_view") == 0) return true;
+    if(strcmp(key, "seed") == 0) return true;
+    if(strcmp(key, "fov_degrees") == 0) return true;
+    if(strcmp(key, "player_name") == 0) return true;
+    if(strcmp(key, "wall_height_scale") == 0) return true;
+    if(strcmp(key, "tail_height_scale") == 0) return true;
+    if(strcmp(key, "wall_texture") == 0) return true;
+    if(strcmp(key, "floor_texture") == 0) return true;
+    if(strcmp(key, "key_up") == 0 || strcmp(key, "key_down") == 0 || strcmp(key, "key_left") == 0 || strcmp(key, "key_right") == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) return true;
+    if(strcmp(key, "show_sprite_debug") == 0) return true;
+    if(strcmp(key, "active_player") == 0) return true;
+    if(strcmp(key, "num_players") == 0) return true;
+    if(strcmp(key, "max_players") == 0) return true;
+    if(strcmp(key, "max_length") == 0) return true;
+    if(strcmp(key, "max_food") == 0) return true;
+    if(strcmp(key, "board_width") == 0) return true;
+    if(strcmp(key, "board_height") == 0) return true;
+    if(strcmp(key, "tick_rate_ms") == 0) return true;
+    if(strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0) return true;
+    if(strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0) return true;
+    return false;
+}
+
+bool persist_config_has_unknown_keys(const char* filename) {
+    if(filename == NULL) return false;
+    FILE* fp = fopen(filename, "r");
+    if(fp == NULL) return false;
+    char buffer[PERSIST_CONFIG_BUFFER];
+    while(fgets(buffer, (int)sizeof(buffer), fp) != NULL) {
+        size_t len = strlen(buffer);
+        if(len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+            len--;
+        }
+        if(len == 0) continue;
+        if(buffer[0] == '#') continue;
+        char* eq_pos = strchr(buffer, '=');
+        if(eq_pos == NULL) continue;
+        *eq_pos = '\0';
+        char* key = trim_in_place(buffer);
+        if(key == NULL || *key == '\0') continue;
+        if(!is_known_config_key(key)) {
+            fclose(fp);
+            return true;
+        }
+    }
+    fclose(fp);
+    return false;
+}

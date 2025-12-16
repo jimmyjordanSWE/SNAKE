@@ -115,9 +115,9 @@ void test_config_clamping_and_booleans(void) {
     int bw, bh, sw, sh;
     game_config_get_board_size(cfg, &bw, &bh);
     game_config_get_screen_size(cfg, &sw, &sh);
-    TEST_ASSERT_TRUE_MSG(bw >= 20 && bh >= 10, "board sizes clamped to minimums");
-    TEST_ASSERT_TRUE_MSG(game_config_get_tick_rate_ms(cfg) >= 10, "tick rate clamped to minimum");
-    TEST_ASSERT_TRUE_MSG(sw >= 20 && sh >= 10, "screen sizes clamped");
+    TEST_ASSERT_TRUE_MSG(bw >= PERSIST_CONFIG_MIN_BOARD_WIDTH && bh >= PERSIST_CONFIG_MIN_BOARD_HEIGHT, "board sizes clamped to minimums");
+    TEST_ASSERT_TRUE_MSG(game_config_get_tick_rate_ms(cfg) >= PERSIST_CONFIG_MIN_TICK_MS, "tick rate clamped to minimum");
+    TEST_ASSERT_TRUE_MSG(sw >= PERSIST_CONFIG_MIN_SCREEN_WIDTH && sh >= PERSIST_CONFIG_MIN_SCREEN_HEIGHT, "screen sizes clamped");
     game_config_destroy(cfg);
     unlink(f1); free(f1);
 
@@ -153,7 +153,8 @@ void test_missing_file_defaults(void) {
     GameConfig* defcfg = NULL;
     TEST_ASSERT_TRUE_MSG(persist_load_config(NULL, &defcfg) == false, "passing NULL filename should return false and provide defaults");
     int bw, bh; game_config_get_board_size(defcfg, &bw, &bh);
-    TEST_ASSERT_TRUE_MSG(bw >= 20 && bh >= 10, "defaults should be sane");
+    TEST_ASSERT_EQUAL_INT(PERSIST_CONFIG_DEFAULT_WIDTH, bw);
+    TEST_ASSERT_EQUAL_INT(PERSIST_CONFIG_DEFAULT_HEIGHT, bh);
     game_config_destroy(defcfg);
 }
 

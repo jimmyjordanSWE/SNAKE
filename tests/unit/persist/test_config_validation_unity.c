@@ -27,11 +27,11 @@ static void test_clamping_min_max(void) {
     game_config_get_board_size(cfg, &bw, &bh);
     game_config_get_screen_size(cfg, &sw, &sh);
     
-    TEST_ASSERT_TRUE_MSG(bw >= 20, "board_width should be clamped to >=20");
-    TEST_ASSERT_TRUE_MSG(bh >= 10, "board_height should be clamped to >=10");
-    TEST_ASSERT_TRUE_MSG(game_config_get_tick_rate_ms(cfg) >= 10, "tick_rate_ms should be clamped to >=10");
-    TEST_ASSERT_TRUE_MSG(sw >= 20, "screen_width should be clamped to >=20");
-    TEST_ASSERT_TRUE_MSG(sh >= 10, "screen_height should be clamped to >=10");
+    TEST_ASSERT_TRUE_MSG(bw >= PERSIST_CONFIG_MIN_BOARD_WIDTH, "board_width should be clamped to >= min width");
+    TEST_ASSERT_TRUE_MSG(bh >= PERSIST_CONFIG_MIN_BOARD_HEIGHT, "board_height should be clamped to >= min height");
+    TEST_ASSERT_TRUE_MSG(game_config_get_tick_rate_ms(cfg) >= PERSIST_CONFIG_MIN_TICK_MS, "tick_rate_ms should be clamped to >= min");
+    TEST_ASSERT_TRUE_MSG(sw >= PERSIST_CONFIG_MIN_SCREEN_WIDTH, "screen_width should be clamped to >= min width");
+    TEST_ASSERT_TRUE_MSG(sh >= PERSIST_CONFIG_MIN_SCREEN_HEIGHT, "screen_height should be clamped to >= min height");
     game_config_destroy(cfg);
 
     
@@ -44,8 +44,8 @@ static void test_clamping_min_max(void) {
     TEST_ASSERT_TRUE_MSG(persist_load_config(f2, &cfg) == true, "load should return true when file exists");
     game_config_get_board_size(cfg, &bw, &bh);
     
-    TEST_ASSERT_TRUE_MSG(bw <= 100, "board_width should be clamped to <=100");
-    TEST_ASSERT_TRUE_MSG(bh <= 100, "board_height should be clamped to <=100");
+    TEST_ASSERT_TRUE_MSG(bw <= PERSIST_CONFIG_MAX_BOARD_WIDTH, "board_width should be clamped to <= max");
+    TEST_ASSERT_TRUE_MSG(bh <= PERSIST_CONFIG_MAX_BOARD_HEIGHT, "board_height should be clamped to <= max");
     game_config_destroy(cfg);
 
     unlink(f1); free(f1);
@@ -68,6 +68,24 @@ static void test_boolean_and_glyphs_parsing(void) {
     unlink(f3); free(f3);
 }
 
+static void test_unknown_keys_detector(void) {
+    char* f1 = make_temp_file();
+    FILE* f = fopen(f1, "w");
+    fprintf(f, "player_name=alice\n");
+    fprintf(f, "unused_key=foobar\n");
+    fclose(f);
+    TEST_ASSERT_TRUE_MSG(persist_config_has_unknown_keys(f1) == true, "should detect unknown key");
+    unlink(f1); free(f1);
+
+    char* f2 = make_temp_file();
+    f = fopen(f2, "w");
+    fprintf(f, "player_name=bob\n");
+    fprintf(f, "board_width=30\n");
+    fclose(f);
+    TEST_ASSERT_TRUE_MSG(persist_config_has_unknown_keys(f2) == false, "no unknown keys should be reported");
+    unlink(f2); free(f2);
+}
+
 static void test_unknown_keys_and_missing_file(void) {
     char* f4 = make_temp_file();
     FILE* f = fopen(f4, "w");
@@ -83,7 +101,8 @@ static void test_unknown_keys_and_missing_file(void) {
     TEST_ASSERT_TRUE_MSG(persist_load_config(NULL, &defcfg) == false, "passing NULL filename should return false");
     int bw, bh;
     game_config_get_board_size(defcfg, &bw, &bh);
-    TEST_ASSERT_TRUE_MSG(bw >= 20 && bh >= 10, "defaults should be sane");
+    TEST_ASSERT_EQUAL_INT(PERSIST_CONFIG_DEFAULT_WIDTH, bw);
+    TEST_ASSERT_EQUAL_INT(PERSIST_CONFIG_DEFAULT_HEIGHT, bh);
     game_config_destroy(defcfg);
 
     unlink(f4); free(f4);
@@ -93,6 +112,7 @@ int main(void) {
     UnityBegin();
     RUN_TEST(test_clamping_min_max);
     RUN_TEST(test_boolean_and_glyphs_parsing);
+    RUN_TEST(test_unknown_keys_detector);
     RUN_TEST(test_unknown_keys_and_missing_file);
     return UnityEnd();
 }

@@ -3,6 +3,22 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+/* Optional LSAN guards to silence false-positive leaks from SDL / GLX
+ * (only enabled when sanitizer/lsan_interface.h is available). */
+#if defined(__has_include)
+#  if __has_include(<sanitizer/lsan_interface.h>)
+#    include <sanitizer/lsan_interface.h>
+#    define LSAN_DISABLE() __lsan_disable()
+#    define LSAN_ENABLE() __lsan_enable()
+#  else
+#    define LSAN_DISABLE() ((void)0)
+#    define LSAN_ENABLE() ((void)0)
+#  endif
+#else
+#  define LSAN_DISABLE() ((void)0)
+#  define LSAN_ENABLE() ((void)0)
+#endif
 typedef struct {
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -35,11 +51,15 @@ int render_3d_sdl_get_height(const SDL3DContext* ctx) { return ctx ? ctx->height
 uint32_t* render_3d_sdl_get_pixels(SDL3DContext* ctx) { return ctx ? ctx->pixels : NULL; }
 bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
 if(!ctx_out || width <= 0 || height <= 0) return false;
-if(SDL_Init(SDL_INIT_VIDEO) < 0) return false;
+/* Disable LeakSanitizer for the SDL/GL initialization sequence which
+ * allocates internal resources in upstream libraries (libGLX / SDL). */
+LSAN_DISABLE();
+if(SDL_Init(SDL_INIT_VIDEO) < 0) { LSAN_ENABLE(); return false; }
 SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
 g_sdl_state.window= SDL_CreateWindow("SNAKE 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 if(!g_sdl_state.window) {
 SDL_Quit();
+LSAN_ENABLE();
 return false;
 }
 SDL_ShowWindow(g_sdl_state.window);
@@ -49,6 +69,7 @@ g_sdl_state.renderer= SDL_CreateRenderer(g_sdl_state.window, -1, SDL_RENDERER_AC
 if(!g_sdl_state.renderer) {
 SDL_DestroyWindow(g_sdl_state.window);
 SDL_Quit();
+LSAN_ENABLE();
 return false;
 }
 SDL_SetRenderDrawColor(g_sdl_state.renderer, 0, 0, 0, 255);
@@ -59,6 +80,7 @@ if(!g_sdl_state.texture) {
 SDL_DestroyRenderer(g_sdl_state.renderer);
 SDL_DestroyWindow(g_sdl_state.window);
 SDL_Quit();
+LSAN_ENABLE();
 return false;
 }
 g_sdl_state.width= width;
@@ -71,11 +93,14 @@ SDL_DestroyTexture(g_sdl_state.texture);
 SDL_DestroyRenderer(g_sdl_state.renderer);
 SDL_DestroyWindow(g_sdl_state.window);
 SDL_Quit();
+LSAN_ENABLE();
 return false;
 }
 ctx_out->width= width;
 ctx_out->height= height;
 ctx_out->pixels= pixels;
+/* Re-enable LSAN now that initialization is complete. */
+LSAN_ENABLE();
 return true;
 }
 void render_3d_sdl_shutdown(SDL3DContext* ctx) {

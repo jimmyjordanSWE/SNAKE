@@ -81,7 +81,7 @@ s->pivot= pivot;
 s->face_camera= face_camera;
 s->texture_id= texture_id;
 s->frame= frame;
-s->color= render_3d_sdl_color(0, 255, 0, 255);
+s->color= render_3d_sdl_color(0, 128, 0, 255);
 s->perp_distance= 0.0f;
 s->screen_x= s->screen_w= s->screen_h= s->screen_y_top= 0;
 s->visible= false;
@@ -242,7 +242,7 @@ int y0= s->screen_y_top;
 int y1= y0 + s->screen_h - 1;
 if(y0 < 0) y0= 0;
 if(y1 >= render_3d_sdl_get_height(ctx)) y1= render_3d_sdl_get_height(ctx) - 1;
-uint32_t col= s->color ? s->color : render_3d_sdl_color(0, 255, 0, 255);
+uint32_t col= s->color ? s->color : render_3d_sdl_color(0, 128, 0, 255);
 if(s->texture_id == -1) {
     int center_x= s->screen_x;
     int center_y= s->screen_y_top + s->screen_h / 2;

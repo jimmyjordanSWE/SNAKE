@@ -112,8 +112,8 @@ int fy= y0 + gs->food[i].y * cell_px + cell_px / 2;
 int radius= cell_px > 2 ? (cell_px / 3) : 1;
 render_3d_sdl_draw_filled_circle(r->display, fx, fy, radius, food_col);
 }
-uint32_t player_cols[3]= {render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255)};
-uint32_t tail_col= render_3d_sdl_color(128, 128, 128, 255);
+uint32_t player_cols[3]= {render_3d_sdl_color(0, 128, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255)};
+uint32_t tail_col= render_3d_sdl_color(0, 128, 0, 255);
     for(int p= 0; p < gs->num_players; p++) {
         const PlayerState* pl= &gs->players[p];
         if(!pl->active || pl->length <= 0) continue;
@@ -468,7 +468,7 @@ for(int p= 0; p < game_state->num_players; p++) {
     float t= camera_get_interpolation_fraction(g_render_3d.camera);
     float head_x= player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * t;
     float head_y= player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * t;
-    uint32_t player_cols[3] = { render_3d_sdl_color(0, 255, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255) };
+    uint32_t player_cols[3] = { render_3d_sdl_color(0, 128, 0, 255), render_3d_sdl_color(0, 200, 255, 255), render_3d_sdl_color(255, 255, 0, 255) };
     uint32_t pcol = player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
     /* Draw head as a colored circle sprite (texture not sampled yet). Use
      * texture_id = -1 so it follows the circle-rendering path instead of
@@ -488,7 +488,7 @@ for(int bi= 1; bi < player->length; bi++) {
         seg_y = player->prev_segment_y[bi] + (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * t;
     }
 float tail_h= g_render_3d.config.tail_height_scale;
-uint32_t gray= render_3d_sdl_color(128, 128, 128, 255);
+uint32_t gray= render_3d_sdl_color(0, 128, 0, 255); // todo check if this is actually graym change name if not
     /* Draw body segment as circle (previously used rect -> square). */
     sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, gray);
 }

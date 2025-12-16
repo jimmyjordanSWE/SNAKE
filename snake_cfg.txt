@@ -1,7 +1,7 @@
 # Snake Game Configuration
-board_width=40
-board_height=40
-tick_rate_ms=150
+board_width=18
+board_height=18
+tick_rate_ms=250
 render_glyphs=utf8
 screen_width=1200
 screen_height=800

@@ -272,17 +272,22 @@ DisplayScore display_scores[PERSIST_MAX_SCORES + SNAKE_MAX_PLAYERS];
 int display_count= 0;
 for(int i= 0; i < score_count && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); i++) {
 if(!scores || !scores[i]) continue;
-snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.31s", highscore_get_name(scores[i]));
+const char* hs_name = highscore_get_name(scores[i]);
+if(!hs_name) hs_name = "";
+snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.*s", (int)sizeof(display_scores[display_count].name) - 1, hs_name);
 display_scores[display_count].score= highscore_get_score(scores[i]);
 display_count++;
 }
 for(int p= 0; p < game->num_players && display_count < (int)(sizeof(display_scores) / sizeof(display_scores[0])); p++) {
 if(!game->players[p].active) continue;
 if(game->players[p].score <= 0) continue;
+char tmp_name_buf[64];
 if(p == 0 && player_name != NULL)
-snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%s (live)", player_name);
+    snprintf(tmp_name_buf, sizeof(tmp_name_buf), "%s (live)", player_name);
 else
-snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "P%d (live)", p + 1);
+    snprintf(tmp_name_buf, sizeof(tmp_name_buf), "P%d (live)", p + 1);
+/* Truncate into the fixed display buffer size, safe for any PERSIST_NAME_MAX */
+snprintf(display_scores[display_count].name, sizeof(display_scores[display_count].name), "%.*s", (int)sizeof(display_scores[display_count].name) - 1, tmp_name_buf);
 display_scores[display_count].score= game->players[p].score;
 display_count++;
 }
@@ -300,7 +305,9 @@ break;
 if(scores_changed && scores) {
 last_score_count= score_count;
 for(int i= 0; i < score_count && i < PERSIST_MAX_SCORES; i++) {
-snprintf(last_scores[i].name, sizeof(last_scores[i].name), "%.31s", highscore_get_name(scores[i]));
+const char* hs_name = highscore_get_name(scores[i]);
+if(!hs_name) hs_name = "";
+snprintf(last_scores[i].name, sizeof(last_scores[i].name), "%.*s", (int)sizeof(last_scores[i].name) - 1, hs_name);
 last_scores[i].score= highscore_get_score(scores[i]);
 }
 invalidate_front_buffer(g_display);

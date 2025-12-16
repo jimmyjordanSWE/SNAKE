@@ -178,9 +178,12 @@ if(highscores) {
 persist_free_scores(highscores, highscore_count);
 highscores= NULL;
 }
+/* Track whether a high score prompt was shown for player 0 during this tick. If so, restart immediately instead of waiting for key input so the game doesn't quit. */
+bool auto_restart_after_highscore = false;
 highscore_count= persist_read_scores(".snake_scores", &highscores);
 for(int ei= 0; ei < events.died_count; ei++) {
 int death_score= events.died_scores[ei];
+int death_player = events.died_players[ei];
 if(death_score > 0) {
         /* Only prompt for a name when the score would enter the high score list. */
         HighScore** cur = NULL;
@@ -195,6 +198,7 @@ if(death_score > 0) {
             /* prompt for a short name (max 8 chars + NUL) */
             render_prompt_for_highscore_name(name_buf, 9, death_score);
             if(!name_buf[0]) snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
+            if(death_player == 0) auto_restart_after_highscore = true;
         } else {
             snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
         }
@@ -216,17 +220,22 @@ render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, 
 render_draw_death_overlay(game_get_state(game), 0, true);
 /* Mirror into 3D view if active */
 if(has_3d) render_3d_draw_death_overlay(game_get_state(game), 0, true);
-while(1) {
-InputState in= {0};
-input_poll(&in);
-if(in.quit) goto clean_done;
-if(in.any_key) {
-game_reset(game);
-break;
-}
-/* update 3D every loop so external view shows it */
-if(has_3d) render_3d_draw_death_overlay(game_get_state(game), 0, true);
-platform_sleep_ms(20);
+/* If the player just entered a highscore, restart immediately to avoid an accidental quit from pressing the quit key. */
+if(auto_restart_after_highscore) {
+    game_reset(game);
+} else {
+    while(1) {
+    InputState in= {0};
+    input_poll(&in);
+    if(in.quit) goto clean_done;
+    if(in.any_key) {
+        game_reset(game);
+        break;
+    }
+    /* update 3D every loop so external view shows it */
+    if(has_3d) render_3d_draw_death_overlay(game_get_state(game), 0, true);
+    platform_sleep_ms(20);
+    }
 }
 }
 uint64_t frame_start= platform_now_ms();

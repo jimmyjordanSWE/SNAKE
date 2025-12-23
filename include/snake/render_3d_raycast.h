@@ -2,11 +2,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 typedef struct {
-    float distance;
-    float hit_x;
-    float hit_y;
-    bool is_vertical;
-    uint8_t shade_level;
+float distance;
+float hit_x;
+float hit_y;
+bool is_vertical;
+uint8_t shade_level;
 } RayHit;
 typedef struct Raycaster3D Raycaster3D;
 Raycaster3D* raycaster_create(int width, int height, const uint8_t* board);

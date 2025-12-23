@@ -9,11 +9,11 @@
 typedef struct Game Game;
 #define GAME_EVENTS_MAX_PLAYERS 8
 typedef struct {
-    int died_players[GAME_EVENTS_MAX_PLAYERS];
-    int died_scores[GAME_EVENTS_MAX_PLAYERS];
-    int died_count;
-    bool game_over;
-    bool food_respawned;
+int died_players[GAME_EVENTS_MAX_PLAYERS];
+int died_scores[GAME_EVENTS_MAX_PLAYERS];
+int died_count;
+bool game_over;
+bool food_respawned;
 } GameEvents;
 #include "snake/input.h"
 typedef struct GameState GameState;

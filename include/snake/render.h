@@ -3,8 +3,8 @@
 #include "snake/persist.h"
 #include <stdbool.h>
 typedef enum {
-    RENDER_GLYPHS_UTF8 = 0,
-    RENDER_GLYPHS_ASCII = 1,
+    RENDER_GLYPHS_UTF8= 0,
+    RENDER_GLYPHS_ASCII= 1,
 } RenderGlyphs;
 void render_set_glyphs(RenderGlyphs glyphs);
 bool render_init(int min_width, int min_height);

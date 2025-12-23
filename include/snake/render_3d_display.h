@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 typedef struct {
-    char character;
-    uint16_t color;
+char character;
+uint16_t color;
 } Framebuffer3DCell;
 typedef struct Display3D Display3D;
 Display3D* display_3d_create(int width, int height);

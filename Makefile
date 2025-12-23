@@ -96,17 +96,17 @@ DEP_3D := $(OBJ_3D:.o=.d)
 
 .DEFAULT_GOAL := debug
 
-.PHONY: all build debug release valgrind gdb clean test-3d format-llm format-human coverage
+.PHONY: all build debug release valgrind gdb clean test-3d format-llm format-human coverage context
 
-all: debug
+all: context debug
 
-build: $(BIN)
+build: context $(BIN)
 
-debug:
+debug: context
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
 	@echo "$(OK_MSG)"
 
-release:
+release: context
 	@$(MAKE) CONFIG=release $(PREBUILD) build
 	@echo "$(OK_MSG)"
 
@@ -120,7 +120,7 @@ gdb:
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
 	gdb ./$(BIN)
 
-test-3d:
+test-3d: context
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) $(BIN_3D)
 	@echo "$(OK_MSG)"
 	./$(BIN_3D)
@@ -298,6 +298,9 @@ format:
 	else \
 		echo "error: $(CLANG_FORMAT_STYLE_HUMAN) not found"; exit 1; \
 	fi
+
+context:
+	@scripts/.venv/bin/python3 scripts/generate_ast.py
 
 -include $(DEP)
 -include $(DEP_3D)

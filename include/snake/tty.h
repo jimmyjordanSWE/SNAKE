@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <termios.h>
 struct ascii_pixel {
-    uint16_t pixel;
-    uint16_t color;
+uint16_t pixel;
+uint16_t color;
 } __attribute__((packed));
 typedef struct tty_context tty_context;
 tty_context* tty_open(const char* tty_path, int min_width, int min_height);
@@ -19,12 +19,8 @@ void tty_clear_back(tty_context* ctx);
 void tty_clear_front(tty_context* ctx);
 void tty_get_size(const tty_context* ctx, int* width, int* height);
 bool tty_check_resize(tty_context* ctx);
-void tty_set_resize_callback(tty_context* ctx,
-                             void (*callback)(tty_context*, int, int, int, int, void*),
-                             void* userdata);
-void tty_set_size_invalid_callback(tty_context* ctx,
-                                   void (*callback)(tty_context*, int, int, int, int, void*),
-                                   void* userdata);
+void tty_set_resize_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
+void tty_set_size_invalid_callback(tty_context* ctx, void (*callback)(tty_context*, int, int, int, int, void*), void* userdata);
 bool tty_size_valid(const tty_context* ctx);
 void tty_get_min_size(const tty_context* ctx, int* min_width, int* min_height);
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height);
@@ -55,7 +51,7 @@ void tty_clear_test_size(void);
 #define COLOR_DEFAULT_BG COLOR_BLACK
 #define COLOR_DEFAULT COLOR_MAKE(COLOR_DEFAULT_FG, COLOR_DEFAULT_BG)
 #define PIXEL_CHAR(ch) ((uint16_t)(ch))
-#define PIXEL_MAKE(ch, fg, bg) ((struct ascii_pixel){.pixel = PIXEL_CHAR(ch), .color = COLOR_MAKE(fg, bg)})
+#define PIXEL_MAKE(ch, fg, bg) ((struct ascii_pixel){.pixel= PIXEL_CHAR(ch), .color= COLOR_MAKE(fg, bg)})
 #define PIXEL_SPACE 0x0020
 #define PIXEL_BLOCK 0x2588
 #define PIXEL_SHADE_L 0x2591

@@ -12,10 +12,9 @@
 #define PERSIST_CONFIG_DEFAULT_MAX_LENGTH 1024
 #define PERSIST_CONFIG_DEFAULT_MAX_FOOD 3
 #define PERSIST_CONFIG_DEFAULT_SEED 42
-
 /* Bounds used for clamping in parsing — prefer named macros in tests instead of
  * literals */
-#define PERSIST_CONFIG_MIN_BOARD_WIDTH 20
+#define PERSIST_CONFIG_MIN_BOARD_WIDTH 10
 #define PERSIST_CONFIG_MAX_BOARD_WIDTH 100
 #define PERSIST_CONFIG_MIN_BOARD_HEIGHT 10
 #define PERSIST_CONFIG_MAX_BOARD_HEIGHT 100
@@ -32,6 +31,8 @@
 #define PERSIST_CONFIG_DEFAULT_ENABLE_EXTERNAL_3D_VIEW 1
 #define PERSIST_CONFIG_DEFAULT_WALL_SCALE 1.50f
 #define PERSIST_CONFIG_DEFAULT_TAIL_SCALE 0.50f
+#define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE_SCALE 1.0f
+#define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE_SCALE 1.0f
 #define PERSIST_TEXTURE_PATH_MAX 128
 #define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE "assets/wall.png"
 #define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE "assets/floor.png"
@@ -89,6 +90,10 @@ void game_config_set_wall_texture(GameConfig* cfg, const char* path);
 const char* game_config_get_wall_texture(const GameConfig* cfg);
 void game_config_set_floor_texture(GameConfig* cfg, const char* path);
 const char* game_config_get_floor_texture(const GameConfig* cfg);
+void game_config_set_wall_texture_scale(GameConfig* cfg, float v);
+float game_config_get_wall_texture_scale(const GameConfig* cfg);
+void game_config_set_floor_texture_scale(GameConfig* cfg, float v);
+float game_config_get_floor_texture_scale(const GameConfig* cfg);
 void game_config_set_key_up(GameConfig* cfg, char c);
 char game_config_get_key_up(const GameConfig* cfg);
 void game_config_set_key_down(GameConfig* cfg, char c);
@@ -109,7 +114,6 @@ void game_config_set_active_player(GameConfig* cfg, int v);
 int game_config_get_active_player(const GameConfig* cfg);
 bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);
-
 /* Return true if the named config file contains one or more keys that are not
  * recognized by the parser. Returns false for unreadable or missing files. */
 bool persist_config_has_unknown_keys(const char* filename);

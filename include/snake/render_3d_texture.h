@@ -3,7 +3,7 @@
 #include <stdint.h>
 #define TEXTURE_MAX_SHADES 6
 typedef struct {
-    uint32_t color;
+uint32_t color;
 } Texel;
 #define TEXTURE_SCALE 4
 typedef struct Texture3D Texture3D;

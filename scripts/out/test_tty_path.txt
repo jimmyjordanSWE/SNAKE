@@ -1,1 +1,0 @@
-test_tty_path: OK

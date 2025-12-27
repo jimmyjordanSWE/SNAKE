@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang clang-format pkg-config libfreetype6-dev zlib1g-dev
+
+      - name: Check formatting (clang-format)
+        run: |
+          command -v clang-format >/dev/null 2>&1 || { echo "clang-format not found"; exit 1; }
+          # Apply style to a temp tree and check for changes
+          git -c core.autocrlf=false checkout -- .
+          clang-format --version
+          files=$(git ls-files '*.c' '*.h')
+          if [ -z "$files" ]; then echo "no files to format"; exit 0; fi
+          clang-format -style=file -i $files
+          if [ -n "$(git status --porcelain)" ]; then echo "Formatting changes required"; git --no-pager diff --name-only; exit 1; fi
+
+      - name: Build (ASAN)
+        run: |
+          make CONFIG=debug-asan build
+
+      - name: Run unit tests
+        run: |
+          bash scripts/run_unit_tests.sh
+
+      - name: Fuzz smoke (short)
+        run: |
+          bash scripts/run_fuzz_smoke.sh

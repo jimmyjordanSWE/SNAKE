@@ -1,15 +1,17 @@
-src/core/collision.c: 59[m] 60[m] 61[m] 63[f] 64[f] 65[f] 150[f] 151[f] 152[f]
-src/core/game.c: 26[m] 42[f] 300[c] 304[m] 306[f] 312[m] 313[m] 314[m] 316[f] 317[f] 318[f] 335[f] 336[f] 350[f] 351[f] 352[f] 354[f] 358[f]
-src/net/net.c: 116[m] 122[f] 127[m] 129[f] 163[f] 169[f]
-src/persist/persist.c: 38[c] 49[f] 97[c] 134[f] 370[c] 408[f] 467[r] 502[f] 797[m] 798[m] 812[f] 813[f]
-src/platform/tty.c: 85[m] 99[f] 105[f] 116[f] 128[f] 135[f] 141[f] 144[c] 145[c] 151[f] 152[f] 155[f] 159[m] 161[f] 162[f] 163[f] 166[f] 188[f] 189[f] 190[f] 192[f] 327[m] 328[m] 330[m] 332[f] 333[f] 334[f] 350[f] 351[f] 352[f]
-src/render/camera.c: 49[c] 56[f]
-src/render/display_3d.c: 11[c] 21[f] 50[c] 102[f]
-src/render/display_tty.c: 12[m] 17[f] 22[f] 32[f]
-src/render/projection.c: 12[c] 19[f]
-src/render/raycast.c: 12[c] 21[f]
-src/render/render_3d.c: 422[c] 465[r] 726[f]
-src/render/render_3d_sdl.c: 45[c] 49[f] 58[f] 78[m] 124[m] 143[f]
-src/render/sprite.c: 22[c] 295[f] 303[c] 313[f]
-src/render/texture.c: 19[c] 29[f] 206[f] 224[m] 246[f]
-src/snakegame.c: 28[m] 33[f] 148[f] 344[f]
+# Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]
+src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
+src/core/game.c: 26m 42f 300c 304m 306f 312m 313m 314m 316f 317f 318f 335f 336f 350f 351f 352f 354f 358f
+src/net/net.c: 116m 122f 127m 129f 163f 169f
+src/persist/persist.c: 38c 49f 97c 134f 370c 408f 467r 502f 797m 798m 812f 813f
+src/platform/tty.c: 85m 99f 105f 116f 128f 135f 141f 144c 145c 151f 152f 155f 159m 161f 162f 163f 166f 188f 189f 190f 192f 327m 328m 330m 332f 333f 334f 350f 351f 352f
+src/render/camera.c: 49c 56f
+src/render/display_3d.c: 11c 21f 50c 102f
+src/render/display_tty.c: 12m 17f 22f 32f
+src/render/projection.c: 12c 19f
+src/render/raycast.c: 12c 21f
+src/render/render_3d.c: 422c 465r 726f
+src/render/render_3d_sdl.c: 45c 49f 58f 78m 124m 143f
+src/render/sprite.c: 22c 295f 303c 313f
+src/render/texture.c: 19c 29f 206f 224m 246f
+src/snakegame.c: 28m 33f 148f 344f
+# Mem: 40a, 71f (15 files)

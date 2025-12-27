@@ -24,8 +24,6 @@ scripts=(
     "call_chains.py"
     "errors.py"
     "data_flow.py"
-    "dependencies.py"
-    "macros.py"
     "hotspots.py"
     "invariants.py"
 )
@@ -40,6 +38,6 @@ done
 
 
 echo "=== AST Context ==="
-$VENV_PYTHON "$SCRIPTS_DIR/structure.py" > "PROJECT_CONTEXT.txt"
+# structure.py is already called above and outputs to $OUT_DIR/structure_out.txt
 
-echo -e "\nLLM Context Updated. Results in $OUT_DIR/ and PROJECT_CONTEXT.txt"
+echo -e "\nLLM Context Updated. Results in $OUT_DIR/"

@@ -28,40 +28,42 @@ def find_allocations(node, source_code, filename):
 def main():
     parser = get_c_parser()
     project_root = os.getcwd()
-    
-    # Scan root, src, and include
-    scan_paths = [project_root, os.path.join(project_root, 'src'), os.path.join(project_root, 'include')]
+    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
     seen_files = {} # path -> [allocs]
-    for path in scan_paths:
-        if not os.path.exists(path): continue
-        if os.path.isdir(path):
-            for root, dirs, files in os.walk(path):
-                if '.venv' in root or 'build' in root or '.git' in root or 'vendor' in root:
-                    continue
-                for file in sorted(files):
-                    if file.endswith(('.c', '.h')):
-                        file_path = os.path.join(root, file)
-                        if file_path in seen_files: continue
-                        rel_path = os.path.relpath(file_path, project_root)
-                        with open(file_path, 'rb') as f:
-                            source_code = f.read()
-                        tree = parser.parse(source_code)
-                        allocs = find_allocations(tree.root_node, source_code, rel_path)
-                        if allocs:
-                            seen_files[rel_path] = allocs
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for file in sorted(files):
+            if file.endswith(('.c', '.h')):
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, project_root)
+                with open(file_path, 'rb') as f:
+                    source_code = f.read()
+                tree = parser.parse(source_code)
+                allocs = find_allocations(tree.root_node, source_code, rel_path)
+                if allocs:
+                    seen_files[rel_path] = allocs
 
-    # Token-minimized output
+    # Token-minimized output with legend
+    print("# Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]")
+    
+    total_allocs = 0
+    total_frees = 0
     for path, allocs in sorted(seen_files.items()):
         formatted = []
         for a in allocs:
-            # a is "func (path:line)"
             parts = a.split()
             func = parts[0]
             line = parts[1].split(':')[-1].rstrip(')')
             op = {'malloc':'m','calloc':'c','realloc':'r','free':'f'}.get(func, func)
-            formatted.append(f"{line}[{op}]")
+            formatted.append(f"{line}{op}")
+            if func == 'free':
+                total_frees += 1
+            else:
+                total_allocs += 1
         print(f"{path}: {' '.join(formatted)}")
+    
+    print(f"# Mem: {total_allocs}a, {total_frees}f ({len(seen_files)} files)")
 
 if __name__ == "__main__":
     main()

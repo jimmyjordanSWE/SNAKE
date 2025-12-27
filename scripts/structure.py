@@ -123,84 +123,123 @@ def extract_symbols(node, source_code):
 def main():
     parser = get_c_parser()
     project_root = os.getcwd()
-    target_dirs = ['src', 'include']
-    output = ["PROJECT_STRUCTURE_AST"]
+    output = ["STRUCTURE"]
+    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
-    for target in target_dirs:
-        dir_path = os.path.join(project_root, target)
-        if not os.path.exists(dir_path): continue
-            
-        tree = {}
-        for root, _, files in os.walk(dir_path):
-            if 'vendor' in root:
-                continue
-            for file in sorted(files):
-                if file.endswith(('.c', '.h')):
-                    file_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(file_path, project_root)
-                    parts = rel_path.split(os.sep)
-                    
-                    curr = tree
-                    for part in parts:
-                        if part not in curr: curr[part] = {}
-                        curr = curr[part]
-                    
-                    with open(file_path, 'rb') as f:
-                        source_code = f.read()
-                    ast_tree = parser.parse(source_code)
-                    curr['__symbols__'] = extract_symbols(ast_tree.root_node, source_code)
+    tree = {}
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for file in sorted(files):
+            if file.endswith(('.c', '.h')):
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, project_root)
+                parts = rel_path.split(os.sep)
+                curr = tree
+                for part in parts:
+                    if part not in curr: curr[part] = {}
+                    curr = curr[part]
+                with open(file_path, 'rb') as f:
+                    source_code = f.read()
+                ast_tree = parser.parse(source_code)
+                curr['__symbols__'] = extract_symbols(ast_tree.root_node, source_code)
 
-        def compress_prefixes(syms):
-            if not syms: return []
-            res = []
-            prev_name = ""
-            for s in syms:
-                curr_name = s['repr']
-                if prev_name:
-                    i = 0
-                    while i < len(curr_name) and i < len(prev_name) and curr_name[i] == prev_name[i]:
-                        i += 1
-                    if i > 0:
-                        display_name = "*" + curr_name[i:]
-                    else:
-                        display_name = curr_name
+    def print_hierarchical(syms, indent):
+        if not syms: return
+        
+        # Build a trie for names
+        trie = {}
+        for s in syms:
+            # Split repr into name and params
+            # repr is "name(params)" or "name{fields}"
+            # For ty/en it might just be "name"
+            if '(' in s['repr']:
+                name, suffix = s['repr'].split('(', 1)
+                suffix = '(' + suffix
+            elif '{' in s['repr']:
+                name, suffix = s['repr'].split('{', 1)
+                suffix = '{' + suffix
+            else:
+                name = s['repr']
+                suffix = ""
+            
+            # Split name by underscores, keep trailing underscores if any
+            # But usually we group by "word_"
+            parts = []
+            current = ""
+            for char in name:
+                current += char
+                if char == '_':
+                    parts.append(current)
+                    current = ""
+            if current:
+                parts.append(current)
+            
+            curr = trie
+            for i, part in enumerate(parts):
+                if part not in curr: curr[part] = {}
+                curr = curr[part]
+                if i == len(parts) - 1:
+                    if '__leaf__' not in curr: curr['__leaf__'] = []
+                    curr['__leaf__'].append(suffix)
+
+        def _print_trie(node, prefix_str, current_indent, needs_type=True):
+            children = [k for k in node if k != '__leaf__']
+            
+            # Collapse single-child nodes
+            if len(children) == 1 and '__leaf__' not in node:
+                child_key = children[0]
+                _print_trie(node[child_key], prefix_str + child_key, current_indent, needs_type)
+                return
+
+            type_tag = f"{sym_type} " if needs_type else ""
+
+            if prefix_str:
+                # If this node is a leaf with no children, combine prefix and signature
+                if '__leaf__' in node and not children and len(node['__leaf__']) == 1:
+                    output.append(" " * current_indent + f"{type_tag}{prefix_str}{node['__leaf__'][0]}")
                 else:
-                    display_name = curr_name
-                res.append(f"{s['type']} {display_name}")
-                prev_name = curr_name
-            return res
+                    # Cluster node
+                    output.append(" " * current_indent + f"{type_tag}{prefix_str}")
+                    # Print leaves directly under cluster
+                    for leaf in node.get('__leaf__', []):
+                        output.append(" " * (current_indent + 1) + leaf)
+                    # Recurse children
+                    for child_key in sorted(children):
+                        _print_trie(node[child_key], child_key, current_indent + 1, needs_type=False)
+            else:
+                # Root of the group analysis
+                for leaf in node.get('__leaf__', []):
+                    output.append(" " * current_indent + f"{sym_type} {leaf}")
+                for child_key in sorted(children):
+                    _print_trie(node[child_key], child_key, current_indent, needs_type=True)
 
-        def print_tree(node, name, indent=0):
-            if name == '__symbols__': return
-            output.append(" " * indent + name)
-            
-            if '__symbols__' in node:
-                syms = node['__symbols__']
-                # Group by type and then compress
-                for group_type in ['fn', 'st', 'ty', 'en']:
-                    type_map = {'fn':'f', 'st':'s', 'ty':'t', 'en':'e'}
-                    seen = set()
-                    group_syms = []
-                    for s in syms:
-                        if s['type'] == group_type and s['repr'] not in seen:
-                            s_copy = s.copy()
-                            s_copy['type'] = type_map[group_type]
-                            group_syms.append(s_copy)
-                            seen.add(s['repr'])
-                            
-                    if group_syms:
-                        # Sort by repr to group common prefixes together
-                        group_syms.sort(key=lambda x: x['repr'])
-                        compressed = compress_prefixes(group_syms)
-                        for c in compressed:
-                            output.append(" " * (indent + 1) + c)
-                            
-            for child_name in sorted(node.keys()):
-                if child_name != '__symbols__':
-                    print_tree(node[child_name], child_name, indent + 1)
+        _print_trie(trie, "", indent, needs_type=True)
 
-        if target in tree:
-            print_tree(tree[target], target, 0)
+    def print_tree(node, name, indent=0):
+        if name == '__symbols__': return
+        output.append(" " * indent + name)
+        if '__symbols__' in node:
+            syms = node['__symbols__']
+            for group_type in ['fn', 'st', 'ty', 'en']:
+                type_map = {'fn':'f', 'st':'s', 'ty':'t', 'en':'e'}
+                group_syms = []
+                seen = set()
+                for s in syms:
+                    if s['type'] == group_type and s['repr'] not in seen:
+                        group_syms.append(s)
+                        seen.add(s['repr'])
+                if group_syms:
+                    nonlocal sym_type
+                    sym_type = type_map[group_type]
+                    print_hierarchical(group_syms, indent + 1)
+        
+        for child_name in sorted(node.keys()):
+            if child_name != '__symbols__':
+                print_tree(node[child_name], child_name, indent + 1)
+
+    sym_type = ""
+    for top_level in sorted(tree.keys()):
+        print_tree(tree[top_level], top_level, 0)
 
     print("\n".join(output))
 

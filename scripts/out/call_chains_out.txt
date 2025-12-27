@@ -1,154 +1,242 @@
-Calls:
- D: main->snake_game_run->render_prompt_for_highscore_name->draw_string->display_put_string->display_put_char
- D: main->snake_game_run->render_prompt_for_highscore_name->draw_string->display_put_string->tty_get_size
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->write
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->snprintf
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->ascii_pixel_equal
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->COLOR_FG
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->utf16_to_utf8
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->memcpy
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->COLOR_BG
- D: main->snake_game_run->render_prompt_for_highscore_name->display_present->tty_flip->utf16_surrogate_pair_to_utf8
- D: main->snake_game_run->render_prompt_for_highscore_name->display_clear->tty_clear_back->PIXEL_MAKE
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_draw_filled_rect->render_3d_sdl_blend_pixel
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_RenderClear
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_RenderPresent
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_PollEvent
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_PumpEvents
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_RenderCopy
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_sdl_present->SDL_UpdateTexture
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_draw_text_centered->render_3d_sdl_get_width
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_draw_text_centered->toupper
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_draw_text_centered->strlen
- D: main->snake_game_run->render_prompt_for_highscore_name->render_3d_draw_congrats_overlay->render_3d_draw_text_centered->render_3d_draw_char
- D: main->snake_game_run->render_prompt_for_highscore_name->draw_centered_string->display_get_size->tty_get_size
- D: main->snake_game_run->render_prompt_for_highscore_name->draw_centered_string->draw_string->display_put_string
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->collision_is_self
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->collision_is_snake
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->collision_is_wall
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->malloc
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->free
- D: main->snake_game_run->game_step->game_tick->collision_detect_and_resolve->collision_next_head
- D: main->snake_game_run->game_step->game_tick->spawn_player->snake_rng_range
- D: main->snake_game_run->game_step->game_tick->spawn_player->collision_is_wall
- D: main->snake_game_run->game_step->game_tick->spawn_player->opposite_dir
- D: main->snake_game_run->game_step->game_tick->spawn_player->point_in_player
- D: main->snake_game_run->game_step->game_tick->spawn_player->collision_next_head
- D: main->snake_game_run->game_step->game_tick->food_respawn->point_in_any_snake
- D: main->snake_game_run->game_step->game_tick->food_respawn->snake_rng_range
- D: main->snake_game_run->game_step->game_tick->food_respawn->point_is_food
- D: main->snake_game_run->game_step->game_tick->food_respawn->random_point
- D: main->snake_game_run->render_draw_death_overlay->draw_string->display_put_string->display_put_char
- D: main->snake_game_run->render_draw_death_overlay->draw_string->display_put_string->tty_get_size
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->write
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->snprintf
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->ascii_pixel_equal
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->COLOR_FG
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->utf16_to_utf8
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->memcpy
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->COLOR_BG
- D: main->snake_game_run->render_draw_death_overlay->display_present->tty_flip->utf16_surrogate_pair_to_utf8
- D: main->snake_game_run->render_draw_death_overlay->fill_rect->display_get_size->tty_get_size
- D: main->snake_game_run->render_draw_death_overlay->fill_rect->display_put_char->map_color
- D: main->snake_game_run->render_draw_death_overlay->fill_rect->display_put_char->PIXEL_MAKE
- D: main->snake_game_run->render_draw_death_overlay->fill_rect->display_put_char->tty_put_pixel
- D: main->snake_game_run->render_draw_death_overlay->draw_box->display_get_size->tty_get_size
- D: main->snake_game_run->render_draw_death_overlay->draw_box->display_put_char->map_color
- D: main->snake_game_run->render_draw_death_overlay->draw_box->display_put_char->PIXEL_MAKE
- D: main->snake_game_run->render_draw_death_overlay->draw_box->display_put_char->tty_put_pixel
- D: main->snake_game_run->render_3d_on_tick->camera_set_from_player->update_vectors->cosf
- D: main->snake_game_run->render_3d_on_tick->camera_set_from_player->update_vectors->sinf
- D: main->snake_game_run->render_3d_on_tick->camera_set_from_player->update_vectors->tanf
- D: main->snake_game_run->render_3d_on_tick->camera_set_from_player->normalize_angle->fmodf
- D: main->snake_game_run->render_3d_draw->camera_get_interpolated_angle->interpolate_angle->angle_difference
- D: main->snake_game_run->render_3d_draw->camera_get_interpolated_angle->interpolate_angle->normalize_angle
- D: main->snake_game_run->render_3d_draw->texture_sample->sample_nearest->floorf
- D: main->snake_game_run->render_3d_draw->texture_sample->sample_bilinear->floorf
- D: main->snake_game_run->render_3d_draw->camera_get_ray_angle->camera_get_interpolated_angle->interpolate_angle
- D: main->snake_game_run->render_3d_draw->texture_get_texel->texture_sample->sample_nearest
- D: main->snake_game_run->render_3d_draw->texture_get_texel->texture_sample->sample_bilinear
- D: main->snake_game_run->render_3d_draw->sprite_project_all->projection_project_wall_perp->cosf
- D: main->snake_game_run->render_3d_draw->sprite_project_all->projection_project_wall_perp->projection_project_wall
- D: main->snake_game_run->render_3d_draw->sprite_project_all->camera_get_interpolated_angle->interpolate_angle
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_sdl_draw_filled_rect->render_3d_sdl_blend_pixel
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_sdl_draw_filled_circle->render_3d_sdl_blend_pixel
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->localtime_r
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->snprintf
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->va_end
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->vsnprintf
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->va_start
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->fopen
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->time
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->fprintf
- D: main->snake_game_run->render_3d_draw->render_3d_draw_minimap->render_3d_log->fclose
- D: main->snake_game_run->render_3d_draw->render_3d_draw_fps_counter->render_3d_draw_char->render_3d_sdl_blend_pixel
- D: main->snake_game_run->render_draw->draw_string->display_put_string->display_put_char
- D: main->snake_game_run->render_draw->draw_string->display_put_string->tty_get_size
- D: main->snake_game_run->render_draw->display_present->tty_flip->write
- D: main->snake_game_run->render_draw->display_present->tty_flip->snprintf
- D: main->snake_game_run->render_draw->display_present->tty_flip->ascii_pixel_equal
- D: main->snake_game_run->render_draw->display_present->tty_flip->COLOR_FG
- D: main->snake_game_run->render_draw->display_present->tty_flip->utf16_to_utf8
- D: main->snake_game_run->render_draw->display_present->tty_flip->memcpy
- D: main->snake_game_run->render_draw->display_present->tty_flip->COLOR_BG
- D: main->snake_game_run->render_draw->display_present->tty_flip->utf16_surrogate_pair_to_utf8
- D: main->snake_game_run->render_draw->display_clear->tty_clear_back->PIXEL_MAKE
- D: main->snake_game_run->render_draw->draw_box->display_get_size->tty_get_size
- D: main->snake_game_run->render_draw->draw_box->display_put_char->map_color
- D: main->snake_game_run->render_draw->draw_box->display_put_char->PIXEL_MAKE
- D: main->snake_game_run->render_draw->draw_box->display_put_char->tty_put_pixel
- D: main->snake_game_run->render_draw->glyph_for_segment->glyph_for_segment_ascii->links_to_neighbor
- D: main->snake_game_run->render_draw->glyph_for_segment->glyph_for_segment_utf8->links_to_neighbor
- D: main->snake_game_run->render_draw->fill_background->display_get_size->tty_get_size
- D: main->snake_game_run->render_draw->fill_background->display_put_char->map_color
- D: main->snake_game_run->render_draw->fill_background->display_put_char->PIXEL_MAKE
- D: main->snake_game_run->render_draw->fill_background->display_put_char->tty_put_pixel
- D: main->snake_game_run->render_draw->invalidate_front_buffer->display_force_redraw->tty_force_redraw
- D: main->snake_game_run->render_draw->draw_top_bar->display_get_size->tty_get_size
- D: main->snake_game_run->render_draw->draw_top_bar->draw_centered_string->display_get_size
- D: main->snake_game_run->render_draw->draw_top_bar->draw_centered_string->draw_string
- D: main->snake_game_run->render_draw->draw_top_bar->draw_centered_string->strlen
- D: main->snake_game_run->render_draw->draw_top_bar->display_put_hline->display_put_char
- D: main->snake_game_run->render_draw->draw_top_bar->display_put_hline->tty_get_size
- D: main->snake_game_run->render_shutdown->display_shutdown->tty_close->dprintf
- D: main->snake_game_run->render_shutdown->display_shutdown->tty_close->close
- D: main->snake_game_run->render_shutdown->display_shutdown->tty_close->free
- D: main->snake_game_run->render_shutdown->display_shutdown->tty_close->tcsetattr
- D: main->snake_game_run->render_3d_draw_death_overlay->render_3d_draw_text_centered->render_3d_draw_char->render_3d_sdl_blend_pixel
- D: main->snake_game_run->render_3d_shutdown->texture_destroy->texture_free_image->free
- D: main->snake_game_run->render_3d_shutdown->sprite_destroy->sprite_shutdown->free
- D: main->snake_game_run->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyWindow
- D: main->snake_game_run->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyTexture
- D: main->snake_game_run->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_Quit
- D: main->snake_game_run->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->free
- D: main->snake_game_run->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyRenderer
- D: main->snake_game_run->game_reset->game_state_reset->spawn_player->snake_rng_range
- D: main->snake_game_run->game_reset->game_state_reset->spawn_player->collision_is_wall
- D: main->snake_game_run->game_reset->game_state_reset->spawn_player->opposite_dir
- D: main->snake_game_run->game_reset->game_state_reset->spawn_player->point_in_player
- D: main->snake_game_run->game_reset->game_state_reset->spawn_player->collision_next_head
- D: main->snake_game_run->game_reset->game_state_reset->food_respawn->point_in_any_snake
- D: main->snake_game_run->game_reset->game_state_reset->food_respawn->snake_rng_range
- D: main->snake_game_run->game_reset->game_state_reset->food_respawn->point_is_food
- D: main->snake_game_run->game_reset->game_state_reset->food_respawn->random_point
- D: main->snake_game_run->game_enqueue_input->game_state_reset->spawn_player->snake_rng_range
- D: main->snake_game_run->game_enqueue_input->game_state_reset->spawn_player->collision_is_wall
- D: main->snake_game_run->game_enqueue_input->game_state_reset->spawn_player->opposite_dir
- D: main->snake_game_run->game_enqueue_input->game_state_reset->spawn_player->point_in_player
- D: main->snake_game_run->game_enqueue_input->game_state_reset->spawn_player->collision_next_head
- D: main->snake_game_run->game_enqueue_input->game_state_reset->food_respawn->point_in_any_snake
- D: main->snake_game_run->game_enqueue_input->game_state_reset->food_respawn->snake_rng_range
- D: main->snake_game_run->game_enqueue_input->game_state_reset->food_respawn->point_is_food
- D: main->snake_game_run->game_enqueue_input->game_state_reset->food_respawn->random_point
- D: main->snake_game_run->persist_append_score->persist_free_scores->highscore_destroy->free
- D: main->snake_game_free->render_3d_shutdown->texture_destroy->texture_free_image->free
- D: main->snake_game_free->render_3d_shutdown->sprite_destroy->sprite_shutdown->free
- D: main->snake_game_free->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyWindow
- D: main->snake_game_free->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyTexture
- D: main->snake_game_free->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_Quit
- D: main->snake_game_free->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->free
- D: main->snake_game_free->render_3d_shutdown->render_3d_sdl_destroy->render_3d_sdl_shutdown->SDL_DestroyRenderer
- D: main->snake_game_free->render_shutdown->display_shutdown->tty_close->dprintf
- D: main->snake_game_free->render_shutdown->display_shutdown->tty_close->close
- D: main->snake_game_free->render_shutdown->display_shutdown->tty_close->free
- D: main->snake_game_free->render_shutdown->display_shutdown->tty_close->tcsetattr
+Flow:
+ display_tty->tty
+ game->collision,direction,persist,rng
+ main->console,persist,snakegame
+ render->display_tty,persist,platform,render_3d
+ render_3d->camera,projection,raycast,render_3d_sdl,sprite,texture
+ snakegame->console,game,input,persist,platform,render,render_3d,tty
+ sprite->camera,projection,render_3d_sdl
+
+Tree(main):
+  main
+    console_info
+    game_config_destroy
+    persist_load_config
+      clamp_int
+    snake_game_free
+      game_config_destroy
+      game_destroy
+        game_free
+      input_shutdown
+        restore_terminal
+      render_3d_shutdown
+        camera_destroy
+        projection_destroy
+        raycaster_destroy
+        render_3d_sdl_destroy
+          render_3d_sdl_shutdown
+        sprite_destroy
+          sprite_shutdown
+        texture_destroy
+          texture_free_image
+      render_shutdown
+        display_shutdown
+          tty_close
+    snake_game_run
+      console_box_paused_terminal_small
+        console_info
+      console_game_ran
+        console_info
+      console_terminal_resized
+        console_info
+      game_config_get_board_size
+      game_config_get_tick_rate_ms
+      game_destroy (see above)
+      game_enqueue_input
+        game_state_reset
+          food_respawn
+            point_in_any_snake
+              point_in_player
+            point_is_food
+            random_point
+              snake_rng_range
+                snake_rng_next_u32
+            snake_rng_range (see above)
+          spawn_player
+            collision_is_wall
+            collision_next_head
+            opposite_dir
+            point_in_player
+            snake_rng_range (see above)
+        snake_dir_turn_left
+        snake_dir_turn_right
+      game_player_current_score
+        game_state_player_current_score
+      game_player_is_active
+        game_state_player_is_active
+      game_reset
+        game_state_reset (see above)
+      game_step
+        game_state_get_num_players
+        game_tick
+          collision_detect_and_resolve
+            collision_is_self
+            collision_is_snake
+            collision_is_wall
+            collision_next_head
+          collision_next_head
+          food_respawn (see above)
+          opposite_dir
+          player_move
+          spawn_player (see above)
+      highscore_get_score
+      input_poll
+        input_poll_from_buf
+          ascii_tolower
+          parse_arrow_key
+      input_shutdown (see above)
+      persist_append_score
+        highscore_get_score
+        highscore_set_name
+        highscore_set_score
+        persist_free_scores
+          highscore_destroy
+        persist_read_scores
+        persist_write_scores
+          highscore_get_score
+      persist_free_scores (see above)
+      persist_read_scores
+      platform_get_terminal_size
+      platform_now_ms
+      platform_sleep_ms
+      platform_was_resized
+      render_3d_draw
+        camera_get_interpolated_angle
+          interpolate_angle
+            angle_difference
+            normalize_angle
+        camera_get_interpolated_position
+        camera_get_interpolation_fraction
+        camera_get_ray_angle
+          camera_get_interpolated_angle (see above)
+        camera_update_interpolation
+        projection_get_wall_scale
+        projection_project_wall_perp
+          projection_project_wall
+        raycast_cast_ray
+        raycast_get_texture_coord
+        render_3d_draw_fps_counter
+          render_3d_draw_char
+            render_3d_sdl_blend_pixel
+        render_3d_draw_minimap
+          render_3d_compute_minimap_cell_px
+          render_3d_log
+          render_3d_sdl_blend_pixel
+          render_3d_sdl_draw_filled_circle
+            render_3d_sdl_blend_pixel
+          render_3d_sdl_draw_filled_rect
+            render_3d_sdl_blend_pixel
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          render_3d_sdl_set_pixel
+        render_3d_sdl_clear
+        render_3d_sdl_draw_column
+        render_3d_sdl_get_height
+        render_3d_sdl_get_width
+        render_3d_sdl_present
+        render_3d_update_fps
+        sprite_add_color
+        sprite_clear
+        sprite_draw
+          render_3d_sdl_draw_column
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          render_3d_sdl_set_pixel
+        sprite_get_count
+        sprite_project_all
+          camera_get_interpolated_angle (see above)
+          camera_get_interpolated_position
+          projection_get_fov_radians
+          projection_get_screen_width
+          projection_project_wall_perp (see above)
+        sprite_sort_by_depth
+        texture_get_texel
+          texture_sample
+            sample_bilinear
+            sample_nearest
+          texture_shade_from_distance
+        texture_has_image
+        texture_sample (see above)
+      render_3d_draw_death_overlay
+        render_3d_draw_text_centered
+          render_3d_draw_char (see above)
+          render_3d_sdl_get_width
+        render_3d_sdl_draw_filled_rect (see above)
+        render_3d_sdl_get_height
+        render_3d_sdl_get_width
+        render_3d_sdl_present
+      render_3d_on_tick
+        camera_set_from_player
+          normalize_angle
+          update_vectors
+      render_3d_shutdown (see above)
+      render_draw
+        display_clear
+          tty_clear_back
+          tty_get_size
+          tty_put_pixel
+        display_get_size
+          tty_get_size
+        display_present
+          tty_flip
+            ascii_pixel_equal
+            utf16_surrogate_pair_to_utf8
+            utf16_to_utf8
+        display_put_char
+          map_color
+          tty_put_pixel
+        draw_box
+          display_get_size (see above)
+          display_put_char (see above)
+        draw_string
+          display_put_string
+            display_put_char (see above)
+            tty_get_size
+        draw_top_bar
+          display_get_size (see above)
+          display_put_hline
+            display_put_char (see above)
+            tty_get_size
+          draw_centered_string
+            display_get_size (see above)
+            draw_string (see above)
+        fill_background
+          display_get_size (see above)
+          display_put_char (see above)
+        glyph_for_segment
+          glyph_for_segment_ascii
+            links_to_neighbor
+          glyph_for_segment_utf8
+            links_to_neighbor
+        gradient_color_for_rank
+        highscore_get_score
+        invalidate_front_buffer
+          display_force_redraw
+            tty_force_redraw
+              tty_flip (see above)
+        is_session_score_from_display
+      render_draw_death_overlay
+        display_get_size (see above)
+        display_present (see above)
+        draw_box (see above)
+        draw_string (see above)
+        fill_rect
+          display_get_size (see above)
+          display_put_char (see above)
+      render_note_session_score
+      render_prompt_for_highscore_name
+        display_clear (see above)
+        display_get_size (see above)
+        display_present (see above)
+        display_put_char (see above)
+        draw_centered_string (see above)
+        draw_string (see above)
+        platform_sleep_ms
+        render_3d_draw_congrats_overlay
+          render_3d_draw_text_centered (see above)
+          render_3d_sdl_draw_filled_rect (see above)
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          render_3d_sdl_present
+      render_shutdown (see above)
+      tty_size_sufficient_for_board

@@ -1,6 +1,5 @@
 
 import os
-import sys
 from collections import defaultdict
 from tree_sitter import Language, Parser
 import tree_sitter_c as tsc
@@ -10,74 +9,71 @@ def get_c_parser():
     parser = Parser(C_LANGUAGE)
     return parser
 
-def find_struct_access(node, source_code, accesses, parent_struct=None):
-    # This is a heuristic. We identify "struct.field" or "struct->field" patterns.
-    # We assign "read" or "write" based on whether it's on the LHS of an assignment.
-    
+def infer_type(var_name):
+    # Simply strip common operators to get the variable base
+    return var_name.split('[')[0].split('-')[0].strip('()*& ')
+
+def find_struct_access(node, source_code, type_accesses):
     if node.type == 'field_expression':
-        # container.field or container->field
-        # check if this field_expression is LHS of assignment
         parent = node.parent
-        mode = "read"
+        mode = "r"
         if parent and parent.type == 'assignment_expression':
             lhs = parent.child_by_field_name('left')
             if lhs == node:
-                mode = "write"
+                mode = "w"
         
-        # Extract field name
-        field = node.child_by_field_name('field')
-        if field:
-             field_name = source_code[field.start_byte:field.end_byte].decode('utf-8')
-             arg = node.child_by_field_name('argument')
-             if arg:
-                 struct_var = source_code[arg.start_byte:arg.end_byte].decode('utf-8')
-                 accesses[struct_var].append(f"{field_name} ({mode})")
+        arg = node.child_by_field_name('argument')
+        if arg:
+            struct_var = source_code[arg.start_byte:arg.end_byte].decode('utf-8')
+            struct_type = infer_type(struct_var)
+            type_accesses[struct_type][mode] += 1
 
     for child in node.children:
-        find_struct_access(child, source_code, accesses)
+        find_struct_access(child, source_code, type_accesses)
 
 def main():
     parser = get_c_parser()
     project_root = os.getcwd()
+    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
-    # Scan root and src
-    scan_paths = [project_root, os.path.join(project_root, 'src')]
+    global_types = defaultdict(lambda: {'r': 0, 'w': 0})
+    module_types = defaultdict(lambda: defaultdict(lambda: {'r': 0, 'w': 0}))
     
-    seen_files = set()
-    print("Data Flow (Struct Access):")
-    for path in scan_paths:
-        if not os.path.exists(path): continue
-        
-        if os.path.isdir(path):
-            for root, dirs, files in os.walk(path):
-                if '.venv' in root or 'build' in root or '.git' in root or 'vendor' in root:
-                    continue
-                for file in sorted(files):
-                    if file.endswith('.c'):
-                        file_path = os.path.join(root, file)
-                        if file_path in seen_files: continue
-                        seen_files.add(file_path)
-                        
-                        rel_path = os.path.relpath(file_path, project_root)
-                        with open(file_path, 'rb') as f:
-                            source_code = f.read()
-                        tree = parser.parse(source_code)
-                        accesses = defaultdict(lambda: {'read': 0, 'write': 0})
-                        
-                        # We need to adapt find_struct_access to use this dict structure or just use list
-                        # The original used defaultdict(list). Let's stick to that and summarize in main.
-                        raw_accesses = defaultdict(list)
-                        find_struct_access(tree.root_node, source_code, raw_accesses)
-                        
-                        if raw_accesses:
-                            print(f" {rel_path}:")
-                            for struct, ops in raw_accesses.items():
-                                reads = [o for o in ops if 'read' in o]
-                                writes = [o for o in ops if 'write' in o]
-                                if reads or writes:
-                                    print(f"  {struct}: r({len(reads)}) w({len(writes)})")
-        else:
-            pass
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for file in sorted(files):
+            if file.endswith('.c'):
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, project_root)
+                parts = rel_path.split(os.sep)
+                module = parts[0] if len(parts) > 1 else 'root'
+                
+                with open(file_path, 'rb') as f:
+                    source_code = f.read()
+                tree = parser.parse(source_code)
+                
+                file_types = defaultdict(lambda: {'r': 0, 'w': 0})
+                find_struct_access(tree.root_node, source_code, file_types)
+                
+                for t, counts in file_types.items():
+                    global_types[t]['r'] += counts['r']
+                    global_types[t]['w'] += counts['w']
+                    module_types[module][t]['r'] += counts['r']
+                    module_types[module][t]['w'] += counts['w']
+    
+    print("Data Ownership (struct r/w totals):")
+    sorted_types = sorted(global_types.items(), key=lambda x: x[1]['r']+x[1]['w'], reverse=True)
+    for t, counts in sorted_types[:15]:
+        if counts['r'] + counts['w'] >= 5:
+            print(f"  {t}: r({counts['r']}) w({counts['w']})")
+    
+    print("\nModule Data Usage:")
+    for mod in sorted(module_types.keys()):
+        types = module_types[mod]
+        top = sorted(types.items(), key=lambda x: x[1]['r']+x[1]['w'], reverse=True)[:5]
+        type_strs = [f"{t}:r{c['r']}w{c['w']}" for t,c in top if c['r']+c['w'] >= 3]
+        if type_strs:
+            print(f"  {mod}: {', '.join(type_strs)}")
 
 if __name__ == "__main__":
     main()

@@ -62,36 +62,22 @@ def find_hotspots(node, source_code, filename, curr_func):
 def main():
     parser = get_c_parser()
     project_root = os.getcwd()
+    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
 
     print("Hotspots Analysis:")
     
-    # Scan root and src
-    scan_paths = [project_root, os.path.join(project_root, 'src')]
-    
-    seen_files = set()
-    for path in scan_paths:
-        if not os.path.exists(path): continue
-        
-        if os.path.isdir(path):
-            for root, dirs, files in os.walk(path):
-                # Skip .venv, build, .git directories
-                if '.venv' in root or 'build' in root or '.git' in root or 'vendor' in root:
-                    continue
-                for file in sorted(files):
-                    if file.endswith('.c'):
-                        file_path = os.path.join(root, file)
-                        if file_path in seen_files: continue
-                        seen_files.add(file_path)
-                        
-                        rel_path = os.path.relpath(file_path, project_root)
-                        with open(file_path, 'rb') as f:
-                            source_code = f.read()
-                        tree = parser.parse(source_code)
-                        results = find_hotspots(tree.root_node, source_code, rel_path, None)
-                        if results:
-                            print(f"{rel_path}: {' '.join(results)}")
-        else:
-            pass
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for file in sorted(files):
+            if file.endswith('.c'):
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, project_root)
+                with open(file_path, 'rb') as f:
+                    source_code = f.read()
+                tree = parser.parse(source_code)
+                results = find_hotspots(tree.root_node, source_code, rel_path, None)
+                if results:
+                    print(f"{rel_path}: {' '.join(results)}")
 
 if __name__ == "__main__":
     main()

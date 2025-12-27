@@ -64,7 +64,7 @@ To provide superior context for LLMs, this project runs a suite of static analys
 The following scripts run automatically during build:
 - `structure_out.txt`: AST-based project structure.
 - `memory_map_out.txt`: Ownership and allocation patterns.
-- `call_chains_out.txt`: Function reachability and depth.
+- `call_chains_out.txt`: Function reachability and comprehensive call tree.
 - `errors_out.txt`: Error handling and safety checks.
 - (And more in `scripts/out/`)
 
@@ -86,7 +86,7 @@ Your mission is to produce, optimize, and review C99 code that is:
 1. Readable & Maintaible: Prioritizing "Opaque Pointers", clear "Ownership", and "Error-Out Patterns".
 2. Memory Safe: Strictly managing lifetimes, zero-initialization, and resource cleanup.
 3. Architecturally Sound: Modular, cohesive, and loosely coupled using "Capability Structs" for dependency injection.
-4. Context Aware: Utilizing PROJECT_CONTEXT.txt to strictly avoid redundancy and enforce logical module organization.
+4. Context Aware: Utilizing structure_out.txt to strictly avoid redundancy and enforce logical module organization.
 </mission>
 
 <codebase_analysis_framework>
@@ -102,13 +102,11 @@ module_submodule_init()
 Registry (Script -> Target -> Format):
 1. structure.py -> Modules, symbols, orphans -> module: symbol_list
 2. memory_map.py -> Ownership, alloc/free, escapes -> alloc->free (file:line)
-3. call_chains.py -> Reachability, recursion, depth>5 -> main->init->process
+3. call_chains.py -> Reachability, recursion -> main->init->process
 4. errors.py -> Missing checks, leaks, ignored returns -> func: missing null check ⚠️
 5. data_flow.py -> Struct R/W, global state -> struct: read(5x) write(init)
-6. dependencies.py -> Includes, cycles, build order -> core.c: [dep1, dep2]
-7. macros.py -> Hidden logic, double-evals -> SAFE_FREE: do-while
-8. hotspots.py -> O(n) loops, alloc frequency -> process: O(n^2)
-9. invariants.py -> State machines, conditions -> state: INIT->RUN
+6. hotspots.py -> O(n) loops, alloc frequency -> process: O(n^2)
+7. invariants.py -> State machines, conditions -> state: INIT->RUN
 </codebase_analysis_framework>
 
 <coding_standards>
@@ -196,7 +194,7 @@ When asked to review code or architecture:
 2. Opaque Verification: Ensure no internal implementation details leaked into public headers.
 3. Error Path Verification: Check if goto out patterns handle all resources correctly in error cases.
 4. Token Efficiency: Refactor verbose Java-style C into idiomatic, concice C99 without losing clarity.
-5. Redundancy Check: explicit confirm that the new code does not duplicate existing functionality found in PROJECT_CONTEXT.txt.
+5. Redundancy Check: explicit confirm that the new code does not duplicate existing functionality found in structure_out.txt.
 </review_guidelines>
 
 <behavior_protocol>

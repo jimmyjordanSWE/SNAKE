@@ -1,6 +1,5 @@
 
 import os
-import sys
 from collections import defaultdict
 from tree_sitter import Language, Parser
 import tree_sitter_c as tsc
@@ -39,9 +38,6 @@ def analyze_function(node, source_code, current_function_name, call_graph):
                  call_graph[current_function_name] = set()
              call_graph[current_function_name].update(calls)
 
-    # Note: recursing into children is mostly handled by find_calls for the body 
-    # but we need to find nested function definitions (unlikely in C) or just top level
-    
     if node.type == 'translation_unit':
         for child in node.children:
              analyze_function(child, source_code, None, call_graph)
@@ -50,54 +46,82 @@ def analyze_function(node, source_code, current_function_name, call_graph):
 def main():
     parser = get_c_parser()
     project_root = os.getcwd()
-    call_graph = defaultdict(set) # caller -> {callees}
+    call_graph = defaultdict(set)
+    func_to_module = {}
+    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
-    # Scan root and src
-    scan_paths = [project_root, os.path.join(project_root, 'src')]
-    
-    seen_files = set()
-    for path in scan_paths:
-        if not os.path.exists(path): continue
-        
-        if os.path.isdir(path):
-            for root, dirs, files in os.walk(path):
-                if '.venv' in root or 'build' in root or '.git' in root or 'vendor' in root:
-                    continue
-                for file in sorted(files):
-                    if file.endswith('.c'):
-                        file_path = os.path.join(root, file)
-                        if file_path in seen_files: continue
-                        seen_files.add(file_path)
-                        
-                        rel_path = os.path.relpath(file_path, project_root)
-                        with open(file_path, 'rb') as f:
-                            source_code = f.read()
-                        tree = parser.parse(source_code)
-                        analyze_function(tree.root_node, source_code, None, call_graph)
-        else:
-            pass
-    
-    # DFS for chains > 5
-    def dfs(node, path, visited):
-        if len(path) > 5:
-            print(f" D: {'->'.join(path)}")
-            return
-        
-        if node in visited:
-            if node in path:
-                 print(f" R: {'->'.join(path)}->{node}")
-            return
-            
-        visited.add(node)
-        if node in call_graph:
-            for callee in call_graph[node]:
-                dfs(callee, path + [callee], visited.copy())
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for file in sorted(files):
+            if file.endswith('.c'):
+                file_path = os.path.join(root, file)
+                module = os.path.splitext(file)[0]
+                with open(file_path, 'rb') as f:
+                    source_code = f.read()
+                tree = parser.parse(source_code)
+                
+                # First pass: find all function definitions in this file
+                def find_defs(node):
+                    if node.type == 'function_definition':
+                        decl = node.child_by_field_name('declarator')
+                        while decl and decl.type in ('pointer_declarator', 'parenthesized_declarator'):
+                             if decl.child_count > 0: decl = decl.children[0]
+                        if decl and decl.type == 'function_declarator':
+                             fname_node = decl.child_by_field_name('declarator')
+                             if fname_node:
+                                 func_name = source_code[fname_node.start_byte:fname_node.end_byte].decode('utf-8')
+                                 func_to_module[func_name] = module
+                    for child in node.children: find_defs(child)
+                find_defs(tree.root_node)
+                
+                # Second pass: analyze calls
+                analyze_function(tree.root_node, source_code, None, call_graph)
 
-    print("Calls:")
+    def get_module(fn):
+        return func_to_module.get(fn, 'stdlib')
+    
+    module_graph = defaultdict(set)
+    for caller, callees in call_graph.items():
+        caller_mod = get_module(caller)
+        for callee in callees:
+            callee_mod = get_module(callee)
+            if callee_mod != caller_mod and callee_mod != 'stdlib':
+                module_graph[caller_mod].add(callee_mod)
+    
+    print("Flow:")
+    for mod in sorted(module_graph.keys()):
+        targets = sorted(module_graph[mod])
+        print(f" {mod}->{','.join(targets)}")
+    
+    print("\nTree(main):")
+    global_expanded = set()
+    def print_tree(fn, indent, path):
+        if fn in path:
+            print(f"{'  '*indent}{fn} (recursive)")
+            return
+        if fn in global_expanded:
+            print(f"{'  '*indent}{fn} (see above)")
+            return
+
+        callees = []
+        if fn in call_graph:
+            callees = sorted(call_graph[fn])
+            callees = [c for c in callees if c in call_graph or get_module(c) != 'stdlib']
+        
+        if not callees:
+            print(f"{'  '*indent}{fn}")
+            return
+
+        print(f"{'  '*indent}{fn}")
+        global_expanded.add(fn)
+        new_path = path | {fn}
+        for c in callees:
+            print_tree(c, indent + 1, new_path)
+    
     if 'main' in call_graph:
-        dfs('main', ['main'], set())
+        print_tree('main', 1, set())
     else:
-        print(" !main")
-
+        print("  !main")
+    
 if __name__ == "__main__":
     main()

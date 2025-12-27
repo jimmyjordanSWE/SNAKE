@@ -1,585 +1,259 @@
-PROJECT_STRUCTURE_AST
-src
- console
-  console.c
-   f console_box_paused_terminal_small(term_w,term_h,req_w,req_h)
-   f *too_small_for_game(term_w,term_h,min_w,min_h)
-   f *error(*fmt)
-   f *game_ran(ticks)
-   f *info(*fmt)
-   f *terminal_resized(w,h)
-   f *warn(*fmt)
- core
-  collision.c
-   f collision_detect_and_resolve(*game)
-   f *is_self(p,*player)
-   f *nake(p,*player)
-   f *wall(p,board_w,board_h)
-   f *next_head(current,dir)
-  game.c
-   f food_respawn(*game)
-   f game_destroy(*g)
-   f *enqueue_input(*g,player_index,*in)
-   f *free(*game)
-   f *get_num_players(*g)
-   f *init(*game,width,height,*cfg)
-   f *player_current_score(*g,player_index)
-   f *died_this_tick(*g,player_index)
-   f *is_active(*g,player_index)
-   f *score_at_death(*g,player_index)
-   f *reset(*g)
-   f *state_get_num_players(*game)
-   f *player_current_score(*game,player_index)
-   f *died_this_tick(*game,player_index)
-   f *is_active(*game,player_index)
-   f *score_at_death(*game,player_index)
-   f *reset(*game)
-   f *ep(*g,*out_events)
-   f *tick(*game)
-   f opposite_dir(dir)
-   f player_move(*player,next_head,grow)
-   f *oint_in_any_snake(*game,p)
-   f *player(*player,p)
-   f *s_food(*game,p)
-   f random_point(*game)
-   f spawn_player(*game,player_index)
-   s Game{state}
-  game_internal.h
-   f game_free(*game)
-   f *init(*game,width,height,*cfg)
-   f *tick(*game)
-   s GameState{width,rng_state,status,num_players,max_players,*food,food_count,max_food,last_food_respawned,*players,max_length}
-   s PlayerState{current_dir,score,died_this_tick,score_at_death,*body,length,max_length,active,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
- input
-  input.c
-   f ascii_tolower(c)
-   f input_init(_)
-   f *poll(*out)
-   f *_from_buf(*out,*buf,n)
-   f *set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
-   f *hutdown(_)
-   f parse_arrow_key(code)
-   f restore_terminal(_)
-   s termios
- net
-  net.c
-   f net_disconnect(*client)
-   f *free_unpacked_game_state(*out)
-   f *pack_game_state(*game,*buf,buf_size)
-   f *input(*input,*buf,buf_size)
-   f *recv_state(*client,*out_game)
-   f *send_input(*client,*input)
-   f *unpack_game_state(*buf,buf_size,*out)
-   f *input(*buf,buf_size,*out)
-   s NetClient{unused}
- persist
-  persist.c
-   f clamp_int(v,lo,hi)
-   f *ompare_scores(*a,*b)
-   f game_config_destroy(*cfg)
-   f *get_active_player(*cfg)
-   f *board_size(*cfg,*w_out,*h_out)
-   f *enable_external_3d_view(*cfg)
-   f *floor_texture_scale(*cfg)
-   f *ov_degrees(*cfg)
-   f *key_down(*cfg)
-   f *left(*cfg)
-   f *pause(*cfg)
-   f *quit(*cfg)
-   f *restart(*cfg)
-   f *ight(*cfg)
-   f *up(*cfg)
-   f *max_food(*cfg)
-   f *length(*cfg)
-   f *players(*cfg)
-   f *num_players(*cfg)
-   f *render_glyphs(*cfg)
-   f *screen_size(*cfg,*w_out,*h_out)
-   f *eed(*cfg)
-   f *how_sprite_debug(*cfg)
-   f *tail_height_scale(*cfg)
-   f *ick_rate_ms(*cfg)
-   f *wall_height_scale(*cfg)
-   f *texture_scale(*cfg)
-   f *set_active_player(*cfg,v)
-   f *board_size(*cfg,w,h)
-   f *enable_external_3d_view(*cfg,v)
-   f *floor_texture(*cfg,*path)
-   f *_scale(*cfg,v)
-   f *ov_degrees(*cfg,fov)
-   f *key_down(*cfg,c)
-   f *left(*cfg,c)
-   f *pause(*cfg,c)
-   f *quit(*cfg,c)
-   f *restart(*cfg,c)
-   f *ight(*cfg,c)
-   f *up(*cfg,c)
-   f *max_food(*cfg,v)
-   f *length(*cfg,v)
-   f *players(*cfg,n)
-   f *num_players(*cfg,n)
-   f *player_name(*cfg,*name)
-   f *render_glyphs(*cfg,v)
-   f *screen_size(*cfg,w,h)
-   f *eed(*cfg,seed)
-   f *how_sprite_debug(*cfg,v)
-   f *tail_height_scale(*cfg,v)
-   f *ick_rate_ms(*cfg,ms)
-   f *wall_height_scale(*cfg,v)
-   f *texture(*cfg,*path)
-   f *_scale(*cfg,v)
-   f highscore_destroy(*hs)
-   f *get_score(*hs)
-   f *set_name(*hs,*name)
-   f *score(*hs,score)
-   f is_known_config_key(*key)
-   f persist_append_score(*filename,*name,score)
-   f *config_has_unknown_keys(*filename)
-   f *free_scores(*scores,count)
-   f *load_config(*filename,*out_config)
-   f *read_scores(*filename,*out_scores)
-   f *write_config(*filename,*config)
-   f *scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_up,key_down,key_left,key_right,key_quit,key_restart,key_pause}
-   s HighScore{PERSIST_NAME_MAX,score}
- platform
-  platform.c
-   f platform_get_terminal_size(*width_out,*height_out)
-   f *now_ms(_)
-   f *sigwinch_handler(sig)
-   f *leep_ms(ms)
-   f *was_resized(_)
-   f *inch_init(_)
-  tty.c
-   f ascii_pixel_equal(a,b)
-   f get_terminal_size(fd,*width,*height)
-   f sigwinch_handler(sig)
-   f tty_check_resize(*ctx)
-   f *lear_back(*ctx)
-   f *front(*ctx)
-   f *ose(*ctx)
-   f *flip(*ctx)
-   f *orce_redraw(*ctx)
-   f *get_board_min_size(board_width,board_height,*min_width,*min_height)
-   f *min_size(*ctx,*min_width,*min_height)
-   f *pixel(*ctx,x,y)
-   f *size(*ctx,*width,*height)
-   f *put_pixel(*ctx,x,y,px)
-   f *set_resize_callback(*ctx,*callback,*userdata)
-   f *size_invalid_callback(*ctx,*callback,*userdata)
-   f *ize_sufficient_for_board(term_width,term_height,board_width,board_height)
-   f *valid(*ctx)
-   f utf16_surrogate_pair_to_utf8(high,low,*out)
-   f *to_utf8(utf16,*utf8_out)
-   s ascii_pixel
-   s tty_context{tty_fd,orig_termios,tty_path,width,height,min_width,min_height,*front,*back,dirty,size_valid,*write_buffer,write_buffer_size,resized,*on_resize,*on_size_invalid,*callback_userdata}
- render
-  camera.c
-   f angle_difference(from,to)
-   f camera_camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
-   f *destroy(*camera)
-   f *istance_to_point(*camera,x,y)
-   f *get_dir(*cam,*dx_out,*dy_out)
-   f *fov_radians(*cam)
-   f *interp_time(*cam)
-   f *olated_angle(*camera)
-   f *position(*camera,*x_out,*y_out)
-   f *ion_fraction(*cam)
-   f *position(*cam,*x_out,*y_out)
-   f *ray_angle(*camera,col,*ray_angle_out)
-   f *update_interval(*cam)
-   f *init(*camera,fov_degrees,screen_width,update_interval)
-   f *point_in_front(*camera,x,y)
-   f *set_angle(*cam,angle)
-   f *from_player(*camera,x,y,dir)
-   f *interpolation_time(*camera,time)
-   f *position(*cam,x,y)
-   f *rev_angle(*cam,prev_angle)
-   f *position(*cam,prev_x,prev_y)
-   f *update_interval(*cam,update_interval)
-   f *update_interpolation(*camera,delta_time)
-   f *vectors(*camera)
-   f *world_to_camera(*camera,world_x,world_y,*cam_x_out,*cam_y_out)
-   f interpolate_angle(from,to,t)
-   f normalize_angle(angle)
-   f update_vectors(*camera)
-   s Camera3D{x,angle,prev_x,fov_radians,screen_width,dir_x,plane_x,interp_time,update_interval}
-  display_3d.c
-   f display_3d_clear(*disp,ch,color)
-   f *destroy(*disp)
-   f *raw_cell(*disp,x,y,ch,color)
-   f *olumn(*disp,col,start_row,end_row,ch,color)
-   f *row(*disp,row,start_col,end_col,ch,color)
-   f *get_height(*disp)
-   f *width(*disp)
-   f *init(*disp,width,height)
-   f *present(*disp)
-   f *shutdown(*disp)
-   s Display3D{width,height,*buffer}
-  display_tty.c
-   f display_clear(*ctx)
-   f *force_redraw(*ctx)
-   f *get_size(*ctx,*width,*height)
-   f *present(*ctx)
-   f *ut_char(*ctx,x,y,ch,fg,bg)
-   f *hline(*ctx,x,y,len,ch,fg,bg)
-   f *string(*ctx,x,y,*str,fg,bg)
-   f *vline(*ctx,x,y,len,ch,fg,bg)
-   f *shutdown(*ctx)
-   f *ize_valid(*ctx)
-   f map_color(display_color)
-   s DisplayContext{*tty}
-  internal
-   render_3d_sprite_internal.h
-    s Sprite3D{world_x,world_height,pivot,face_camera,texture_id,frame,color,perp_distance,screen_x,screen_w,screen_h,screen_y_top,visible,is_rect}
-  projection.c
-   f projection_destroy(*proj)
-   f *get_fov_radians(*proj)
-   f *screen_height(*proj)
-   f *width(*proj)
-   f *wall_scale(*proj)
-   f *init(*proj,screen_width,screen_height,fov_radians,wall_scale)
-   f *project_wall(*proj,distance,*result_out)
-   f *_perp(*proj,distance,ray_angle,cam_angle,*out)
-   f *set_horizon(*proj,horizon_y)
-   f *world_distance_per_pixel(*proj,distance)
-   f *_perp(*proj,distance,ray_angle,cam_angle)
-   s Projection3D{screen_width,screen_height,fov_radians,horizon_y,wall_scale}
-  raycast.c
-   f raycast_cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
-   f *get_texture_coord(*hit,is_vertical)
-   f *init(*rc,width,height,*board)
-   f *s_wall(*rc,x,y)
-   f *er_destroy(*rc)
-   s Raycaster3D{board_width,board_height,*board}
-  render.c
-   f compare_display_scores_desc(*a,*b)
-   f draw_box(x,y,width,height,fg_color)
-   f *centered_string(y,*str,fg_color)
-   f *string(x,y,*str,fg_color)
-   f *top_bar(_)
-   f fill_background(_)
-   f *rect(x,y,width,height,fg_color,bg_color,ch)
-   f glyph_for_segment(*body,length,idx)
-   f *_ascii(*body,length,idx)
-   f *utf8(*body,length,idx)
-   f *radient_color_for_rank(rank,total)
-   f invalidate_front_buffer(*ctx)
-   f *s_session_score(*s)
-   f *_from_display(*s)
-   f links_to_neighbor(from,neighbor)
-   f render_draw(*game,*player_name,*scores,score_count)
-   f *_death_overlay(*game,anim_frame,show_prompt)
-   f *startup_screen(*player_name_out,max_len)
-   f *init(min_width,min_height)
-   f *note_session_score(*name,score)
-   f *prompt_for_highscore_name(*player_name_out,max_len,score)
-   f *set_glyphs(glyphs)
-   f *hutdown(_)
-   s <anon>{PERSIST_NAME_MAX,score}
-   s *up,down,left,right}
-   t DisplayScore
-   t SegmentLinks
-  render_3d.c
-   f render_3d_compute_minimap_cell_px(d_w,d_h,m_w,m_h)
-   f *draw(*game_state,*player_name,*scores,score_count,delta_seconds)
-   f *_char(*disp,x,y,c,col,scale)
-   f *ongrats_overlay(score,*name_entered)
-   f *death_overlay(*game,anim_frame,show_prompt)
-   f *fps_counter(_)
-   f *minimap(*r,interp_t)
-   f *_into(*ctx,*gs)
-   f *text_centered(*disp,y,*text,col,scale)
-   f *init(*game_state,*config)
-   f *log(*fmt)
-   f *on_tick(*game_state)
-   f *set_active_player(player_index)
-   f *fov(fov_degrees)
-   f *tick_rate_ms(ms)
-   f *hutdown(_)
-   f *update_fps(delta_seconds)
-   s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps}
-   s SDL3DContext
-   t Render3DContext
-   t *Mode
-  render_3d_sdl.c
-   f call_lsan_disable(_)
-   f *enable(_)
-   f render_3d_sdl_blend_pixel(*ctx,x,y,src_col)
-   f *clear(*ctx,col)
-   f *destroy(*ctx)
-   f *raw_column(*ctx,x,y_start,y_end,col)
-   f *filled_circle(*ctx,center_x,center_y,radius,col)
-   f *rect(*ctx,x,y,w_rect,h_rect,col)
-   f *get_height(*ctx)
-   f *width(*ctx)
-   f *init(width,height,*ctx_out)
-   f *present(*ctx)
-   f *set_pixel(*ctx,x,y,col)
-   f *hutdown(*ctx)
-   s <anon>{*window,*renderer,*texture,width,height}
-   s SDL3DContext{width,height,*pixels,*window,*renderer,*texture,initialized}
-   t SDLState
-  sprite.c
-   f sprite_add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
-   f *_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-   f *rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-   f *clear(*sr)
-   f *destroy(*sr)
-   f *raw(*sr,*ctx,*column_depths)
-   f *get_count(*sr)
-   f *screen_info(*sr,idx,*screen_x_out,*screen_h_out,*visible_out)
-   f *texture_id(*sr,idx,*texture_id_out)
-   f *init(*sr,max_sprites,*camera,*proj)
-   f *project_all(*sr)
-   f *shutdown(*sr)
-   f *ort_by_depth(*sr)
-   s SpriteRenderer3D{*sprites,max_sprites,count,*camera,*proj}
-  texture.c
-   f sample_bilinear(*tex,u,v)
-   f *nearest(*tex,u,v)
-   f texture_destroy(*tex)
-   f *free_image(*tex)
-   f *get_img_h(*tex)
-   f *w(*tex)
-   f *texel(*tex,distance,is_vertical,tex_coord,*texel_out)
-   f *has_image(*tex)
-   f *init(*tex)
-   f *load_from_file(*tex,*filename)
-   f *sample(*tex,u,v,bilinear)
-   f *et_shade_chars(*tex,*chars)
-   f *olors(*tex,*colors)
-   f *hade_from_distance(distance)
-   s Texture3D{TEXTURE_MAX_SHADES,TEXTURE_MAX_SHADES,*pixels,img_w,img_h}
-  wall_perspective.c
-   f render_3d_compute_wall_u(interp_cam_x,interp_cam_y,ray_angle,yy,horizon,screen_height,pd,is_vertical,wall_world_height,*out_rowDist)
- snakegame.c
-  f snake_game_free(*s)
-  f *run(*s)
-  s SnakeGame{*cfg,*game,has_3d}
- utils
-  bounds.c
-   f snake_in_bounds(x,y,width,height)
-  direction.c
-   f snake_dir_turn_left(d)
-   f *right(d)
-  rng.c
-   f snake_rng_next_u32(*state)
-   f *range(*state,lo,hi_inclusive)
-   f *seed(*state,seed)
-  utils.c
+STRUCTURE
 include
  snake
   collision.h
-   f collision_detect_and_resolve(*game)
-   f *is_self(p,*player)
-   f *nake(p,*player)
-   f *wall(p,board_w,board_h)
-   f *next_head(current,dir)
+   f collision_
+    detect_and_resolve(*game)
+    is_
+     self(p,*player)
+     snake(p,*player)
+     wall(p,board_w,board_h)
+    next_head(current,dir)
    s GameState
    s PlayerState
   console.h
-   f console_box_paused_terminal_small(term_w,term_h,req_w,req_h)
-   f *too_small_for_game(term_w,term_h,min_w,min_h)
-   f *error(*fmt)
-   f *game_ran(ticks)
-   f *info(*fmt)
-   f *terminal_resized(w,h)
-   f *warn(*fmt)
+   f console_
+    box_
+     paused_terminal_small(term_w,term_h,req_w,req_h)
+     too_small_for_game(term_w,term_h,min_w,min_h)
+    error(*fmt)
+    game_ran(ticks)
+    info(*fmt)
+    terminal_resized(w,h)
+    warn(*fmt)
   direction.h
-   f snake_dir_turn_left(d)
-   f *right(d)
+   f snake_dir_turn_
+    left(d)
+    right(d)
   display.h
-   f display_clear(*ctx)
-   f *draw_line_h(*ctx,x,y,len,ch,fg,bg)
-   f *v(*ctx,x,y,len,ch,fg,bg)
-   f *fill_rect(*ctx,x,y,w,h,ch,fg,bg)
-   f *lush(*ctx)
-   f *orce_redraw(*ctx)
-   f *get_size(*ctx,*width,*height)
-   f *present(*ctx)
-   f *ut_char(*ctx,x,y,ch,fg,bg)
-   f *hline(*ctx,x,y,len,ch,fg,bg)
-   f *string(*ctx,x,y,*str,fg,bg)
-   f *vline(*ctx,x,y,len,ch,fg,bg)
-   f *shutdown(*ctx)
-   f *ize_valid(*ctx)
+   f display_
+    clear(*ctx)
+    draw_line_
+     h(*ctx,x,y,len,ch,fg,bg)
+     v(*ctx,x,y,len,ch,fg,bg)
+    fill_rect(*ctx,x,y,w,h,ch,fg,bg)
+    flush(*ctx)
+    force_redraw(*ctx)
+    get_size(*ctx,*width,*height)
+    present(*ctx)
+    put_
+     char(*ctx,x,y,ch,fg,bg)
+     hline(*ctx,x,y,len,ch,fg,bg)
+     string(*ctx,x,y,*str,fg,bg)
+     vline(*ctx,x,y,len,ch,fg,bg)
+    shutdown(*ctx)
+    size_valid(*ctx)
    s DisplayContext
    t DisplayContext
   game.h
-   f game_destroy(*g)
-   f *enqueue_input(*g,player_index,*in)
-   f *get_num_players(*g)
-   f *player_current_score(*g,player_index)
-   f *died_this_tick(*g,player_index)
-   f *is_active(*g,player_index)
-   f *score_at_death(*g,player_index)
-   f *reset(*g)
-   f *step(*g,*out_events)
+   f game_
+    destroy(*g)
+    enqueue_input(*g,player_index,*in)
+    get_num_players(*g)
+    player_
+     current_score(*g,player_index)
+     died_this_tick(*g,player_index)
+     is_active(*g,player_index)
+     score_at_death(*g,player_index)
+    reset(*g)
+    step(*g,*out_events)
    s <anon>{GAME_EVENTS_MAX_PLAYERS,GAME_EVENTS_MAX_PLAYERS,died_count,game_over,food_respawned}
    s Game
-   s *State
+   s GameState
    s PlayerState
    t Game
-   t *Events
-   t *State
+   t GameEvents
+   t GameState
    t PlayerState
   input.h
-   f input_init(_)
-   f *poll(*out)
-   f *_from_buf(*out,*buf,n)
-   f *set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
-   f *hutdown(_)
+   f input_
+    init(_)
+    poll(*out)
+    poll_from_buf(*out,*buf,n)
+    set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+    shutdown(_)
    s <anon>{quit,any_key,move_up,turn_left}
    t InputState
   net.h
-   f net_disconnect(*client)
-   f *free_unpacked_game_state(*out)
-   f *pack_game_state(*game,*buf,buf_size)
-   f *input(*input,*buf,buf_size)
-   f *recv_state(*client,*out_game)
-   f *send_input(*client,*input)
-   f *unpack_game_state(*buf,buf_size,*out)
-   f *input(*buf,buf_size,*out)
+   f net_
+    disconnect(*client)
+    free_unpacked_game_state(*out)
+    pack_
+     game_state(*game,*buf,buf_size)
+     input(*input,*buf,buf_size)
+    recv_state(*client,*out_game)
+    send_input(*client,*input)
+    unpack_
+     game_state(*buf,buf_size,*out)
+     input(*buf,buf_size,*out)
    s NetClient
    t NetClient
   persist.h
-   f game_config_destroy(*cfg)
-   f *get_active_player(*cfg)
-   f *board_size(*cfg,*w_out,*h_out)
-   f *enable_external_3d_view(*cfg)
-   f *floor_texture_scale(*cfg)
-   f *ov_degrees(*cfg)
-   f *key_down(*cfg)
-   f *left(*cfg)
-   f *pause(*cfg)
-   f *quit(*cfg)
-   f *restart(*cfg)
-   f *ight(*cfg)
-   f *up(*cfg)
-   f *max_food(*cfg)
-   f *length(*cfg)
-   f *players(*cfg)
-   f *num_players(*cfg)
-   f *render_glyphs(*cfg)
-   f *screen_size(*cfg,*w_out,*h_out)
-   f *eed(*cfg)
-   f *how_sprite_debug(*cfg)
-   f *tail_height_scale(*cfg)
-   f *ick_rate_ms(*cfg)
-   f *wall_height_scale(*cfg)
-   f *texture_scale(*cfg)
-   f *set_active_player(*cfg,v)
-   f *board_size(*cfg,w,h)
-   f *enable_external_3d_view(*cfg,v)
-   f *floor_texture(*cfg,*path)
-   f *_scale(*cfg,v)
-   f *ov_degrees(*cfg,fov)
-   f *key_down(*cfg,c)
-   f *left(*cfg,c)
-   f *pause(*cfg,c)
-   f *quit(*cfg,c)
-   f *restart(*cfg,c)
-   f *ight(*cfg,c)
-   f *up(*cfg,c)
-   f *max_food(*cfg,v)
-   f *length(*cfg,v)
-   f *players(*cfg,n)
-   f *num_players(*cfg,n)
-   f *player_name(*cfg,*name)
-   f *render_glyphs(*cfg,v)
-   f *screen_size(*cfg,w,h)
-   f *eed(*cfg,seed)
-   f *how_sprite_debug(*cfg,v)
-   f *tail_height_scale(*cfg,v)
-   f *ick_rate_ms(*cfg,ms)
-   f *wall_height_scale(*cfg,v)
-   f *texture(*cfg,*path)
-   f *_scale(*cfg,v)
-   f highscore_destroy(*hs)
-   f *get_score(*hs)
-   f *set_name(*hs,*name)
-   f *score(*hs,score)
-   f persist_append_score(*filename,*name,score)
-   f *config_has_unknown_keys(*filename)
-   f *free_scores(*scores,count)
-   f *load_config(*filename,*out_config)
-   f *read_scores(*filename,*out_scores)
-   f *write_config(*filename,*config)
-   f *scores(*filename,*scores,count)
+   f game_config_
+    destroy(*cfg)
+    get_
+     active_player(*cfg)
+     board_size(*cfg,*w_out,*h_out)
+     enable_external_3d_view(*cfg)
+     floor_texture_scale(*cfg)
+     fov_degrees(*cfg)
+     key_
+      down(*cfg)
+      left(*cfg)
+      pause(*cfg)
+      quit(*cfg)
+      restart(*cfg)
+      right(*cfg)
+      up(*cfg)
+     max_
+      food(*cfg)
+      length(*cfg)
+      players(*cfg)
+     num_players(*cfg)
+     render_glyphs(*cfg)
+     screen_size(*cfg,*w_out,*h_out)
+     seed(*cfg)
+     show_sprite_debug(*cfg)
+     tail_height_scale(*cfg)
+     tick_rate_ms(*cfg)
+     wall_
+      height_scale(*cfg)
+      texture_scale(*cfg)
+    set_
+     active_player(*cfg,v)
+     board_size(*cfg,w,h)
+     enable_external_3d_view(*cfg,v)
+     floor_
+      texture(*cfg,*path)
+      texture_scale(*cfg,v)
+     fov_degrees(*cfg,fov)
+     key_
+      down(*cfg,c)
+      left(*cfg,c)
+      pause(*cfg,c)
+      quit(*cfg,c)
+      restart(*cfg,c)
+      right(*cfg,c)
+      up(*cfg,c)
+     max_
+      food(*cfg,v)
+      length(*cfg,v)
+      players(*cfg,n)
+     num_players(*cfg,n)
+     player_name(*cfg,*name)
+     render_glyphs(*cfg,v)
+     screen_size(*cfg,w,h)
+     seed(*cfg,seed)
+     show_sprite_debug(*cfg,v)
+     tail_height_scale(*cfg,v)
+     tick_rate_ms(*cfg,ms)
+     wall_
+      height_scale(*cfg,v)
+      texture(*cfg,*path)
+      texture_scale(*cfg,v)
+   f highscore_
+    destroy(*hs)
+    get_score(*hs)
+    set_
+     name(*hs,*name)
+     score(*hs,score)
+   f persist_
+    append_score(*filename,*name,score)
+    config_has_unknown_keys(*filename)
+    free_scores(*scores,count)
+    load_config(*filename,*out_config)
+    read_scores(*filename,*out_scores)
+    write_
+     config(*filename,*config)
+     scores(*filename,*scores,count)
    s GameConfig
    s HighScore
    t GameConfig
    t HighScore
   platform.h
-   f platform_get_terminal_size(*width_out,*height_out)
-   f *now_ms(_)
-   f *sleep_ms(ms)
-   f *was_resized(_)
-   f *inch_init(_)
+   f platform_
+    get_terminal_size(*width_out,*height_out)
+    now_ms(_)
+    sleep_ms(ms)
+    was_resized(_)
+    winch_init(_)
   render.h
-   f render_draw(*game,*player_name,*scores,score_count)
-   f *_death_overlay(*game,anim_frame,show_prompt)
-   f *startup_screen(*player_name_out,max_len)
-   f *init(min_width,min_height)
-   f *note_session_score(*name,score)
-   f *prompt_for_highscore_name(*player_name_out,max_len,score)
-   f *set_glyphs(glyphs)
-   f *hutdown(_)
+   f render_
+    draw(*game,*player_name,*scores,score_count)
+    draw_
+     death_overlay(*game,anim_frame,show_prompt)
+     startup_screen(*player_name_out,max_len)
+    init(min_width,min_height)
+    note_session_score(*name,score)
+    prompt_for_highscore_name(*player_name_out,max_len,score)
+    set_glyphs(glyphs)
+    shutdown(_)
    t RenderGlyphs
   render_3d.h
-   f render_3d_compute_minimap_cell_px(display_w,display_h,map_w,map_h)
-   f *draw(*game_state,*player_name,*scores,score_count,delta_seconds)
-   f *_congrats_overlay(score,*name_entered)
-   f *death_overlay(*game,anim_frame,show_prompt)
-   f *minimap_into(*ctx,*gs)
-   f *init(*game_state,*config)
-   f *on_tick(*game_state)
-   f *set_active_player(player_index)
-   f *fov(fov_degrees)
-   f *tick_rate_ms(ms)
-   f *hutdown(_)
+   f render_3d_
+    compute_minimap_cell_px(display_w,display_h,map_w,map_h)
+    draw(*game_state,*player_name,*scores,score_count,delta_seconds)
+    draw_
+     congrats_overlay(score,*name_entered)
+     death_overlay(*game,anim_frame,show_prompt)
+     minimap_into(*ctx,*gs)
+    init(*game_state,*config)
+    on_tick(*game_state)
+    set_
+     active_player(player_index)
+     fov(fov_degrees)
+     tick_rate_ms(ms)
+    shutdown(_)
    s <anon>{active_player,fov_degrees,show_sprite_debug,screen_width,screen_height,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX}
    s SDL3DContext
    t Render3DConfig
   render_3d_camera.h
-   f camera_camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
-   f *destroy(*camera)
-   f *istance_to_point(*camera,x,y)
-   f *get_dir(*cam,*dx_out,*dy_out)
-   f *fov_radians(*cam)
-   f *interp_time(*cam)
-   f *olated_angle(*camera)
-   f *position(*camera,*x_out,*y_out)
-   f *ion_fraction(*cam)
-   f *position(*cam,*x_out,*y_out)
-   f *ray_angle(*camera,col,*ray_angle_out)
-   f *update_interval(*cam)
-   f *init(*camera,fov_degrees,screen_width,update_interval)
-   f *point_in_front(*camera,x,y)
-   f *set_angle(*cam,angle)
-   f *from_player(*camera,x,y,dir)
-   f *interpolation_time(*camera,time)
-   f *position(*cam,x,y)
-   f *rev_angle(*cam,prev_angle)
-   f *position(*cam,prev_x,prev_y)
-   f *update_interval(*cam,update_interval)
-   f *update_interpolation(*camera,delta_time)
-   f *vectors(*camera)
-   f *world_to_camera(*camera,world_x,world_y,*cam_x_out,*cam_y_out)
+   f camera_
+    camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
+    destroy(*camera)
+    distance_to_point(*camera,x,y)
+    get_
+     dir(*cam,*dx_out,*dy_out)
+     fov_radians(*cam)
+     interp_time(*cam)
+     interpolated_
+      angle(*camera)
+      position(*camera,*x_out,*y_out)
+     interpolation_fraction(*cam)
+     position(*cam,*x_out,*y_out)
+     ray_angle(*camera,col,*ray_angle_out)
+     update_interval(*cam)
+    init(*camera,fov_degrees,screen_width,update_interval)
+    point_in_front(*camera,x,y)
+    set_
+     angle(*cam,angle)
+     from_player(*camera,x,y,dir)
+     interpolation_time(*camera,time)
+     position(*cam,x,y)
+     prev_
+      angle(*cam,prev_angle)
+      position(*cam,prev_x,prev_y)
+     update_interval(*cam,update_interval)
+    update_
+     interpolation(*camera,delta_time)
+     vectors(*camera)
+    world_to_camera(*camera,world_x,world_y,*cam_x_out,*cam_y_out)
    s Camera3D
    t Camera3D
   render_3d_display.h
-   f display_3d_clear(*disp,ch,color)
-   f *destroy(*disp)
-   f *raw_cell(*disp,x,y,ch,color)
-   f *olumn(*disp,col,start_row,end_row,ch,color)
-   f *row(*disp,row,start_col,end_col,ch,color)
-   f *get_height(*disp)
-   f *width(*disp)
-   f *init(*disp,width,height)
-   f *present(*disp)
-   f *shutdown(*disp)
+   f display_3d_
+    clear(*disp,ch,color)
+    destroy(*disp)
+    draw_
+     cell(*disp,x,y,ch,color)
+     column(*disp,col,start_row,end_row,ch,color)
+     row(*disp,row,start_col,end_col,ch,color)
+    get_
+     height(*disp)
+     width(*disp)
+    init(*disp,width,height)
+    present(*disp)
+    shutdown(*disp)
    s <anon>{character,color}
    s Display3D
    t Display3D
@@ -587,114 +261,591 @@ include
   render_3d_perspective.h
    f render_3d_compute_wall_u(interp_cam_x,interp_cam_y,ray_angle,yy,horizon,screen_height,pd,is_vertical,wall_world_height,*out_rowDist)
   render_3d_projection.h
-   f projection_destroy(*proj)
-   f *get_fov_radians(*proj)
-   f *screen_height(*proj)
-   f *width(*proj)
-   f *wall_scale(*proj)
-   f *init(*proj,screen_width,screen_height,fov_radians,wall_scale)
-   f *project_wall(*proj,distance,*result_out)
-   f *_perp(*proj,distance,ray_angle,cam_angle,*result_out)
-   f *set_horizon(*proj,horizon_y)
-   f *world_distance_per_pixel(*proj,distance)
-   f *_perp(*proj,distance,ray_angle,cam_angle)
+   f projection_
+    destroy(*proj)
+    get_
+     fov_radians(*proj)
+     screen_
+      height(*proj)
+      width(*proj)
+     wall_scale(*proj)
+    init(*proj,screen_width,screen_height,fov_radians,wall_scale)
+    project_
+     wall(*proj,distance,*result_out)
+     wall_perp(*proj,distance,ray_angle,cam_angle,*result_out)
+    set_horizon(*proj,horizon_y)
+    world_distance_per_
+     pixel(*proj,distance)
+     pixel_perp(*proj,distance,ray_angle,cam_angle)
    s <anon>{draw_start,draw_end,wall_height,texture_scale}
    s Projection3D
    t Projection3D
    t WallProjection
   render_3d_raycast.h
-   f raycast_cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
-   f *get_texture_coord(*hit,is_vertical)
-   f *init(*rc,width,height,*board)
-   f *s_wall(*rc,x,y)
-   f *er_destroy(*rc)
+   f raycast_
+    cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+    get_texture_coord(*hit,is_vertical)
+    init(*rc,width,height,*board)
+    is_wall(*rc,x,y)
+   f raycaster_destroy(*rc)
    s <anon>{distance,hit_x,hit_y,is_vertical,shade_level}
    s Raycaster3D
    t RayHit
-   t *caster3D
+   t Raycaster3D
   render_3d_sdl.h
-   f render_3d_sdl_blend_pixel(*ctx,x,y,src_col)
-   f *clear(*ctx,col)
-   f *olor(r,g,b,a)
-   f *destroy(*ctx)
-   f *raw_column(*ctx,x,y_start,y_end,col)
-   f *filled_circle(*ctx,center_x,center_y,radius,col)
-   f *rect(*ctx,x,y,w,h,col)
-   f *get_height(*ctx)
-   f *width(*ctx)
-   f *init(width,height,*ctx_out)
-   f *present(*ctx)
-   f *set_pixel(*ctx,x,y,col)
-   f *hutdown(*ctx)
+   f render_3d_sdl_
+    blend_pixel(*ctx,x,y,src_col)
+    clear(*ctx,col)
+    color(r,g,b,a)
+    destroy(*ctx)
+    draw_
+     column(*ctx,x,y_start,y_end,col)
+     filled_
+      circle(*ctx,center_x,center_y,radius,col)
+      rect(*ctx,x,y,w,h,col)
+    get_
+     height(*ctx)
+     width(*ctx)
+    init(width,height,*ctx_out)
+    present(*ctx)
+    set_pixel(*ctx,x,y,col)
+    shutdown(*ctx)
    s SDL3DContext
    t SDL3DContext
   render_3d_sprite.h
-   f sprite_add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
-   f *_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-   f *rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-   f *clear(*sr)
-   f *destroy(*sr)
-   f *raw(*sr,*ctx,*column_depths)
-   f *get_count(*sr)
-   f *screen_info(*sr,idx,*screen_x_out,*screen_h_out,*visible_out)
-   f *texture_id(*sr,idx,*texture_id_out)
-   f *init(*sr,max_sprites,*camera,*proj)
-   f *project_all(*sr)
-   f *shutdown(*sr)
-   f *ort_by_depth(*sr)
+   f sprite_
+    add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
+    add_
+     color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+    clear(*sr)
+    destroy(*sr)
+    draw(*sr,*ctx,*column_depths)
+    get_
+     count(*sr)
+     screen_info(*sr,idx,*screen_x_out,*screen_h_out,*visible_out)
+     texture_id(*sr,idx,*texture_id_out)
+    init(*sr,max_sprites,*camera,*proj)
+    project_all(*sr)
+    shutdown(*sr)
+    sort_by_depth(*sr)
    s Sprite3D
-   s *Renderer3D
+   s SpriteRenderer3D
    t Sprite3D
-   t *Renderer3D
+   t SpriteRenderer3D
   render_3d_texture.h
-   f texture_destroy(*tex)
-   f *free_image(*tex)
-   f *get_img_h(*tex)
-   f *w(*tex)
-   f *texel(*tex,distance,is_vertical,tex_coord,*texel_out)
-   f *has_image(*tex)
-   f *init(*tex)
-   f *load_from_file(*tex,*filename)
-   f *sample(*tex,u,v,bilinear)
-   f *et_shade_chars(*tex,*chars)
-   f *olors(*tex,*colors)
-   f *hade_from_distance(distance)
+   f texture_
+    destroy(*tex)
+    free_image(*tex)
+    get_
+     img_
+      h(*tex)
+      w(*tex)
+     texel(*tex,distance,is_vertical,tex_coord,*texel_out)
+    has_image(*tex)
+    init(*tex)
+    load_from_file(*tex,*filename)
+    sample(*tex,u,v,bilinear)
+    set_shade_
+     chars(*tex,*chars)
+     colors(*tex,*colors)
+    shade_from_distance(distance)
    s <anon>{color}
    s Texture3D
    t Texel
-   t *ture3D
+   t Texture3D
   snakegame.h
-   f snake_game_free(*game)
-   f *run(*game)
+   f snake_game_
+    free(*game)
+    run(*game)
    s SnakeGame
    t SnakeGame
   tty.h
-   f tty_check_resize(*ctx)
-   f *lear_back(*ctx)
-   f *front(*ctx)
-   f *ose(*ctx)
-   f *flip(*ctx)
-   f *orce_redraw(*ctx)
-   f *get_board_min_size(board_width,board_height,*min_width,*min_height)
-   f *min_size(*ctx,*min_width,*min_height)
-   f *pixel(*ctx,x,y)
-   f *size(*ctx,*width,*height)
-   f *put_pixel(*ctx,x,y,px)
-   f *set_resize_callback(*ctx,*callback,*userdata)
-   f *size_invalid_callback(*ctx,*callback,*userdata)
-   f *ize_sufficient_for_board(term_width,term_height,board_width,board_height)
-   f *valid(*ctx)
+   f tty_
+    check_resize(*ctx)
+    clear_
+     back(*ctx)
+     front(*ctx)
+    close(*ctx)
+    flip(*ctx)
+    force_redraw(*ctx)
+    get_
+     board_min_size(board_width,board_height,*min_width,*min_height)
+     min_size(*ctx,*min_width,*min_height)
+     pixel(*ctx,x,y)
+     size(*ctx,*width,*height)
+    put_pixel(*ctx,x,y,px)
+    set_
+     resize_callback(*ctx,*callback,*userdata)
+     size_invalid_callback(*ctx,*callback,*userdata)
+    size_
+     sufficient_for_board(term_width,term_height,board_width,board_height)
+     valid(*ctx)
    s ascii_pixel
-   s *{pixel,color}
+    {pixel,color}
+    
    s tty_context
    t tty_context
   types.h
    s <anon>{x}
    t GameStatus
    t SnakeDir
-   t *Point
+   t SnakePoint
   utils.h
+   f snake_
+    in_bounds(x,y,width,height)
+    rng_
+     next_u32(*state)
+     range(*state,lo,hi_inclusive)
+     seed(*state,seed)
+main.c
+ f main(_)
+src
+ console
+  console.c
+   f console_
+    box_
+     paused_terminal_small(term_w,term_h,req_w,req_h)
+     too_small_for_game(term_w,term_h,min_w,min_h)
+    error(*fmt)
+    game_ran(ticks)
+    info(*fmt)
+    terminal_resized(w,h)
+    warn(*fmt)
+ core
+  collision.c
+   f collision_
+    detect_and_resolve(*game)
+    is_
+     self(p,*player)
+     snake(p,*player)
+     wall(p,board_w,board_h)
+    next_head(current,dir)
+  game.c
+   f food_respawn(*game)
+   f game_
+    destroy(*g)
+    enqueue_input(*g,player_index,*in)
+    free(*game)
+    get_num_players(*g)
+    init(*game,width,height,*cfg)
+    player_
+     current_score(*g,player_index)
+     died_this_tick(*g,player_index)
+     is_active(*g,player_index)
+     score_at_death(*g,player_index)
+    reset(*g)
+    state_
+     get_num_players(*game)
+     player_
+      current_score(*game,player_index)
+      died_this_tick(*game,player_index)
+      is_active(*game,player_index)
+      score_at_death(*game,player_index)
+     reset(*game)
+    step(*g,*out_events)
+    tick(*game)
+   f opposite_dir(dir)
+   f player_move(*player,next_head,grow)
+   f point_
+    in_
+     any_snake(*game,p)
+     player(*player,p)
+    is_food(*game,p)
+   f random_point(*game)
+   f spawn_player(*game,player_index)
+   s Game{state}
+  game_internal.h
+   f game_
+    free(*game)
+    init(*game,width,height,*cfg)
+    tick(*game)
+   s GameState{width,rng_state,status,num_players,max_players,*food,food_count,max_food,last_food_respawned,*players,max_length}
+   s PlayerState{current_dir,score,died_this_tick,score_at_death,*body,length,max_length,active,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
+ input
+  input.c
+   f ascii_tolower(c)
+   f input_
+    init(_)
+    poll(*out)
+    poll_from_buf(*out,*buf,n)
+    set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+    shutdown(_)
+   f parse_arrow_key(code)
+   f restore_terminal(_)
+   s termios
+ net
+  net.c
+   f net_
+    disconnect(*client)
+    free_unpacked_game_state(*out)
+    pack_
+     game_state(*game,*buf,buf_size)
+     input(*input,*buf,buf_size)
+    recv_state(*client,*out_game)
+    send_input(*client,*input)
+    unpack_
+     game_state(*buf,buf_size,*out)
+     input(*buf,buf_size,*out)
+   s NetClient{unused}
+ persist
+  persist.c
+   f clamp_int(v,lo,hi)
+   f compare_scores(*a,*b)
+   f game_config_
+    destroy(*cfg)
+    get_
+     active_player(*cfg)
+     board_size(*cfg,*w_out,*h_out)
+     enable_external_3d_view(*cfg)
+     floor_texture_scale(*cfg)
+     fov_degrees(*cfg)
+     key_
+      down(*cfg)
+      left(*cfg)
+      pause(*cfg)
+      quit(*cfg)
+      restart(*cfg)
+      right(*cfg)
+      up(*cfg)
+     max_
+      food(*cfg)
+      length(*cfg)
+      players(*cfg)
+     num_players(*cfg)
+     render_glyphs(*cfg)
+     screen_size(*cfg,*w_out,*h_out)
+     seed(*cfg)
+     show_sprite_debug(*cfg)
+     tail_height_scale(*cfg)
+     tick_rate_ms(*cfg)
+     wall_
+      height_scale(*cfg)
+      texture_scale(*cfg)
+    set_
+     active_player(*cfg,v)
+     board_size(*cfg,w,h)
+     enable_external_3d_view(*cfg,v)
+     floor_
+      texture(*cfg,*path)
+      texture_scale(*cfg,v)
+     fov_degrees(*cfg,fov)
+     key_
+      down(*cfg,c)
+      left(*cfg,c)
+      pause(*cfg,c)
+      quit(*cfg,c)
+      restart(*cfg,c)
+      right(*cfg,c)
+      up(*cfg,c)
+     max_
+      food(*cfg,v)
+      length(*cfg,v)
+      players(*cfg,n)
+     num_players(*cfg,n)
+     player_name(*cfg,*name)
+     render_glyphs(*cfg,v)
+     screen_size(*cfg,w,h)
+     seed(*cfg,seed)
+     show_sprite_debug(*cfg,v)
+     tail_height_scale(*cfg,v)
+     tick_rate_ms(*cfg,ms)
+     wall_
+      height_scale(*cfg,v)
+      texture(*cfg,*path)
+      texture_scale(*cfg,v)
+   f highscore_
+    destroy(*hs)
+    get_score(*hs)
+    set_
+     name(*hs,*name)
+     score(*hs,score)
+   f is_known_config_key(*key)
+   f persist_
+    append_score(*filename,*name,score)
+    config_has_unknown_keys(*filename)
+    free_scores(*scores,count)
+    load_config(*filename,*out_config)
+    read_scores(*filename,*out_scores)
+    write_
+     config(*filename,*config)
+     scores(*filename,*scores,count)
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_up,key_down,key_left,key_right,key_quit,key_restart,key_pause}
+   s HighScore{PERSIST_NAME_MAX,score}
+ platform
+  platform.c
+   f platform_
+    get_terminal_size(*width_out,*height_out)
+    now_ms(_)
+    sigwinch_handler(sig)
+    sleep_ms(ms)
+    was_resized(_)
+    winch_init(_)
+  tty.c
+   f ascii_pixel_equal(a,b)
+   f get_terminal_size(fd,*width,*height)
+   f sigwinch_handler(sig)
+   f tty_
+    check_resize(*ctx)
+    clear_
+     back(*ctx)
+     front(*ctx)
+    close(*ctx)
+    flip(*ctx)
+    force_redraw(*ctx)
+    get_
+     board_min_size(board_width,board_height,*min_width,*min_height)
+     min_size(*ctx,*min_width,*min_height)
+     pixel(*ctx,x,y)
+     size(*ctx,*width,*height)
+    put_pixel(*ctx,x,y,px)
+    set_
+     resize_callback(*ctx,*callback,*userdata)
+     size_invalid_callback(*ctx,*callback,*userdata)
+    size_
+     sufficient_for_board(term_width,term_height,board_width,board_height)
+     valid(*ctx)
+   f utf16_
+    surrogate_pair_to_utf8(high,low,*out)
+    to_utf8(utf16,*utf8_out)
+   s ascii_pixel
+   s tty_context{tty_fd,orig_termios,tty_path,width,height,min_width,min_height,*front,*back,dirty,size_valid,*write_buffer,write_buffer_size,resized,*on_resize,*on_size_invalid,*callback_userdata}
+ render
+  camera.c
+   f angle_difference(from,to)
+   f camera_
+    camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
+    destroy(*camera)
+    distance_to_point(*camera,x,y)
+    get_
+     dir(*cam,*dx_out,*dy_out)
+     fov_radians(*cam)
+     interp_time(*cam)
+     interpolated_
+      angle(*camera)
+      position(*camera,*x_out,*y_out)
+     interpolation_fraction(*cam)
+     position(*cam,*x_out,*y_out)
+     ray_angle(*camera,col,*ray_angle_out)
+     update_interval(*cam)
+    init(*camera,fov_degrees,screen_width,update_interval)
+    point_in_front(*camera,x,y)
+    set_
+     angle(*cam,angle)
+     from_player(*camera,x,y,dir)
+     interpolation_time(*camera,time)
+     position(*cam,x,y)
+     prev_
+      angle(*cam,prev_angle)
+      position(*cam,prev_x,prev_y)
+     update_interval(*cam,update_interval)
+    update_
+     interpolation(*camera,delta_time)
+     vectors(*camera)
+    world_to_camera(*camera,world_x,world_y,*cam_x_out,*cam_y_out)
+   f interpolate_angle(from,to,t)
+   f normalize_angle(angle)
+   f update_vectors(*camera)
+   s Camera3D{x,angle,prev_x,fov_radians,screen_width,dir_x,plane_x,interp_time,update_interval}
+  display_3d.c
+   f display_3d_
+    clear(*disp,ch,color)
+    destroy(*disp)
+    draw_
+     cell(*disp,x,y,ch,color)
+     column(*disp,col,start_row,end_row,ch,color)
+     row(*disp,row,start_col,end_col,ch,color)
+    get_
+     height(*disp)
+     width(*disp)
+    init(*disp,width,height)
+    present(*disp)
+    shutdown(*disp)
+   s Display3D{width,height,*buffer}
+  display_tty.c
+   f display_
+    clear(*ctx)
+    force_redraw(*ctx)
+    get_size(*ctx,*width,*height)
+    present(*ctx)
+    put_
+     char(*ctx,x,y,ch,fg,bg)
+     hline(*ctx,x,y,len,ch,fg,bg)
+     string(*ctx,x,y,*str,fg,bg)
+     vline(*ctx,x,y,len,ch,fg,bg)
+    shutdown(*ctx)
+    size_valid(*ctx)
+   f map_color(display_color)
+   s DisplayContext{*tty}
+  internal
+   render_3d_sprite_internal.h
+    s Sprite3D{world_x,world_height,pivot,face_camera,texture_id,frame,color,perp_distance,screen_x,screen_w,screen_h,screen_y_top,visible,is_rect}
+  projection.c
+   f projection_
+    destroy(*proj)
+    get_
+     fov_radians(*proj)
+     screen_
+      height(*proj)
+      width(*proj)
+     wall_scale(*proj)
+    init(*proj,screen_width,screen_height,fov_radians,wall_scale)
+    project_
+     wall(*proj,distance,*result_out)
+     wall_perp(*proj,distance,ray_angle,cam_angle,*out)
+    set_horizon(*proj,horizon_y)
+    world_distance_per_
+     pixel(*proj,distance)
+     pixel_perp(*proj,distance,ray_angle,cam_angle)
+   s Projection3D{screen_width,screen_height,fov_radians,horizon_y,wall_scale}
+  raycast.c
+   f raycast_
+    cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+    get_texture_coord(*hit,is_vertical)
+    init(*rc,width,height,*board)
+    is_wall(*rc,x,y)
+   f raycaster_destroy(*rc)
+   s Raycaster3D{board_width,board_height,*board}
+  render.c
+   f compare_display_scores_desc(*a,*b)
+   f draw_
+    box(x,y,width,height,fg_color)
+    centered_string(y,*str,fg_color)
+    string(x,y,*str,fg_color)
+    top_bar(_)
+   f fill_
+    background(_)
+    rect(x,y,width,height,fg_color,bg_color,ch)
+   f glyph_for_
+    segment(*body,length,idx)
+    segment_
+     ascii(*body,length,idx)
+     utf8(*body,length,idx)
+   f gradient_color_for_rank(rank,total)
+   f invalidate_front_buffer(*ctx)
+   f is_session_
+    score(*s)
+    score_from_display(*s)
+   f links_to_neighbor(from,neighbor)
+   f render_
+    draw(*game,*player_name,*scores,score_count)
+    draw_
+     death_overlay(*game,anim_frame,show_prompt)
+     startup_screen(*player_name_out,max_len)
+    init(min_width,min_height)
+    note_session_score(*name,score)
+    prompt_for_highscore_name(*player_name_out,max_len,score)
+    set_glyphs(glyphs)
+    shutdown(_)
+   s <anon>
+    {PERSIST_NAME_MAX,score}
+    {up,down,left,right}
+   t DisplayScore
+   t SegmentLinks
+  render_3d.c
+   f render_3d_
+    compute_minimap_cell_px(d_w,d_h,m_w,m_h)
+    draw(*game_state,*player_name,*scores,score_count,delta_seconds)
+    draw_
+     char(*disp,x,y,c,col,scale)
+     congrats_overlay(score,*name_entered)
+     death_overlay(*game,anim_frame,show_prompt)
+     fps_counter(_)
+     minimap(*r,interp_t)
+     minimap_into(*ctx,*gs)
+     text_centered(*disp,y,*text,col,scale)
+    init(*game_state,*config)
+    log(*fmt)
+    on_tick(*game_state)
+    set_
+     active_player(player_index)
+     fov(fov_degrees)
+     tick_rate_ms(ms)
+    shutdown(_)
+    update_fps(delta_seconds)
+   s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps}
+   s SDL3DContext
+   t Render3DContext
+   t RenderMode
+  render_3d_sdl.c
+   f call_lsan_
+    disable(_)
+    enable(_)
+   f render_3d_sdl_
+    blend_pixel(*ctx,x,y,src_col)
+    clear(*ctx,col)
+    destroy(*ctx)
+    draw_
+     column(*ctx,x,y_start,y_end,col)
+     filled_
+      circle(*ctx,center_x,center_y,radius,col)
+      rect(*ctx,x,y,w_rect,h_rect,col)
+    get_
+     height(*ctx)
+     width(*ctx)
+    init(width,height,*ctx_out)
+    present(*ctx)
+    set_pixel(*ctx,x,y,col)
+    shutdown(*ctx)
+   s <anon>{*window,*renderer,*texture,width,height}
+   s SDL3DContext{width,height,*pixels,*window,*renderer,*texture,initialized}
+   t SDLState
+  sprite.c
+   f sprite_
+    add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
+    add_
+     color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+    clear(*sr)
+    destroy(*sr)
+    draw(*sr,*ctx,*column_depths)
+    get_
+     count(*sr)
+     screen_info(*sr,idx,*screen_x_out,*screen_h_out,*visible_out)
+     texture_id(*sr,idx,*texture_id_out)
+    init(*sr,max_sprites,*camera,*proj)
+    project_all(*sr)
+    shutdown(*sr)
+    sort_by_depth(*sr)
+   s SpriteRenderer3D{*sprites,max_sprites,count,*camera,*proj}
+  texture.c
+   f sample_
+    bilinear(*tex,u,v)
+    nearest(*tex,u,v)
+   f texture_
+    destroy(*tex)
+    free_image(*tex)
+    get_
+     img_
+      h(*tex)
+      w(*tex)
+     texel(*tex,distance,is_vertical,tex_coord,*texel_out)
+    has_image(*tex)
+    init(*tex)
+    load_from_file(*tex,*filename)
+    sample(*tex,u,v,bilinear)
+    set_shade_
+     chars(*tex,*chars)
+     colors(*tex,*colors)
+    shade_from_distance(distance)
+   s Texture3D{TEXTURE_MAX_SHADES,TEXTURE_MAX_SHADES,*pixels,img_w,img_h}
+  wall_perspective.c
+   f render_3d_compute_wall_u(interp_cam_x,interp_cam_y,ray_angle,yy,horizon,screen_height,pd,is_vertical,wall_world_height,*out_rowDist)
+ snakegame.c
+  f snake_game_
+   free(*s)
+   run(*s)
+  s SnakeGame{*cfg,*game,has_3d}
+ utils
+  bounds.c
    f snake_in_bounds(x,y,width,height)
-   f *rng_next_u32(*state)
-   f *range(*state,lo,hi_inclusive)
-   f *seed(*state,seed)
+  direction.c
+   f snake_dir_turn_
+    left(d)
+    right(d)
+  rng.c
+   f snake_rng_
+    next_u32(*state)
+    range(*state,lo,hi_inclusive)
+    seed(*state,seed)
+  utils.c

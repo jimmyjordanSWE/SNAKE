@@ -1,0 +1,7 @@
+src/console/console.c: L7r?(vfprintf) L13r?(vfprintf) L19r?(vfprintf)
+src/input/input.c: L26r?(fcntl) L27r?(tcsetattr) L36r?(atexit) L45r?(tcsetattr) L49r?(tcsetattr)
+src/platform/platform.c: L13r?(clock_gettime) L41r?(signal)
+src/platform/tty.c: L133r?(tcsetattr) L139r?(tcsetattr) L153r?(tcsetattr) L164r?(tcsetattr) L174r?(dprintf) L175r?(dprintf) L176r?(signal) L183r?(dprintf) L184r?(dprintf) L185r?(dprintf) L186r?(dprintf) L187r?(tcsetattr) L365r?(ctx->on_resize) L367r?(ctx->on_size_invalid)
+src/render/render_3d.c: L641r?(sprite_add_color) L655r?(sprite_add_color) L672r?(sprite_add_color)
+src/render/render_3d_sdl.c: L16r?(fn) L24r?(fn) L76r?(LSAN_DISABLE) L83r?(LSAN_ENABLE) L86r?(LSAN_ENABLE) L94r?(LSAN_ENABLE) L105r?(LSAN_ENABLE) L117r?(LSAN_ENABLE) L130r?(LSAN_ENABLE) L136r?(LSAN_ENABLE)
+src/snakegame.c: L233r?(persist_append_score) L313r?(persist_append_score)

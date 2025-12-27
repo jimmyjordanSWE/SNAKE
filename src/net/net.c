@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 size_t net_pack_input(const InputState* input, unsigned char* buf, size_t buf_size) {
 if(!input || !buf || buf_size < 1) return 0;
 unsigned char flags= 0;
@@ -89,6 +90,9 @@ p+= 4;
 memcpy(&v, p, 4);
 out->height= (int)ntohl(v);
 p+= 4;
+/* Reject non-positive dimensions early */
+if (out->width <= 0 || out->height <= 0)
+    return false;
 memcpy(&v, p, 4);
 out->rng_state= ntohl(v);
 p+= 4;
@@ -164,21 +168,78 @@ out->max_players= 0;
 }
 }
 struct NetClient {
-int unused;
+    int fd;
 };
+
 NetClient* net_connect(const char* host, int port) {
-(void)host;
-(void)port;
-return NULL;
+    if (!host || port <= 0)
+        return NULL;
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+        return NULL;
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((uint16_t)port);
+    if (inet_pton(AF_INET, host, &addr.sin_addr) != 1) {
+        close(fd);
+        return NULL;
+    }
+    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        close(fd);
+        return NULL;
+    }
+    NetClient* c = malloc(sizeof(NetClient));
+    if (!c) {
+        close(fd);
+        return NULL;
+    }
+    c->fd = fd;
+    return c;
 }
-void net_disconnect(NetClient* client) { (void)client; }
+
+void net_disconnect(NetClient* client) {
+    if (!client)
+        return;
+    close(client->fd);
+    free(client);
+}
+
 bool net_send_input(NetClient* client, const InputState* input) {
-(void)client;
-(void)input;
-return false;
+    if (!client || !input)
+        return false;
+    unsigned char buf[256];
+    size_t sz = net_pack_input(input, buf, sizeof(buf));
+    if (sz == 0)
+        return false;
+    uint32_t nsz = htonl((uint32_t)sz);
+    ssize_t r = send(client->fd, &nsz, sizeof(nsz), 0);
+    if (r != sizeof(nsz))
+        return false;
+    r = send(client->fd, buf, sz, 0);
+    if (r != (ssize_t)sz)
+        return false;
+    return true;
 }
+
 bool net_recv_state(NetClient* client, GameState* out_game) {
-(void)client;
-(void)out_game;
-return false;
+    if (!client || !out_game)
+        return false;
+    uint32_t nsz = 0;
+    ssize_t r = recv(client->fd, &nsz, sizeof(nsz), MSG_WAITALL);
+    if (r != sizeof(nsz))
+        return false;
+    nsz = ntohl(nsz);
+    if (nsz == 0 || nsz > 1000000)
+        return false;
+    unsigned char* buf = malloc(nsz);
+    if (!buf)
+        return false;
+    r = recv(client->fd, buf, nsz, MSG_WAITALL);
+    if (r != (ssize_t)nsz) {
+        free(buf);
+        return false;
+    }
+    bool ok = net_unpack_game_state(buf, (size_t)nsz, out_game);
+    free(buf);
+    return ok;
 }

@@ -91,7 +91,7 @@ else
 MAYBE_ANALYZE :=
 endif
 
-.PHONY: all build debug release valgrind gdb clean format-llm format-human context
+.PHONY: all build debug release valgrind gdb clean format-llm format-human context llvm-context
 
 all: $(MAYBE_ANALYZE) debug
 
@@ -144,6 +144,13 @@ format:
 
 analyze:
 	@./scripts/analyze_all.sh
+
+context: llvm-context
+
+llvm-context:
+	@./scripts/analyze_all.sh
+	@./.venv/bin/python3 ./scripts/structure.py > PROJECT_CONTEXT.txt
+	@echo "Context updated."
 
 -include $(DEP)
 

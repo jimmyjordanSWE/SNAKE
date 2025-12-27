@@ -38,4 +38,8 @@ for script in "${scripts[@]}"; do
     fi
 done
 
-echo -e "\nLLM Context Updated. Results in $OUT_DIR/"
+
+echo "=== AST Context ==="
+$VENV_PYTHON "$SCRIPTS_DIR/structure.py" > "PROJECT_CONTEXT.txt"
+
+echo -e "\nLLM Context Updated. Results in $OUT_DIR/ and PROJECT_CONTEXT.txt"

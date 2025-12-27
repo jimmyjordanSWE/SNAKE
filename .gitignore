@@ -58,4 +58,5 @@ dkms.conf
 # Exclude the generated binary but not headers/sources
 snakegame
 snakegame_3d
-/build/.venv/
+/build/
+.venv/

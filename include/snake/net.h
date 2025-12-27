@@ -1,6 +1,6 @@
 #pragma once
-#include "snake/game.h"
-#include "snake/input.h"
+#include "game.h"
+#include "input.h"
 #include <stdbool.h>
 typedef struct NetClient NetClient;
 NetClient* net_connect(const char* host, int port);

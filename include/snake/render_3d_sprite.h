@@ -1,9 +1,9 @@
 
 #pragma once
-#include "snake/render_3d_camera.h"
-#include "snake/render_3d_projection.h"
-#include "snake/render_3d_sdl.h"
-#include "snake/types.h"
+#include "render_3d_camera.h"
+#include "render_3d_projection.h"
+#include "render_3d_sdl.h"
+#include "types.h"
 #include <stdbool.h>
 typedef struct Sprite3D Sprite3D;
 typedef struct SpriteRenderer3D SpriteRenderer3D;
@@ -20,5 +20,4 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
 void sprite_shutdown(SpriteRenderer3D* sr);
 bool sprite_get_screen_info(const SpriteRenderer3D* sr, int idx, int* screen_x_out, int* screen_h_out, bool* visible_out);
 int sprite_get_count(const SpriteRenderer3D* sr);
-/* Test helper: retrieve sprite texture id at index (not for production use) */
 int sprite_get_texture_id(const SpriteRenderer3D* sr, int idx, int* texture_id_out);

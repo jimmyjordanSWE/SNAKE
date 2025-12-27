@@ -1,0 +1,3 @@
+Invariants (State Transitions):
+src/render/render_3d.c: g_render_3d.game_state->NULL(L756)
+src/core/game.c: game->status->GAME_STATUS_RUNNING(L288) game->status->GAME_STATUS_RUNNING(L376) game->status->GAME_STATUS_GAME_OVER(L428)

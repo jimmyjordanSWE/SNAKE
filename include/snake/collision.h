@@ -1,5 +1,5 @@
 #pragma once
-#include "snake/types.h"
+#include "types.h"
 #include <stdbool.h>
 struct PlayerState;
 struct GameState;

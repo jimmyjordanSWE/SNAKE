@@ -55,6 +55,7 @@ dkms.conf
 *.dwo
 
 
-/build
-
-snake
+# Exclude the generated binary but not headers/sources
+snakegame
+snakegame_3d
+/build/.venv/

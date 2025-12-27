@@ -1,0 +1,12 @@
+Hotspots Analysis:
+src/snakegame.c: snake_game_run:LOOP(2,L177) snake_game_run:LOOP(2,L210) snake_game_run:LOOP(3,L219) snake_game_run:LOOP(2,L247) snake_game_run:LOOP(2,L258) snake_game_run:LOOP(2,L276)
+src/render/display_tty.c: display_clear:LOOP(2,L57)
+src/render/render.c: fill_background:LOOP(2,L176) render_draw:LOOP(2,L288) render_prompt_for_highscore_name:LOOP(2,L434) render_prompt_for_highscore_name:LOOP(2,L445) render_prompt_for_highscore_name:LOOP(2,L459) fill_rect:LOOP(2,L502)
+src/render/render_3d.c: render_3d_draw_minimap:LOOP(2,L141) render_3d_draw_char:LOOP(2,L273) render_3d_draw_char:LOOP(3,L277) render_3d_draw_char:LOOP(4,L278) render_3d_draw:LOOP(2,L499) render_3d_draw:LOOP(2,L512) render_3d_draw:LOOP(2,L559) render_3d_draw:LOOP(2,L576) render_3d_draw:LOOP(2,L610) render_3d_draw:LOOP(2,L661)
+src/render/render_3d_sdl.c: render_3d_sdl_draw_filled_circle:LOOP(2,L224) render_3d_sdl_draw_filled_rect:LOOP(2,L252) render_3d_sdl_draw_filled_rect:LOOP(2,L257)
+src/render/sprite.c: sprite_project_all:LOOP(2,L130) sprite_project_all:LOOP(2,L132) sprite_project_all:LOOP(2,L172) sprite_sort_by_depth:LOOP(2,L191) sprite_sort_by_depth:LOOP(2,L202) sprite_draw:LOOP(2,L247) sprite_draw:LOOP(3,L250) sprite_draw:LOOP(2,L271) sprite_draw:LOOP(3,L272) sprite_draw:LOOP(2,L284)
+src/render/texture.c: texture_load_from_file:LOOP(2,L137) texture_load_from_file:LOOP(2,L180) texture_load_from_file:LOOP(2,L230)
+src/platform/tty.c: tty_flip:LOOP(2,L234) tty_flip:LOOP(3,L239) tty_flip:LOOP(3,L271) tty_flip:LOOP(3,L291) tty_check_resize:LOOP(2,L345)
+src/core/collision.c: collision_detect_and_resolve:LOOP(2,L83) collision_detect_and_resolve:LOOP(2,L109) collision_detect_and_resolve:LOOP(2,L129)
+src/core/game.c: food_respawn:LOOP(2,L167) spawn_player:LOOP(2,L252) spawn_player:LOOP(2,L270) game_tick:LOOP(2,L442) game_tick:LOOP(3,L445)
+src/persist/persist.c: persist_load_config:LOOP(2,L547) persist_load_config:LOOP(2,L557) persist_load_config:LOOP(2,L640)

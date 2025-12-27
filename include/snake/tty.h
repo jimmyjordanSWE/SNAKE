@@ -25,9 +25,7 @@ bool tty_size_valid(const tty_context* ctx);
 void tty_get_min_size(const tty_context* ctx, int* min_width, int* min_height);
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height);
 bool tty_size_sufficient_for_board(int term_width, int term_height, int board_width, int board_height);
-void tty_simulate_winch(void);
-void tty_set_test_size(int width, int height);
-void tty_clear_test_size(void);
+
 #define COLOR_MAKE(fg, bg) ((uint16_t)(((bg) << 4) | (fg)))
 #define COLOR_FG(c) ((uint8_t)((c) & 0x0F))
 #define COLOR_BG(c) ((uint8_t)(((c) >> 4) & 0x0F))

@@ -1,6 +1,6 @@
 #pragma once
-#include "snake/game.h"
-#include "snake/persist.h"
+#include "game.h"
+#include "persist.h"
 #include <stdbool.h>
 typedef enum {
     RENDER_GLYPHS_UTF8= 0,

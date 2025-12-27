@@ -25,7 +25,7 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
         *err_out = 1;
     if (!config_in)
         return NULL;
-    SnakeGame* s = (SnakeGame*)malloc(sizeof(*s));
+    SnakeGame* s = malloc(sizeof *s);
     if (!s)
         return NULL;
     s->cfg = game_config_create();

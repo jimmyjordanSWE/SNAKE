@@ -6,6 +6,7 @@ char character;
 uint16_t color;
 } Framebuffer3DCell;
 typedef struct Display3D Display3D;
+// Returns a newly allocated Display3D; caller must call display_3d_destroy()
 Display3D* display_3d_create(int width, int height);
 void display_3d_destroy(Display3D* disp);
 int display_3d_get_width(const Display3D* disp);

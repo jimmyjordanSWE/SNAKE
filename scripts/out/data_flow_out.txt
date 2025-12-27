@@ -8,12 +8,12 @@ Data Ownership (struct r/w totals):
   g: r(58) w(9)
   sr: r(49) w(15)
   config: r(34) w(30)
-  tex: r(54) w(7)
+  tex: r(55) w(7)
   camera: r(32) w(26)
   cfg: r(32) w(26)
   disp: r(27) w(9)
   g_render_3d.config: r(27) w(9)
-  ctx_out: r(21) w(13)
+  ctx_out: r(23) w(13)
 
 Module Data Usage:
   src: ctx:r214w38, game:r184w41, g_render_3d:r157w26, player:r123w21, s:r50w57

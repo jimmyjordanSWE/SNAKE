@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 typedef struct Camera3D Camera3D;
+// Returns a newly allocated Camera3D; caller must call camera_destroy()
 Camera3D* camera_create(float fov_degrees, int screen_width, float update_interval);
 void camera_destroy(Camera3D* camera);
 void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float update_interval);

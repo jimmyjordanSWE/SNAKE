@@ -18,6 +18,7 @@ bool food_respawned;
 #include "input.h"
 typedef struct GameState GameState;
 typedef struct PlayerState PlayerState;
+// Returns a newly allocated Game; caller must call game_destroy() to free it.
 Game* game_create(const GameConfig* cfg, uint32_t seed_override);
 void game_destroy(Game* g);
 int game_enqueue_input(Game* g, int player_index, const InputState* in);

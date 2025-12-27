@@ -35,7 +35,7 @@ struct HighScore {
     int score;
 };
 HighScore* highscore_create(const char* name, int score) {
-    HighScore* hs = (HighScore*)calloc(1, sizeof(*hs));
+    HighScore* hs = calloc(1, sizeof *hs);
     if (!hs)
         return NULL;
     if (name)
@@ -94,7 +94,7 @@ struct GameConfig {
     char key_pause;
 };
 GameConfig* game_config_create(void) {
-    GameConfig* c = (GameConfig*)calloc(1, sizeof(*c));
+    GameConfig* c = calloc(1, sizeof *c);
     if (!c)
         return NULL;
     c->board_width = PERSIST_CONFIG_DEFAULT_WIDTH;

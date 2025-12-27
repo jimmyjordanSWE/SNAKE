@@ -16,7 +16,7 @@ struct Texture3D {
     int img_h;
 };
 Texture3D* texture_create(void) {
-    Texture3D* t = (Texture3D*)calloc(1, sizeof(*t));
+    Texture3D* t = calloc(1, sizeof *t);
     if (!t)
         return NULL;
     texture_init(t);
@@ -244,7 +244,7 @@ bool texture_load_from_file(Texture3D* tex, const char* filename) {
     }
     tex->img_w = w;
     tex->img_h = h;
-    tex->pixels = malloc(n_pixels * sizeof(uint32_t));
+    tex->pixels = malloc(n_pixels * sizeof *tex->pixels);
     if (!tex->pixels) {
         stbi_image_free(data);
         return false;

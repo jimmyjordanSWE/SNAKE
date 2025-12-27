@@ -9,6 +9,7 @@ bool is_vertical;
 uint8_t shade_level;
 } RayHit;
 typedef struct Raycaster3D Raycaster3D;
+// Returns a newly allocated Raycaster3D; caller must call raycaster_destroy()
 Raycaster3D* raycaster_create(int width, int height, const uint8_t* board);
 void raycaster_destroy(Raycaster3D* rc);
 void raycast_init(Raycaster3D* rc, int width, int height, const uint8_t* board);

@@ -43,17 +43,21 @@
 #define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
 #define PERSIST_PLAYER_NAME_MAX 32
 typedef struct HighScore HighScore;
+// Returns a newly allocated HighScore; caller must call highscore_destroy() to free it.
 HighScore* highscore_create(const char* name, int score);
 void highscore_destroy(HighScore* hs);
 const char* highscore_get_name(const HighScore* hs);
 int highscore_get_score(const HighScore* hs);
 void highscore_set_name(HighScore* hs, const char* name);
 void highscore_set_score(HighScore* hs, int score);
+// Reads scores from `filename`. On success, returns number of scores and allocates an array
+// of `HighScore*`s returned via `*out_scores`; caller must call `persist_free_scores(*out_scores, <returned count>)`.
 int persist_read_scores(const char* filename, HighScore*** out_scores);
 bool persist_write_scores(const char* filename, HighScore** scores, int count);
 bool persist_append_score(const char* filename, const char* name, int score);
 void persist_free_scores(HighScore** scores, int count);
 typedef struct GameConfig GameConfig;
+// Returns a newly allocated GameConfig; caller must call game_config_destroy() to free it.
 GameConfig* game_config_create(void);
 void game_config_destroy(GameConfig* cfg);
 void game_config_set_board_size(GameConfig* cfg, int w, int h);

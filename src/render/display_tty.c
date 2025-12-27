@@ -9,7 +9,7 @@ static inline uint16_t map_color(uint16_t display_color) {
     return display_color;
 }
 DisplayContext* display_init(int min_width, int min_height) {
-    DisplayContext* ctx = malloc(sizeof(DisplayContext));
+    DisplayContext* ctx = malloc(sizeof *ctx);
     if (!ctx)
         return NULL;
     ctx->tty = tty_open(NULL, min_width, min_height);

@@ -7,6 +7,7 @@ src/render/render_3d.c: L640r?(sprite_add_color) L654r?(sprite_add_color) L671r?
 src/render/render_3d_sdl.c: L16r?(fn) L24r?(fn) L76r?(LSAN_DISABLE) L83r?(LSAN_ENABLE) L86r?(LSAN_ENABLE) L94r?(LSAN_ENABLE) L105r?(LSAN_ENABLE) L117r?(LSAN_ENABLE) L130r?(LSAN_ENABLE) L136r?(LSAN_ENABLE)
 tests/test_collision.c: L28n?(g.players[i].body)
 tests/test_env.c: L8r?(setenv) L9r?(setenv) L10r?(setenv) L11r?(setenv) L12r?(setenv)
+tests/test_game_oom.c: L55r?(real_free)
 tests/test_net_integration.c: L23r?(setsockopt) L47r?(send) L48r?(send) L61r?(sleep) L70r?(pthread_join)
 tests/test_persist.c: L15r?(remove)
 tests/test_persist_config.c: L15r?(remove)

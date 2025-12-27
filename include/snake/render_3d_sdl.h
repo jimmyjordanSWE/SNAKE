@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 typedef struct SDL3DContext SDL3DContext;
+// Returns a newly allocated SDL3DContext; caller must call render_3d_sdl_destroy()
 SDL3DContext* render_3d_sdl_create(int width, int height);
 void render_3d_sdl_destroy(SDL3DContext* ctx);
 int render_3d_sdl_get_width(const SDL3DContext* ctx);

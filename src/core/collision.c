@@ -56,9 +56,9 @@ void collision_detect_and_resolve(struct GameState* game) {
         return;
     if ((size_t)num_players > SIZE_MAX / sizeof(bool))
         return;
-    SnakePoint* next_heads = malloc(sizeof(SnakePoint) * (size_t)num_players);
-    bool* should_reset = malloc(sizeof(bool) * (size_t)num_players);
-    bool* will_eat = malloc(sizeof(bool) * (size_t)num_players);
+    SnakePoint* next_heads = malloc((size_t)num_players * sizeof *next_heads);
+    bool* should_reset = malloc((size_t)num_players * sizeof *should_reset);
+    bool* will_eat = malloc((size_t)num_players * sizeof *will_eat);
     if (!next_heads || !should_reset || !will_eat) {
         free(next_heads);
         free(should_reset);

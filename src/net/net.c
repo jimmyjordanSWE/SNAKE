@@ -87,6 +87,8 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
     out->players = NULL;
     out->max_food = 0;
     out->max_players = 0;
+    bool ok = false;
+
     const unsigned char* p = buf;
     uint32_t v;
     memcpy(&v, p, 4);
@@ -97,7 +99,7 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
     p += 4;
     /* Reject non-positive dimensions early */
     if (out->width <= 0 || out->height <= 0)
-        return false;
+        goto out;
     memcpy(&v, p, 4);
     out->rng_state = ntohl(v);
     p += 4;
@@ -112,28 +114,24 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
     p += 4;
     size_t expected = 24 + (size_t)out->food_count * 8 + (size_t)out->num_players * 8;
     if (buf_size < expected)
-        return false;
+        goto out;
+
     if (out->food_count > 0) {
         if ((size_t)out->food_count > SIZE_MAX / sizeof(SnakePoint))
-            return false;
-        out->max_food = out->food_count;
-        out->food = malloc(sizeof(SnakePoint) * (size_t)out->food_count);
+            goto out;
+        out->food = malloc((size_t)out->food_count * sizeof *out->food);
         if (!out->food)
-            return false;
+            goto out;
+        out->max_food = out->food_count;
     }
+
     if (out->num_players > 0) {
-        if ((size_t)out->num_players > SIZE_MAX / sizeof(PlayerState)) {
-            free(out->food);
-            out->food = NULL;
-            return false;
-        }
+        if ((size_t)out->num_players > SIZE_MAX / sizeof(PlayerState))
+            goto out;
+        out->players = malloc((size_t)out->num_players * sizeof *out->players);
+        if (!out->players)
+            goto out;
         out->max_players = out->num_players;
-        out->players = malloc(sizeof(PlayerState) * (size_t)out->num_players);
-        if (!out->players) {
-            free(out->food);
-            out->food = NULL;
-            return false;
-        }
         for (int i = 0; i < out->num_players; i++) {
             out->players[i].body = NULL;
             out->players[i].length = 0;
@@ -142,6 +140,7 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
             out->players[i].needs_reset = false;
         }
     }
+
     for (int i = 0; i < out->food_count; i++) {
         memcpy(&v, p, 4);
         out->food[i].x = (int)ntohl(v);
@@ -158,7 +157,20 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
         out->players[i].length = (int)ntohl(v);
         p += 4;
     }
-    return true;
+
+    ok = true;
+out:
+    if (!ok) {
+        free(out->food);
+        out->food = NULL;
+        out->food_count = 0;
+        out->max_food = 0;
+        free(out->players);
+        out->players = NULL;
+        out->num_players = 0;
+        out->max_players = 0;
+    }
+    return ok;
 }
 void net_free_unpacked_game_state(GameState* out) {
     if (!out)
@@ -197,7 +209,7 @@ NetClient* net_connect(const char* host, int port) {
         close(fd);
         return NULL;
     }
-    NetClient* c = malloc(sizeof(NetClient));
+    NetClient* c = malloc(sizeof *c);
     if (!c) {
         close(fd);
         return NULL;

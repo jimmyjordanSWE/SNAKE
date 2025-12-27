@@ -23,7 +23,7 @@ struct Game {
 Game* game_create(const GameConfig* cfg, uint32_t seed_override) {
     if (!cfg)
         return NULL;
-    Game* g = (Game*)malloc(sizeof(Game));
+    Game* g = malloc(sizeof *g);
     if (!g)
         return NULL;
     int bw = 0, bh = 0;
@@ -319,7 +319,7 @@ void game_init(GameState* game, int width, int height, const GameConfig* cfg) {
     if (!game->players)
         return;
     if (game->max_food > 0) {
-        game->food = malloc(sizeof(SnakePoint) * (size_t)game->max_food);
+        game->food = malloc((size_t)game->max_food * sizeof *game->food);
         if (!game->food) {
             free(game->players);
             game->players = NULL;
@@ -327,9 +327,9 @@ void game_init(GameState* game, int width, int height, const GameConfig* cfg) {
         }
     }
     size_t total_elements = (size_t)game->max_players * (size_t)game->max_length;
-    void* all_bodies = malloc(total_elements * sizeof(SnakePoint));
-    void* all_prev_x = malloc(total_elements * sizeof(float));
-    void* all_prev_y = malloc(total_elements * sizeof(float));
+    SnakePoint* all_bodies = malloc(total_elements * sizeof *all_bodies);
+    float* all_prev_x = malloc(total_elements * sizeof *all_prev_x);
+    float* all_prev_y = malloc(total_elements * sizeof *all_prev_y);
     if (!all_bodies || !all_prev_x || !all_prev_y) {
         free(all_bodies);
         free(all_prev_x);

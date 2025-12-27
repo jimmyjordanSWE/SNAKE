@@ -7,6 +7,7 @@ int wall_height;
 float texture_scale;
 } WallProjection;
 typedef struct Projection3D Projection3D;
+// Returns a newly allocated Projection3D; caller must call projection_destroy()
 Projection3D* projection_create(int screen_width, int screen_height, float fov_radians, float wall_scale);
 void projection_destroy(Projection3D* proj);
 void projection_init(Projection3D* proj, int screen_width, int screen_height, float fov_radians, float wall_scale);

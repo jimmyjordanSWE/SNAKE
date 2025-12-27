@@ -886,6 +886,10 @@ tests
   f main(_)
  test_env.c
   f main(_)
+ test_game_oom.c
+  f ensure_real_fns(_)
+  f free(*p)
+  f main(_)
  test_highscore_name.c
   f main(_)
  test_input.c

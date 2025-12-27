@@ -42,7 +42,7 @@ struct SDL3DContext {
     bool initialized;
 };
 SDL3DContext* render_3d_sdl_create(int width, int height) {
-    SDL3DContext* ctx = (SDL3DContext*)calloc(1, sizeof(*ctx));
+    SDL3DContext* ctx = calloc(1, sizeof *ctx);
     if (!ctx)
         return NULL;
     if (!render_3d_sdl_init(width, height, ctx)) {
@@ -73,68 +73,95 @@ bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
         return true;
     if (width > (int)(SIZE_MAX / ((size_t)height * sizeof(uint32_t))))
         return false;
+
     LSAN_DISABLE();
+    int err = 0;
+    int sdl_inited = 0;
+
+    ctx_out->pixels = NULL;
+    ctx_out->window = NULL;
+    ctx_out->renderer = NULL;
+    ctx_out->texture = NULL;
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        ctx_out->pixels = (uint32_t*)malloc((size_t)width * (size_t)height * sizeof(uint32_t));
-        if (ctx_out->pixels) {
-            ctx_out->width = width;
-            ctx_out->height = height;
-            ctx_out->initialized = true;
-            LSAN_ENABLE();
-            return true;
+        /* SDL unavailable: fall back to a plain pixel buffer if possible */
+        ctx_out->pixels = malloc((size_t)width * (size_t)height * sizeof *ctx_out->pixels);
+        if (!ctx_out->pixels) {
+            err = 1;
+            goto out;
         }
-        LSAN_ENABLE();
-        return false;
+        ctx_out->width = width;
+        ctx_out->height = height;
+        ctx_out->initialized = true;
+        goto out;
     }
+    sdl_inited = 1;
+
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
     ctx_out->window = SDL_CreateWindow("SNAKE 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
                                        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP);
     if (!ctx_out->window) {
-        SDL_Quit();
-        LSAN_ENABLE();
-        return false;
+        err = 2;
+        goto out;
     }
     SDL_ShowWindow(ctx_out->window);
     SDL_SetWindowAlwaysOnTop(ctx_out->window, SDL_TRUE);
     SDL_RaiseWindow(ctx_out->window);
     SDL_PumpEvents();
+
     ctx_out->renderer = SDL_CreateRenderer(ctx_out->window, -1, SDL_RENDERER_ACCELERATED);
     if (!ctx_out->renderer) {
-        SDL_DestroyWindow(ctx_out->window);
-        SDL_Quit();
-        LSAN_ENABLE();
-        return false;
+        err = 3;
+        goto out;
     }
     SDL_SetRenderDrawColor(ctx_out->renderer, 0, 0, 0, 255);
     SDL_RenderClear(ctx_out->renderer);
     SDL_RenderPresent(ctx_out->renderer);
+
     ctx_out->texture =
         SDL_CreateTexture(ctx_out->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
     if (!ctx_out->texture) {
-        SDL_DestroyRenderer(ctx_out->renderer);
-        SDL_DestroyWindow(ctx_out->window);
-        SDL_Quit();
-        LSAN_ENABLE();
-        return false;
+        err = 4;
+        goto out;
     }
-    ctx_out->width = width;
-    ctx_out->height = height;
-    SDL_RaiseWindow(ctx_out->window);
-    SDL_PumpEvents();
-    ctx_out->pixels = (uint32_t*)malloc((size_t)width * (size_t)height * sizeof(uint32_t));
+
+    ctx_out->pixels = malloc((size_t)width * (size_t)height * sizeof *ctx_out->pixels);
     if (!ctx_out->pixels) {
-        SDL_DestroyTexture(ctx_out->texture);
-        SDL_DestroyRenderer(ctx_out->renderer);
-        SDL_DestroyWindow(ctx_out->window);
-        SDL_Quit();
-        LSAN_ENABLE();
-        return false;
+        err = 5;
+        goto out;
     }
+
     ctx_out->width = width;
     ctx_out->height = height;
     ctx_out->initialized = true;
+
+out:
+    if (err) {
+        if (ctx_out->pixels) {
+            free(ctx_out->pixels);
+            ctx_out->pixels = NULL;
+        }
+        if (ctx_out->texture) {
+            SDL_DestroyTexture(ctx_out->texture);
+            ctx_out->texture = NULL;
+        }
+        if (ctx_out->renderer) {
+            SDL_DestroyRenderer(ctx_out->renderer);
+            ctx_out->renderer = NULL;
+        }
+        if (ctx_out->window) {
+            SDL_DestroyWindow(ctx_out->window);
+            ctx_out->window = NULL;
+        }
+        if (sdl_inited)
+            SDL_Quit();
+        ctx_out->width = 0;
+        ctx_out->height = 0;
+        ctx_out->initialized = false;
+    }
+
     LSAN_ENABLE();
-    return true;
+    return ctx_out->initialized;
 }
 void render_3d_sdl_shutdown(SDL3DContext* ctx) {
     if (!ctx || !ctx->initialized)

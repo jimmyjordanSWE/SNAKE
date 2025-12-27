@@ -1,13 +1,23 @@
 Flow:
- display_tty->tty
+ camera->test_game_oom
+ collision->test_game_oom
+ display_3d->test_game_oom
+ display_tty->test_game_oom,tty
  fuzz_stb_image->net,persist
- game->collision,direction,persist,rng
+ game->collision,direction,persist,rng,test_game_oom
+ net->test_game_oom
+ persist->test_game_oom
+ projection->test_game_oom
+ raycast->test_game_oom
  render->display_tty,persist,platform,render_3d,render_input
- render_3d->camera,env,projection,raycast,render_3d_sdl,sprite,texture
- snakegame->console,game,input,persist,platform,render,render_3d,tty
- sprite->camera,projection,render_3d_sdl
+ render_3d->camera,env,projection,raycast,render_3d_sdl,sprite,test_game_oom,texture
+ render_3d_sdl->test_game_oom
+ snakegame->console,game,input,persist,platform,render,render_3d,test_game_oom,tty
+ sprite->camera,projection,render_3d_sdl,test_game_oom
  test_persist_long_lines->persist
- test_tty_path->collision,console,env,input,net,persist,render_input,snakegame,test_persist_long_lines,texture,tty
+ test_tty_path->collision,console,env,game,input,net,persist,render_input,snakegame,test_game_oom,test_persist_long_lines,texture,tty
+ texture->test_game_oom
+ tty->test_game_oom
 
 Tree(main):
   main
@@ -16,51 +26,78 @@ Tree(main):
       collision_is_snake
       collision_is_wall
       collision_next_head
+      free
+        ensure_real_fns
     collision_is_wall
     collision_next_head
     console_info
     env_bool
+    free (see above)
     game_config_destroy
+      free (see above)
+    game_destroy
+      free (see above)
+      game_free
+        free (see above)
     input_poll_from_buf
       ascii_tolower
       parse_arrow_key
     net_disconnect
+      free (see above)
     net_free_unpacked_game_state
+      free (see above)
     net_recv_state
+      free (see above)
       net_unpack_game_state
+        free (see above)
     net_send_input
       net_pack_input
-    net_unpack_game_state
+    net_unpack_game_state (see above)
     persist_free_scores
+      free (see above)
       highscore_destroy
+        free (see above)
     persist_load_config
       clamp_int
     persist_read_scores
+      free (see above)
     render_sanitize_player_name
     run_case
-      game_config_destroy
+      game_config_destroy (see above)
       persist_free_scores (see above)
       persist_load_config (see above)
-      persist_read_scores
+      persist_read_scores (see above)
     snake_game_free
-      game_config_destroy
-      game_destroy
-        game_free
+      free (see above)
+      game_config_destroy (see above)
+      game_destroy (see above)
       input_shutdown
         restore_terminal
       render_3d_shutdown
         camera_destroy
+          free (see above)
+        free (see above)
         projection_destroy
+          free (see above)
         raycaster_destroy
+          free (see above)
         render_3d_sdl_destroy
+          free (see above)
           render_3d_sdl_shutdown
+            free (see above)
         sprite_destroy
+          free (see above)
           sprite_shutdown
+            free (see above)
         texture_destroy
+          free (see above)
           texture_free_image
+            free (see above)
       render_shutdown
         display_shutdown
+          free (see above)
           tty_close
+            free (see above)
     snake_game_run
       console_box_paused_terminal_small
         console_info
@@ -115,11 +152,11 @@ Tree(main):
         highscore_set_name
         highscore_set_score
         persist_free_scores (see above)
-        persist_read_scores
+        persist_read_scores (see above)
         persist_write_scores
           highscore_get_score
       persist_free_scores (see above)
-      persist_read_scores
+      persist_read_scores (see above)
       platform_get_terminal_size
       platform_now_ms
       platform_sleep_ms
@@ -269,6 +306,7 @@ Tree(main):
       tty_size_sufficient_for_board
     texture_destroy (see above)
     texture_load_from_file
+      free (see above)
       is_safe_texture_filename
-    tty_close
+    tty_close (see above)
     tty_get_write_buffer_size

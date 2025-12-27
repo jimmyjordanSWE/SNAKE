@@ -22,13 +22,7 @@ This is a C-based snake game. The project is built with `make` and uses the SDL2
     ./snakegame
     ```
 
-## Testing
 
-The project has a suite of tests. While there isn't a single command to run all tests, you can run individual test targets from the `Makefile`. For example:
-
-```bash
-make test-3d
-```
 
 # Development Conventions
 

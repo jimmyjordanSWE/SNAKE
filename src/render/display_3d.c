@@ -8,7 +8,7 @@ struct Display3D {
     Framebuffer3DCell* buffer;
 };
 Display3D* display_3d_create(int width, int height) {
-    Display3D* d = (Display3D*)calloc(1, sizeof(*d));
+    Display3D* d = calloc(1, sizeof *d);
     if (!d)
         return NULL;
     display_3d_init(d, width, height);

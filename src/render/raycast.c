@@ -9,7 +9,7 @@ struct Raycaster3D {
     const uint8_t* board;
 };
 Raycaster3D* raycaster_create(int width, int height, const uint8_t* board) {
-    Raycaster3D* r = (Raycaster3D*)calloc(1, sizeof(*r));
+    Raycaster3D* r = calloc(1, sizeof *r);
     if (!r)
         return NULL;
     raycast_init(r, width, height, board);

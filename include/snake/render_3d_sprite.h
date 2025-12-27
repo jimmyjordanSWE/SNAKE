@@ -7,6 +7,7 @@
 #include <stdbool.h>
 typedef struct Sprite3D Sprite3D;
 typedef struct SpriteRenderer3D SpriteRenderer3D;
+// Returns a newly allocated SpriteRenderer3D; caller must call sprite_destroy()
 SpriteRenderer3D* sprite_create(int max_sprites, const Camera3D* camera, const Projection3D* proj);
 void sprite_destroy(SpriteRenderer3D* sr);
 void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, const Projection3D* proj);

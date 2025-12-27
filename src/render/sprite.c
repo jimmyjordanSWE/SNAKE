@@ -299,7 +299,7 @@ void sprite_shutdown(SpriteRenderer3D* sr) {
     sr->proj = NULL;
 }
 SpriteRenderer3D* sprite_create(int max_sprites, const Camera3D* camera, const Projection3D* proj) {
-    SpriteRenderer3D* sr = (SpriteRenderer3D*)calloc(1, sizeof(*sr));
+    SpriteRenderer3D* sr = calloc(1, sizeof *sr);
     if (!sr)
         return NULL;
     sprite_init(sr, max_sprites, camera, proj);

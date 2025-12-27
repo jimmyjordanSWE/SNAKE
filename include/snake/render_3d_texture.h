@@ -7,6 +7,7 @@ uint32_t color;
 } Texel;
 #define TEXTURE_SCALE 4
 typedef struct Texture3D Texture3D;
+// Returns a newly allocated Texture3D; caller must call texture_destroy()
 Texture3D* texture_create(void);
 void texture_destroy(Texture3D* tex);
 void texture_init(Texture3D* tex);

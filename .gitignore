@@ -60,3 +60,14 @@ snakegame
 .snake_scores
 /build/
 .venv/
+
+# Fuzzing artifacts and generated files — do not commit
+# Root-level artifacts produced when triaging fuzz findings
+leak-*
+oom-*
+crash-*
+stb_oom-*
+stb_run.log
+
+# Specific artifact directories (build is already ignored but being explicit helps)
+build/fuzz/artifacts/

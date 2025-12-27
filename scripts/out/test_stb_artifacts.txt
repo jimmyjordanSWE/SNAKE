@@ -1,0 +1,5 @@
+tested: crash-57df17949c0678e92046e76f0e045bf4a70887f1 -> w=0 h=0 c=0 img=(nil)
+tested: leak-465fa86a76c1fee19a72e60a53cfeb6f6842b034 -> w=0 h=0 c=0 img=(nil)
+tested: leak-c46c42b93580ff0584604ce5ad8028e84a9abb63 -> w=0 h=0 c=0 img=(nil)
+tested: leak-1e7335f4ddb0d5eaee558b398870d5d114636303 -> w=0 h=0 c=0 img=(nil)
+test_stb_artifacts: tested 4 artifacts

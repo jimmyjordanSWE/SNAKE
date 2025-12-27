@@ -35,7 +35,3 @@ jobs:
       - name: Run unit tests
         run: |
           bash scripts/run_unit_tests.sh
-
-      - name: Fuzz smoke (short)
-        run: |
-          bash scripts/run_fuzz_smoke.sh

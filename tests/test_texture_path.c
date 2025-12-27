@@ -24,12 +24,25 @@ int main(void) {
 
     /* Path with many parent components */
     char many_parents[4096];
+    size_t mp_used = 0, mp_avail = sizeof(many_parents);
     many_parents[0] = '\0';
     for (int i = 0; i < 2000; i += 3) {
-        strcat(many_parents, "../");
+        if (mp_used + 3 + 1 >= mp_avail) break;
+        memcpy(many_parents + mp_used, "../", 3);
+        mp_used += 3;
+        many_parents[mp_used] = '\0';
     }
-    strncat(many_parents, "image.png", sizeof(many_parents) - strlen(many_parents) - 1);
+    /* Safely append the filename */
+    if (mp_used + strlen("image.png") + 1 < mp_avail) {
+        strncat(many_parents, "image.png", mp_avail - mp_used - 1);
+    }
     ok = texture_load_from_file(tex, many_parents);
+    assert(ok == false);
+
+    /* Reject unsafe paths */
+    ok = texture_load_from_file(tex, "/etc/passwd");
+    assert(ok == false);
+    ok = texture_load_from_file(tex, "../image.png");
     assert(ok == false);
 
     texture_destroy(tex);

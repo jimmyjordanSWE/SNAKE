@@ -1,4 +1,11 @@
 STRUCTURE
+fuzz
+ fuzz_net.c
+  f LLVMFuzzerTestOneInput(*data,size)
+ fuzz_persist.c
+  f LLVMFuzzerTestOneInput(*data,size)
+ fuzz_stb_image.c
+  f LLVMFuzzerTestOneInput(*data,size)
 include
  snake
   collision.h
@@ -45,6 +52,8 @@ include
     size_valid(*ctx)
    s DisplayContext
    t DisplayContext
+  env.h
+   f env_bool(*name,default_val)
   game.h
    f game_
     destroy(*g)
@@ -357,6 +366,8 @@ include
    s Texture3D
    t Texel
    t Texture3D
+  render_input.h
+   f render_sanitize_player_name(*input,*out,out_len)
   snakegame.h
    f snake_game_
     free(*game)
@@ -377,6 +388,7 @@ include
      min_size(*ctx,*min_width,*min_height)
      pixel(*ctx,x,y)
      size(*ctx,*width,*height)
+     write_buffer_size(*ctx)
     put_pixel(*ctx,x,y,px)
     set_
      resize_callback(*ctx,*callback,*userdata)
@@ -401,6 +413,10 @@ include
      next_u32(*state)
      range(*state,lo,hi_inclusive)
      seed(*state,seed)
+  validate.h
+   f safe_
+    copy_and_null(*dst,dst_size,*src,len)
+    snprintf(*buf,buf_size,*fmt)
 main.c
  f main(_)
 src
@@ -493,7 +509,7 @@ src
     unpack_
      game_state(*buf,buf_size,*out)
      input(*buf,buf_size,*out)
-   s NetClient{unused}
+   s NetClient{fd}
  persist
   persist.c
    f clamp_int(v,lo,hi)
@@ -604,6 +620,7 @@ src
      min_size(*ctx,*min_width,*min_height)
      pixel(*ctx,x,y)
      size(*ctx,*width,*height)
+     write_buffer_size(*ctx)
     put_pixel(*ctx,x,y,px)
     set_
      resize_callback(*ctx,*callback,*userdata)
@@ -796,6 +813,8 @@ src
    s <anon>{*window,*renderer,*texture,width,height}
    s SDL3DContext{width,height,*pixels,*window,*renderer,*texture,initialized}
    t SDLState
+  render_input.c
+   f render_sanitize_player_name(*input,*out,out_len)
   sprite.c
    f sprite_
     add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
@@ -815,6 +834,7 @@ src
     sort_by_depth(*sr)
    s SpriteRenderer3D{*sprites,max_sprites,count,*camera,*proj}
   texture.c
+   f is_safe_texture_filename(*filename)
    f sample_
     bilinear(*tex,u,v)
     nearest(*tex,u,v)
@@ -849,9 +869,57 @@ src
    f snake_dir_turn_
     left(d)
     right(d)
+  env.c
+   f env_bool(*name,default_val)
   rng.c
    f snake_rng_
     next_u32(*state)
     range(*state,lo,hi_inclusive)
     seed(*state,seed)
   utils.c
+  validate.c
+   f safe_
+    copy_and_null(*dst,dst_size,*src,len)
+    snprintf(*buf,buf_size,*fmt)
+tests
+ test_collision.c
+  f main(_)
+ test_env.c
+  f main(_)
+ test_highscore_name.c
+  f main(_)
+ test_input.c
+  f main(_)
+ test_net.c
+  f main(_)
+ test_net_integration.c
+  f main(_)
+ test_net_overflow.c
+  f main(_)
+ test_persist.c
+  f main(_)
+  f run_case(*content,expect_count)
+ test_persist_config.c
+  f main(_)
+  f run_case(*content,expect_ok)
+ test_persist_long_lines.c
+  f main(_)
+  f run_case(*fn)
+ test_persist_truncation.c
+  f main(_)
+ test_stb_artifacts.c
+  f main(_)
+ test_stb_chunk_size_limit.c
+  f main(_)
+ test_stb_image_fuzz.c
+  f main(_)
+ test_stb_leak_plte.c
+  f main(_)
+ test_texture_path.c
+  f main(_)
+ test_texture_path_extra.c
+  f main(_)
+ test_tty_buffer_cap.c
+  f main(_)
+ test_tty_path.c
+  f main(_)

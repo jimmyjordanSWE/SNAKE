@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <termios.h>
+#include <stddef.h>
 struct ascii_pixel {
 uint16_t pixel;
 uint16_t color;
@@ -25,6 +26,9 @@ bool tty_size_valid(const tty_context* ctx);
 void tty_get_min_size(const tty_context* ctx, int* min_width, int* min_height);
 void tty_get_board_min_size(int board_width, int board_height, int* min_width, int* min_height);
 bool tty_size_sufficient_for_board(int term_width, int term_height, int board_width, int board_height);
+
+/* Expose write buffer size for testing and heuristics */
+size_t tty_get_write_buffer_size(tty_context* ctx);
 
 #define COLOR_MAKE(fg, bg) ((uint16_t)(((bg) << 4) | (fg)))
 #define COLOR_FG(c) ((uint8_t)((c) & 0x0F))

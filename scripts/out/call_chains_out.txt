@@ -1,18 +1,47 @@
 Flow:
  display_tty->tty
+ fuzz_stb_image->net,persist
  game->collision,direction,persist,rng
- main->console,persist,snakegame
- render->display_tty,persist,platform,render_3d
- render_3d->camera,projection,raycast,render_3d_sdl,sprite,texture
+ render->display_tty,persist,platform,render_3d,render_input
+ render_3d->camera,env,projection,raycast,render_3d_sdl,sprite,texture
  snakegame->console,game,input,persist,platform,render,render_3d,tty
  sprite->camera,projection,render_3d_sdl
+ test_persist_long_lines->persist
+ test_tty_path->collision,console,env,input,net,persist,render_input,snakegame,test_persist_long_lines,texture,tty
 
 Tree(main):
   main
+    collision_detect_and_resolve
+      collision_is_self
+      collision_is_snake
+      collision_is_wall
+      collision_next_head
+    collision_is_wall
+    collision_next_head
     console_info
+    env_bool
     game_config_destroy
+    input_poll_from_buf
+      ascii_tolower
+      parse_arrow_key
+    net_disconnect
+    net_free_unpacked_game_state
+    net_recv_state
+      net_unpack_game_state
+    net_send_input
+      net_pack_input
+    net_unpack_game_state
+    persist_free_scores
+      highscore_destroy
     persist_load_config
       clamp_int
+    persist_read_scores
+    render_sanitize_player_name
+    run_case
+      game_config_destroy
+      persist_free_scores (see above)
+      persist_load_config (see above)
+      persist_read_scores
     snake_game_free
       game_config_destroy
       game_destroy
@@ -71,11 +100,7 @@ Tree(main):
       game_step
         game_state_get_num_players
         game_tick
-          collision_detect_and_resolve
-            collision_is_self
-            collision_is_snake
-            collision_is_wall
-            collision_next_head
+          collision_detect_and_resolve (see above)
           collision_next_head
           food_respawn (see above)
           opposite_dir
@@ -83,16 +108,13 @@ Tree(main):
           spawn_player (see above)
       highscore_get_score
       input_poll
-        input_poll_from_buf
-          ascii_tolower
-          parse_arrow_key
+        input_poll_from_buf (see above)
       input_shutdown (see above)
       persist_append_score
         highscore_get_score
         highscore_set_name
         highscore_set_score
-        persist_free_scores
-          highscore_destroy
+        persist_free_scores (see above)
         persist_read_scores
         persist_write_scores
           highscore_get_score
@@ -112,6 +134,7 @@ Tree(main):
         camera_get_ray_angle
           camera_get_interpolated_angle (see above)
         camera_update_interpolation
+        env_bool
         projection_get_wall_scale
         projection_project_wall_perp
           projection_project_wall
@@ -121,6 +144,7 @@ Tree(main):
           render_3d_draw_char
             render_3d_sdl_blend_pixel
         render_3d_draw_minimap
+          env_bool
           render_3d_compute_minimap_cell_px
           render_3d_log
           render_3d_sdl_blend_pixel
@@ -240,5 +264,11 @@ Tree(main):
           render_3d_sdl_get_height
           render_3d_sdl_get_width
           render_3d_sdl_present
+        render_sanitize_player_name
       render_shutdown (see above)
       tty_size_sufficient_for_board
+    texture_destroy (see above)
+    texture_load_from_file
+      is_safe_texture_filename
+    tty_close
+    tty_get_write_buffer_size

@@ -5,12 +5,14 @@
 #include "platform.h"
 #include <errno.h>
 #include <signal.h>
+#include <stdio.h>
 #include <sys/ioctl.h>
 #include <time.h>
 #include <unistd.h>
 uint64_t platform_now_ms(void) {
     struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1)
+        return 0;
     return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
 }
 void platform_sleep_ms(uint64_t ms) {
@@ -38,7 +40,9 @@ bool platform_get_terminal_size(int* width_out, int* height_out) {
     return true;
 }
 void platform_winch_init(void) {
-    signal(SIGWINCH, platform_sigwinch_handler);
+    if (signal(SIGWINCH, platform_sigwinch_handler) == SIG_ERR) {
+        perror("signal(SIGWINCH)");
+    }
 }
 bool platform_was_resized(void) {
     if (platform_terminal_resized) {

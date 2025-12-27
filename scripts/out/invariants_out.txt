@@ -1,9 +1,9 @@
 # State Transitions (state/status/mode/active/valid/etc)
-src/core/game.c: g->state.last_food_respawned->false(L73) g->state.last_food_respawned->false(L77) player->active->true(L220) player->active->false(L278) game->status->GAME_STATUS_RUNNING(L288) game->players[i].active->false(L325) game->players[i].active->false(L369) game->status->GAME_STATUS_RUNNING(L376) game->status->GAME_STATUS_GAME_OVER(L428)
-src/input/input.c: g_initialized->false(L28) g_initialized->true(L53)
+src/core/game.c: g->state.last_food_respawned->false(L73) g->state.last_food_respawned->false(L77) player->active->true(L238) player->active->false(L296) game->status->GAME_STATUS_RUNNING(L306) game->players[i].active->false(L343) game->players[i].active->false(L387) game->status->GAME_STATUS_RUNNING(L394) game->status->GAME_STATUS_GAME_OVER(L446)
+src/input/input.c: g_initialized->false(L33) g_initialized->true(L60)
 src/net/net.c: out->players[i].active->false(L137)
 src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L110)
-src/platform/tty.c: ctx->size_valid->false(L111) ctx->size_valid->true(L113) ctx->dirty->true(L177) ctx->dirty->true(L203) ctx->dirty->true(L217) ctx->dirty->false(L298) ctx->dirty->true(L304) ctx->size_valid->false(L361) ctx->size_valid->true(L363) ctx->dirty->true(L368)
+src/platform/tty.c: ctx->size_valid->false(L111) ctx->size_valid->true(L113) ctx->dirty->true(L187) ctx->dirty->true(L215) ctx->dirty->true(L229) ctx->dirty->false(L310) ctx->dirty->true(L316) ctx->size_valid->false(L373) ctx->size_valid->true(L375) ctx->dirty->true(L380)
 src/render/render_3d.c: g_render_3d.config.active_player->0(L367) g_render_3d.initialized->true(L428) s_floor_row_dist_valid->true(L469) s_floor_row_dist_valid->false(L471) g_render_3d.initialized->false(L755) g_render_3d.game_state->NULL(L756)
 src/render/render_3d_sdl.c: ctx_out->initialized->true(L82) ctx_out->initialized->true(L135) ctx->initialized->false(L161)
 # Total: 32 transitions in 7 files

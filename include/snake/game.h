@@ -23,6 +23,8 @@ void game_destroy(Game* g);
 int game_enqueue_input(Game* g, int player_index, const InputState* in);
 void game_step(Game* g, GameEvents* out_events);
 const GameState* game_get_state(const Game* g);
+GameStatus game_get_status(const Game* g);
+void game_get_size(const Game* g, int* width, int* height);
 int game_get_num_players(const Game* g);
 bool game_player_is_active(const Game* g, int player_index);
 int game_player_current_score(const Game* g, int player_index);

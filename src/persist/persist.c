@@ -425,7 +425,7 @@ bool persist_write_scores(const char* filename, HighScore** scores, int count) {
         const char* name = highscore_get_name(scores[i]);
         int score = highscore_get_score(scores[i]);
         if (fprintf(fp, "%s %d\n", name ? name : "", score) < 0) {
-            fclose(fp);
+            (void)fclose(fp);
             (void)unlink(temp_filename);
             return false;
         }

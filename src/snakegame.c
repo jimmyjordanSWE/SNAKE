@@ -164,7 +164,7 @@ int snake_game_run(SnakeGame* s) {
     HighScore** highscores = NULL;
     int highscore_count = persist_read_scores(".snake_scores", &highscores);
     render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-    while (((const struct GameState*)game_get_state(game))->status != GAME_STATUS_GAME_OVER) {
+    while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
         if (platform_was_resized()) {
             int new_w = 0, new_h = 0;
             if (!platform_get_terminal_size(&new_w, &new_h)) {
@@ -230,7 +230,9 @@ int snake_game_run(SnakeGame* s) {
                 } else {
                     snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
                 }
-                persist_append_score(".snake_scores", name_buf, death_score);
+                if (!persist_append_score(".snake_scores", name_buf, death_score)) {
+                    console_warn("Failed to append score for %s\n", name_buf);
+                }
                 render_note_session_score(name_buf, death_score);
                 if (cur) {
                     persist_free_scores(cur, cur_cnt);
@@ -310,7 +312,9 @@ clean_done:
         } else {
             snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
         }
-        persist_append_score(".snake_scores", name_buf, final_score);
+        if (!persist_append_score(".snake_scores", name_buf, final_score)) {
+            console_warn("Failed to append final score for %s\n", name_buf);
+        }
         render_note_session_score(name_buf, final_score);
         if (cur)
             persist_free_scores(cur, cur_cnt);

@@ -22,9 +22,14 @@ static char s_key_restart = 'r';
 static char s_key_pause = 'p';
 static void restore_terminal(void) {
     if (g_initialized) {
-        if (g_stdin_flags >= 0)
-            fcntl(STDIN_FILENO, F_SETFL, g_stdin_flags);
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios);
+        if (g_stdin_flags >= 0) {
+            if (fcntl(STDIN_FILENO, F_SETFL, g_stdin_flags) == -1) {
+                perror("restore_terminal: fcntl(F_SETFL)");
+            }
+        }
+        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios) == -1) {
+            perror("restore_terminal: tcsetattr");
+        }
         g_initialized = false;
     }
 }
@@ -33,7 +38,9 @@ bool input_init(void) {
         return true;
     if (tcgetattr(STDIN_FILENO, &g_original_termios) < 0)
         return false;
-    atexit(restore_terminal);
+    if (atexit(restore_terminal) != 0) {
+        return false;
+    }
     struct termios new_termios = g_original_termios;
     new_termios.c_lflag &= (unsigned int)~(unsigned int)(ICANON | ECHO);
     new_termios.c_cc[VMIN] = 0;

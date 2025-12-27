@@ -94,6 +94,24 @@ const GameState* game_get_state(const Game* g) {
         return NULL;
     return &g->state;
 }
+GameStatus game_get_status(const Game* g) {
+    if (!g)
+        return GAME_STATUS_GAME_OVER;
+    return g->state.status;
+}
+void game_get_size(const Game* g, int* width, int* height) {
+    if (!g) {
+        if (width)
+            *width = 0;
+        if (height)
+            *height = 0;
+        return;
+    }
+    if (width)
+        *width = g->state.width;
+    if (height)
+        *height = g->state.height;
+}
 int game_get_num_players(const Game* g) {
     if (!g)
         return 0;

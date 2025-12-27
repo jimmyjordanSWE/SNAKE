@@ -39,6 +39,7 @@ Tree(main):
         console_info
       console_terminal_resized
         console_info
+      console_warn
       game_config_get_board_size
       game_config_get_tick_rate_ms
       game_destroy (see above)
@@ -60,6 +61,7 @@ Tree(main):
             snake_rng_range (see above)
         snake_dir_turn_left
         snake_dir_turn_right
+      game_get_status
       game_player_current_score
         game_state_player_current_score
       game_player_is_active

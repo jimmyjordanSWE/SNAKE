@@ -1,9 +1,9 @@
 # Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
-src/core/game.c: 26m 42f 300c 304m 306f 312m 313m 314m 316f 317f 318f 335f 336f 350f 351f 352f 354f 358f
+src/core/game.c: 26m 42f 318c 322m 324f 330m 331m 332m 334f 335f 336f 353f 354f 368f 369f 370f 372f 376f
 src/net/net.c: 116m 122f 127m 129f 163f 169f
 src/persist/persist.c: 38c 49f 97c 134f 370c 408f 467r 502f 797m 798m 812f 813f
-src/platform/tty.c: 85m 99f 105f 116f 128f 135f 141f 144c 145c 151f 152f 155f 159m 161f 162f 163f 166f 188f 189f 190f 192f 327m 328m 330m 332f 333f 334f 350f 351f 352f
+src/platform/tty.c: 85m 99f 105f 116f 128f 137f 145f 148c 149c 155f 156f 161f 165m 167f 168f 169f 174f 200f 201f 202f 204f 339m 340m 342m 344f 345f 346f 362f 363f 364f
 src/render/camera.c: 49c 56f
 src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
@@ -13,5 +13,5 @@ src/render/render_3d.c: 422c 465r 726f
 src/render/render_3d_sdl.c: 45c 49f 58f 78m 124m 143f
 src/render/sprite.c: 22c 295f 303c 313f
 src/render/texture.c: 19c 29f 206f 224m 246f
-src/snakegame.c: 28m 33f 148f 344f
+src/snakegame.c: 28m 33f 148f 348f
 # Mem: 40a, 71f (15 files)

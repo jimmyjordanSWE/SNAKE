@@ -130,14 +130,18 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     }
     size_t n_cells = (size_t)actual_width * (size_t)actual_height;
     if (n_cells == 0 || n_cells / (size_t)actual_width != (size_t)actual_height) {
-        tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
-        close(ctx->tty_fd);
+        if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
+            perror("tty_open: tcsetattr cleanup (overflow)");
+        }
+        (void)close(ctx->tty_fd);
         free(ctx);
         return NULL;
     }
     if (n_cells > SIZE_MAX / sizeof(struct ascii_pixel)) {
-        tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
-        close(ctx->tty_fd);
+        if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
+            perror("tty_open: tcsetattr cleanup (n_cells)");
+        }
+        (void)close(ctx->tty_fd);
         free(ctx);
         return NULL;
     }
@@ -150,8 +154,10 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     error:
         free(ctx->front);
         free(ctx->back);
-        tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
-        close(ctx->tty_fd);
+        if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
+            perror("tty_open: tcsetattr cleanup (error)");
+        }
+        (void)close(ctx->tty_fd);
         free(ctx);
         return NULL;
     }
@@ -161,8 +167,10 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         free(ctx->front);
         free(ctx->back);
         free(ctx->write_buffer);
-        tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
-        close(ctx->tty_fd);
+        if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
+            perror("tty_open: tcsetattr cleanup (buffers)");
+        }
+        (void)close(ctx->tty_fd);
         free(ctx);
         return NULL;
     }
@@ -171,20 +179,24 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         ctx->front[i] = default_pixel;
         ctx->back[i] = default_pixel;
     }
-    dprintf(ctx->tty_fd, "\x1b[2J");
-    dprintf(ctx->tty_fd, "\x1b[?25l");
-    signal(SIGWINCH, sigwinch_handler);
+    if (dprintf(ctx->tty_fd, "\x1b[2J") < 0) {}
+    if (dprintf(ctx->tty_fd, "\x1b[?25l") < 0) {}
+    if (signal(SIGWINCH, sigwinch_handler) == SIG_ERR) {
+        perror("signal(SIGWINCH) in tty");
+    }
     ctx->dirty = true;
     return ctx;
 }
 void tty_close(tty_context* ctx) {
     if (!ctx)
         return;
-    dprintf(ctx->tty_fd, "\x1b[0m");
-    dprintf(ctx->tty_fd, "\x1b[?25h");
-    dprintf(ctx->tty_fd, "\x1b[2J");
-    dprintf(ctx->tty_fd, "\x1b[H");
-    tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios);
+    if (dprintf(ctx->tty_fd, "\x1b[0m") < 0) {}
+    if (dprintf(ctx->tty_fd, "\x1b[?25h") < 0) {}
+    if (dprintf(ctx->tty_fd, "\x1b[2J") < 0) {}
+    if (dprintf(ctx->tty_fd, "\x1b[H") < 0) {}
+    if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
+        perror("tty_close: tcsetattr");
+    }
     free(ctx->front);
     free(ctx->back);
     free(ctx->write_buffer);

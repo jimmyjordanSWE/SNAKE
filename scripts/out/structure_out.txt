@@ -49,7 +49,10 @@ include
    f game_
     destroy(*g)
     enqueue_input(*g,player_index,*in)
-    get_num_players(*g)
+    get_
+     num_players(*g)
+     size(*g,*width,*height)
+     status(*g)
     player_
      current_score(*g,player_index)
      died_this_tick(*g,player_index)
@@ -427,7 +430,10 @@ src
     destroy(*g)
     enqueue_input(*g,player_index,*in)
     free(*game)
-    get_num_players(*g)
+    get_
+     num_players(*g)
+     size(*g,*width,*height)
+     status(*g)
     init(*game,width,height,*cfg)
     player_
      current_score(*g,player_index)

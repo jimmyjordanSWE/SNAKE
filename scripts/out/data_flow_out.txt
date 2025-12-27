@@ -10,9 +10,9 @@ Data Ownership (struct r/w totals):
   tex: r(54) w(7)
   camera: r(32) w(26)
   cfg: r(32) w(26)
+  g: r(39) w(3)
   disp: r(27) w(9)
   g_render_3d.config: r(27) w(9)
-  g: r(33) w(3)
   ctx_out: r(21) w(13)
 
 Module Data Usage:

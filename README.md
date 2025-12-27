@@ -1,6 +1,6 @@
 # SNAKE 🐍
 
-A professional-grade C99 snake game with dual rendering modes: pseudo-3D SDL2 graphics and terminal-based ASCII art.
+A C99 snake game implementation featuring dual rendering modes: pseudo-3D SDL2 graphics and terminal-based ASCII output.
 
 ## Features
 
@@ -9,6 +9,13 @@ A professional-grade C99 snake game with dual rendering modes: pseudo-3D SDL2 gr
 - **Configurable** — Board size, tick rate, FOV, textures, keybindings
 - **Multiplayer Ready** — Supports multiple players on same board
 - **High Score Persistence** — Saves scores to `.snake_scores`
+
+## Architecture
+
+The codebase follows modular design principles and includes:
+- **Opaque Pointers**: Encapsulation of internal state.
+- **Error-Out Pattern**: Centralized resource management and cleanup.
+- **Context Generation**: Scripts that produce structural metadata in `scripts/out/` to assist in project navigation.
 
 ## Prerequisites
 
@@ -61,26 +68,11 @@ Edit `snake_cfg.txt` to customize:
 
 | Key | Action |
 |-----|--------|
-| W/A/S/D | Move (configurable) |
-| P | Pause |
-| R | Restart |
-| Q | Quit |
-
-## Project Structure
-
-```
-├── main.c              # Entry point
-├── src/
-│   ├── core/           # Game logic, collision
-│   ├── render/         # 3D raycasting, TTY display
-│   ├── input/          # Keyboard handling
-│   ├── persist/        # Config & score I/O
-│   ├── platform/       # Platform abstractions
-│   └── net/            # Networking (future)
-├── include/snake/      # Public headers (opaque APIs)
-├── scripts/            # LLM context analysis tools
-└── docs/               # Architecture & standards
-```
+| A / D | Turn Left / Right (Relative, for 3D view) |
+| Arrows | Cardinal Directions (Up, Down, Left, Right, for top-down) |
+| P | Pause/Resume |
+| R | Restart Session |
+| Q | Quit to Terminal |
 
 ## Development
 
@@ -96,7 +88,3 @@ make analyze
 ```
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical details and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
-## License
-
-MIT

@@ -72,17 +72,14 @@ Sprites → Depth Sort → Composite
 
 - **Caller owns**: Configs passed to `*_create()`
 - **Callee owns**: Returned opaque pointers (caller must call `*_destroy()`)
-- **Static analysis**: `memory_map.py` tracks all malloc/free pairs
 
 ---
 
-# LLM Context Generation Pipeline
-
-This project generates **high-level structural context** so LLMs can understand the codebase without loading every source file into their context window.
+This project generates structural context to assist LLMs in understanding the codebase structure.
 
 ## Purpose
 
-Instead of providing raw source code to an LLM, these scripts produce:
+Instead of providing only raw source code to an LLM, these scripts produce:
 - **Compressed symbol maps** — All functions, structs, typedefs in minimal tokens
 - **Architectural views** — Call graphs, data flow, dependencies
 - **Pattern summaries** — Memory ownership, state machines, hotspots
@@ -99,15 +96,15 @@ make analyze  # Manual refresh
 
 ## Script Registry
 
-| Script | Output | What It Extracts |
+| Script | Output | Metadata Provided |
 |--------|--------|------------------|
-| `structure.py` | `structure_out.txt` | STRUCTURE (Symbol tree) |
-| `call_chains.py` | `call_chains_out.txt` | **Module flow graph** + comprehensive call tree from `main` |
-| `data_flow.py` | `data_flow_out.txt` | **Struct ownership** totals + per-module data usage |
-| `memory_map.py` | `memory_map_out.txt` | Allocation locations (malloc/free line numbers) |
+| `structure.py` | `structure_out.txt` | Symbol hierarchy |
+| `call_chains.py` | `call_chains_out.txt` | Call tree and module flow |
+| `data_flow.py` | `data_flow_out.txt` | Struct usage totals |
+| `memory_map.py` | `memory_map_out.txt` | Allocation site tracking |
 | `hotspots.py` | `hotspots_out.txt` | Loop nesting depths |
-| `errors.py` | `errors_out.txt` | Allocation patterns (for ownership tracking) |
-| `invariants.py` | `invariants_out.txt` | State variable transitions |
+| `errors.py` | `errors_out.txt` | Allocation ownership patterns |
+| `invariants.py` | `invariants_out.txt` | State variable usage |
 
 ## How LLMs Use This
 

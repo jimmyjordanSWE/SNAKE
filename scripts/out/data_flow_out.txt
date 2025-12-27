@@ -4,7 +4,7 @@ Data Ownership (struct r/w totals):
   g_render_3d: r(157) w(26)
   player: r(123) w(21)
   s: r(50) w(57)
-  out: r(30) w(53)
+  out: r(30) w(51)
   sr: r(49) w(15)
   config: r(34) w(30)
   tex: r(54) w(7)

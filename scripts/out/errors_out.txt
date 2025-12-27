@@ -1,5 +1,5 @@
 src/console/console.c: L7r?(vfprintf) L13r?(vfprintf) L19r?(vfprintf)
-src/input/input.c: L52r?(tcsetattr) L56r?(tcsetattr)
+src/input/input.c: L50r?(tcsetattr) L54r?(tcsetattr)
 src/platform/tty.c: L377r?(ctx->on_resize) L379r?(ctx->on_size_invalid)
 src/render/render_3d.c: L641r?(sprite_add_color) L655r?(sprite_add_color) L672r?(sprite_add_color)
 src/render/render_3d_sdl.c: L16r?(fn) L24r?(fn) L76r?(LSAN_DISABLE) L83r?(LSAN_ENABLE) L86r?(LSAN_ENABLE) L94r?(LSAN_ENABLE) L105r?(LSAN_ENABLE) L117r?(LSAN_ENABLE) L130r?(LSAN_ENABLE) L136r?(LSAN_ENABLE)

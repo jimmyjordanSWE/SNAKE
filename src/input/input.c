@@ -13,10 +13,8 @@ static inline unsigned char ascii_tolower(unsigned char c) {
 static struct termios g_original_termios;
 static int g_stdin_flags = -1;
 static bool g_initialized = false;
-static char s_key_up = 'w';
-static char s_key_down = 's';
-static char s_key_left = 'a';
-static char s_key_right = 'd';
+static char s_key_turn_left = 'a';
+static char s_key_turn_right = 'd';
 static char s_key_quit = 'q';
 static char s_key_restart = 'r';
 static char s_key_pause = 'p';
@@ -116,19 +114,16 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
             break;
         default:
             out->any_key = true;
-            if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_up))
-                out->move_up = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_down))
-                out->move_down = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_left))
+            unsigned char lc = ascii_tolower((unsigned char)c);
+            if (lc == ascii_tolower((unsigned char)s_key_turn_left))
                 out->turn_left = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_right))
+            else if (lc == ascii_tolower((unsigned char)s_key_turn_right))
                 out->turn_right = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_quit))
+            else if (lc == ascii_tolower((unsigned char)s_key_quit))
                 out->quit = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_restart))
+            else if (lc == ascii_tolower((unsigned char)s_key_restart))
                 out->restart = true;
-            else if (ascii_tolower((unsigned char)c) == ascii_tolower((unsigned char)s_key_pause))
+            else if (lc == ascii_tolower((unsigned char)s_key_pause))
                 out->pause_toggle = true;
             break;
         }
@@ -141,14 +136,12 @@ void input_set_key_bindings(char up,
                             char quit,
                             char restart,
                             char pause_toggle) {
-    if (up)
-        s_key_up = up;
-    if (down)
-        s_key_down = down;
+    (void)up;
+    (void)down;
     if (turn_left)
-        s_key_left = turn_left;
+        s_key_turn_left = turn_left;
     if (turn_right)
-        s_key_right = turn_right;
+        s_key_turn_right = turn_right;
     if (quit)
         s_key_quit = quit;
     if (restart)

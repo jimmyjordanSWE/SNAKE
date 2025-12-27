@@ -2,34 +2,6 @@
 
 This is a C-based snake game. The project is built with `make` and uses the SDL2 library for graphics. The code is well-structured, with a clear separation of concerns between modules. It follows a set of coding standards that emphasize modularity, memory safety, and testability.
 
-# Building and Running
-
-## Building
-
-*   **Debug build (default):**
-    ```bash
-    make
-    ```
-*   **Release build:**
-    ```bash
-    make release
-    ```
-
-## Running
-
-*   **Run the game:**
-    ```bash
-    ./snakegame
-    ```
-
-## Testing
-
-The project has a suite of tests. While there isn't a single command to run all tests, you can run individual test targets from the `Makefile`. For example:
-
-```bash
-make test-3d
-```
-
 # Development Conventions
 
 ## Coding Style
@@ -52,21 +24,15 @@ You can format the code using the following commands:
 
 ```bash
 make format-llm
-make format-human
+make format
 ```
+
+ALWAYS `make format-llm` (saves tokens) before reading files.
+ALWAYS `make format` when done or before committing. 
 
 # Project Context & Static Analysis
 
 To provide superior context for LLMs, this project runs a suite of static analysis scripts on **every** `make` execution. These scripts generate token-minimized overviews of the codebase, highlighting structure, memory mapping, call chains, and more.
-
-## Automated Analysis Suite
-
-The following scripts run automatically during build:
-- `structure_out.txt`: AST-based project structure.
-- `memory_map_out.txt`: Ownership and allocation patterns.
-- `call_chains_out.txt`: Function reachability and comprehensive call tree.
-- `errors_out.txt`: Error handling and safety checks.
-- (And more in `scripts/out/`)
 
 If any script fails, the build will halt to ensure the context information is always accurate. You can manually refresh the analysis by running:
 
@@ -75,7 +41,7 @@ make analyze
 ```
 
 
-# C99 agent persona
+# agent persona
 <system_prompt>
 <identity>
 You are an expert C99 Systems Engineer & Architect, specifically optimized for high-performance, safe, and maintainable C systems. You are acting as a senior principal engineer conducting pair programming, architectural design, and code reviews.

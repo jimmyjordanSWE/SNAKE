@@ -1,6 +1,6 @@
 # State Transitions (state/status/mode/active/valid/etc)
 src/core/game.c: g->state.last_food_respawned->false(L73) g->state.last_food_respawned->false(L77) player->active->true(L238) player->active->false(L296) game->status->GAME_STATUS_RUNNING(L306) game->players[i].active->false(L343) game->players[i].active->false(L387) game->status->GAME_STATUS_RUNNING(L394) game->status->GAME_STATUS_GAME_OVER(L446)
-src/input/input.c: g_initialized->false(L33) g_initialized->true(L60)
+src/input/input.c: g_initialized->false(L31) g_initialized->true(L58)
 src/net/net.c: out->players[i].active->false(L137)
 src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L110)
 src/platform/tty.c: ctx->size_valid->false(L111) ctx->size_valid->true(L113) ctx->dirty->true(L187) ctx->dirty->true(L215) ctx->dirty->true(L229) ctx->dirty->false(L310) ctx->dirty->true(L316) ctx->size_valid->false(L373) ctx->size_valid->true(L375) ctx->dirty->true(L380)

@@ -30,33 +30,18 @@ make format-llm  # Token-optimized for LLM
 
 Formatting is enforced via `.clang-format`. Run before committing.
 
-## Static Analysis
+## LLM Context Generation
 
-Analysis runs automatically on every build. View results:
-
-```bash
-cat scripts/out/errors_out.txt     # Safety issues
-cat scripts/out/memory_map_out.txt # Allocation tracking
-cat PROJECT_CONTEXT.txt            # Full symbol tree
-```
+A suite of scripts runs during the build process to generate structural context in `scripts/out/`. These files provide metadata to assist LLMs in project navigation.
 
 ## Adding Code
 
 1. **Headers** — One public header per module in `include/snake/`
 2. **Implementation** — Corresponding `.c` in `src/<module>/`
 3. **Internal** — Use `*_internal.h` for private types
-4. **Tests** — Add targets to `Makefile`
 
 ## Commit Guidelines
 
 - Build must pass with `make` (errors = failure)
 - Empty `errors_out.txt` required
-- Format code before committing
-
-## LLM Agent Integration
-
-This project embeds LLM context in `GEMINI.md`. When using AI assistants:
-
-1. Ensure `GEMINI.md` is loaded as system context
-2. Run `make analyze` to refresh `PROJECT_CONTEXT.txt`
-3. Analysis scripts prevent redundant code generation
+- Run `make format` before committing.

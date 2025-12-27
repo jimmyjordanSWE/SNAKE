@@ -1,11 +1,11 @@
 # State Transitions (state/status/mode/active/valid/etc)
-src/core/game.c: g->state.last_food_respawned->false(L73) g->state.last_food_respawned->false(L77) player->active->true(L238) player->active->false(L296) game->status->GAME_STATUS_RUNNING(L306) game->players[i].active->false(L343) game->players[i].active->false(L387) game->status->GAME_STATUS_RUNNING(L394) game->status->GAME_STATUS_GAME_OVER(L446)
-src/input/input.c: g_initialized->false(L31) g_initialized->true(L58)
+src/core/game.c: g->state.last_food_respawned->false(L75) g->state.last_food_respawned->false(L79) s->players[idx].active->false(L141) player->active->true(L266) player->active->false(L324) game->status->GAME_STATUS_RUNNING(L334) game->players[i].active->false(L371) game->players[i].active->false(L415) game->status->GAME_STATUS_RUNNING(L422) game->status->GAME_STATUS_GAME_OVER(L474)
+src/input/input.c: g_initialized->false(L38) g_initialized->true(L65)
 src/net/net.c: out->players[i].active->false(L139)
-src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L110)
+src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L116)
 src/platform/tty.c: ctx->dirty->true(L185) ctx->dirty->true(L237) ctx->dirty->true(L251) ctx->dirty->false(L332) ctx->dirty->true(L338) ctx->size_valid->false(L395) ctx->size_valid->true(L397) ctx->dirty->true(L402)
 src/render/render_3d.c: g_render_3d.config.active_player->0(L367) g_render_3d.initialized->true(L428) s_floor_row_dist_valid->true(L469) s_floor_row_dist_valid->false(L471) g_render_3d.initialized->false(L753) g_render_3d.game_state->NULL(L754)
 src/render/render_3d_sdl.c: ctx_out->initialized->true(L95) ctx_out->initialized->true(L136) ctx_out->initialized->false(L160) ctx->initialized->false(L188)
 tests/test_collision.c: g.players[0].active->true(L31) g.players[1].active->true(L33)
 tests/test_net_integration.c: gs.status->GAME_STATUS_RUNNING(L38) gs.players[0].active->true(L41)
-# Total: 35 transitions in 9 files
+# Total: 36 transitions in 9 files

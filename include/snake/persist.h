@@ -25,7 +25,7 @@
 #define PERSIST_CONFIG_DEFAULT_FOV_DEGREES 90.0f
 #define PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG 0
 #define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER 0
-#define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS 1
+#define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS 2
 #define PERSIST_CONFIG_DEFAULT_ENABLE_EXTERNAL_3D_VIEW 1
 #define PERSIST_CONFIG_DEFAULT_WALL_SCALE 1.50f
 #define PERSIST_CONFIG_DEFAULT_TAIL_SCALE 0.50f
@@ -110,6 +110,17 @@ void game_config_set_key_restart(GameConfig* cfg, char c);
 char game_config_get_key_restart(const GameConfig* cfg);
 void game_config_set_key_pause(GameConfig* cfg, char c);
 char game_config_get_key_pause(const GameConfig* cfg);
+
+/* Per-player key bindings (player index 0..SNAKE_MAX_PLAYERS-1) */
+void game_config_set_player_key_up(GameConfig* cfg, int player_idx, char c);
+char game_config_get_player_key_up(const GameConfig* cfg, int player_idx);
+void game_config_set_player_key_down(GameConfig* cfg, int player_idx, char c);
+char game_config_get_player_key_down(const GameConfig* cfg, int player_idx);
+void game_config_set_player_key_left(GameConfig* cfg, int player_idx, char c);
+char game_config_get_player_key_left(const GameConfig* cfg, int player_idx);
+void game_config_set_player_key_right(GameConfig* cfg, int player_idx, char c);
+char game_config_get_player_key_right(const GameConfig* cfg, int player_idx);
+
 void game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
 int game_config_get_enable_external_3d_view(const GameConfig* cfg);
 void game_config_set_active_player(GameConfig* cfg, int v);

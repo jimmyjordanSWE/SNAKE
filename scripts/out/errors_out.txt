@@ -1,7 +1,7 @@
 fuzz/fuzz_persist.c: L18r?(remove)
 fuzz/fuzz_stb_image.c: L27r?(fwrite)
 src/console/console.c: L7r?(vfprintf) L13r?(vfprintf) L19r?(vfprintf)
-src/input/input.c: L50r?(tcsetattr) L54r?(tcsetattr)
+src/input/input.c: L57r?(tcsetattr) L61r?(tcsetattr)
 src/platform/tty.c: L399r?(ctx->on_resize) L401r?(ctx->on_size_invalid)
 src/render/render_3d.c: L640r?(sprite_add_color) L654r?(sprite_add_color) L671r?(sprite_add_color)
 src/render/render_3d_sdl.c: L16r?(fn) L24r?(fn) L77r?(LSAN_DISABLE) L163r?(LSAN_ENABLE)

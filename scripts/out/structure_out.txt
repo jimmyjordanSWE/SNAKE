@@ -56,6 +56,7 @@ include
    f env_bool(*name,default_val)
   game.h
    f game_
+    add_player(*g,*cfg)
     destroy(*g)
     enqueue_input(*g,player_index,*in)
     get_
@@ -81,8 +82,13 @@ include
    f input_
     init(_)
     poll(*out)
-    poll_from_buf(*out,*buf,n)
-    set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+    poll_
+     all(*outs,max_players)
+     all_from_buf(*outs,max_players,*buf,n)
+     from_buf(*out,*buf,n)
+    set_
+     key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+     player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
     shutdown(_)
    s <anon>{quit,any_key,move_up,turn_left}
    t InputState
@@ -122,6 +128,11 @@ include
       length(*cfg)
       players(*cfg)
      num_players(*cfg)
+     player_key_
+      down(*cfg,player_idx)
+      left(*cfg,player_idx)
+      right(*cfg,player_idx)
+      up(*cfg,player_idx)
      render_glyphs(*cfg)
      screen_size(*cfg,*w_out,*h_out)
      seed(*cfg)
@@ -152,7 +163,13 @@ include
       length(*cfg,v)
       players(*cfg,n)
      num_players(*cfg,n)
-     player_name(*cfg,*name)
+     player_
+      key_
+       down(*cfg,player_idx,c)
+       left(*cfg,player_idx,c)
+       right(*cfg,player_idx,c)
+       up(*cfg,player_idx,c)
+      name(*cfg,*name)
      render_glyphs(*cfg,v)
      screen_size(*cfg,w,h)
      seed(*cfg,seed)
@@ -189,6 +206,27 @@ include
     sleep_ms(ms)
     was_resized(_)
     winch_init(_)
+  player.h
+   f player_cfg_
+    destroy(*cfg)
+    get_
+     color(*cfg)
+     key_
+      down(*cfg)
+      left(*cfg)
+      right(*cfg)
+      up(*cfg)
+    set_
+     color(*cfg,color)
+     default_bindings_for_index(*cfg,idx)
+     key_
+      down(*cfg,c)
+      left(*cfg,c)
+      right(*cfg,c)
+      up(*cfg,c)
+     name(*cfg,*name)
+   s PlayerCfg
+   t PlayerCfg
   render.h
    f render_
     draw(*game,*player_name,*scores,score_count)
@@ -443,6 +481,7 @@ src
   game.c
    f food_respawn(*game)
    f game_
+    add_player(*g,*cfg)
     destroy(*g)
     enqueue_input(*g,player_index,*in)
     free(*game)
@@ -483,15 +522,42 @@ src
     init(*game,width,height,*cfg)
     tick(*game)
    s GameState{width,rng_state,status,num_players,max_players,*food,food_count,max_food,last_food_respawned,*players,max_length}
-   s PlayerState{current_dir,score,died_this_tick,score_at_death,*body,length,max_length,active,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
+   s PlayerState{current_dir,score,died_this_tick,score_at_death,PERSIST_PLAYER_NAME_MAX,color,*body,length,max_length,active,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
+  player.c
+   f player_cfg_
+    destroy(*cfg)
+    get_
+     color(*cfg)
+     key_
+      down(*cfg)
+      left(*cfg)
+      right(*cfg)
+      up(*cfg)
+    set_
+     color(*cfg,color)
+     default_bindings_for_index(*cfg,idx)
+     key_
+      down(*cfg,c)
+      left(*cfg,c)
+      right(*cfg,c)
+      up(*cfg,c)
+     name(*cfg,*name)
+   s PlayerCfg{PERSIST_PLAYER_NAME_MAX,color,key_up,key_quit}
  input
   input.c
    f ascii_tolower(c)
    f input_
     init(_)
     poll(*out)
-    poll_from_buf(*out,*buf,n)
-    set_key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+    poll_
+     all(*outs,max_players)
+     all_from_
+      buf(*outs,max_players,*buf,n)
+      buf_impl(*outs,max_players,*buf,n)
+     from_buf(*out,*buf,n)
+    set_
+     key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
+     player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
     shutdown(_)
    f parse_arrow_key(code)
    f restore_terminal(_)
@@ -535,6 +601,11 @@ src
       length(*cfg)
       players(*cfg)
      num_players(*cfg)
+     player_key_
+      down(*cfg,player_idx)
+      left(*cfg,player_idx)
+      right(*cfg,player_idx)
+      up(*cfg,player_idx)
      render_glyphs(*cfg)
      screen_size(*cfg,*w_out,*h_out)
      seed(*cfg)
@@ -565,7 +636,13 @@ src
       length(*cfg,v)
       players(*cfg,n)
      num_players(*cfg,n)
-     player_name(*cfg,*name)
+     player_
+      key_
+       down(*cfg,player_idx,c)
+       left(*cfg,player_idx,c)
+       right(*cfg,player_idx,c)
+       up(*cfg,player_idx,c)
+      name(*cfg,*name)
      render_glyphs(*cfg,v)
      screen_size(*cfg,w,h)
      seed(*cfg,seed)
@@ -592,7 +669,7 @@ src
     write_
      config(*filename,*config)
      scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_up,key_down,key_left,key_right,key_quit,key_restart,key_pause}
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_up,key_down,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS}
    s HighScore{PERSIST_NAME_MAX,score}
  platform
   platform.c
@@ -886,6 +963,8 @@ tests
   f main(_)
  test_env.c
   f main(_)
+ test_game_multi.c
+  f main(_)
  test_game_oom.c
   f ensure_real_fns(_)
   f free(*p)
@@ -893,6 +972,8 @@ tests
  test_highscore_name.c
   f main(_)
  test_input.c
+  f main(_)
+ test_input_multi.c
   f main(_)
  test_net.c
   f main(_)

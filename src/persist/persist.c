@@ -1,4 +1,5 @@
 #include "persist.h"
+#include "game.h"
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -92,6 +93,11 @@ struct GameConfig {
     char key_quit;
     char key_restart;
     char key_pause;
+    /* Per-player bindings */
+    char key_up_arr[SNAKE_MAX_PLAYERS];
+    char key_down_arr[SNAKE_MAX_PLAYERS];
+    char key_left_arr[SNAKE_MAX_PLAYERS];
+    char key_right_arr[SNAKE_MAX_PLAYERS];
 };
 GameConfig* game_config_create(void) {
     GameConfig* c = calloc(1, sizeof *c);
@@ -126,6 +132,16 @@ GameConfig* game_config_create(void) {
     c->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
     c->key_restart = PERSIST_CONFIG_DEFAULT_KEY_RESTART;
     c->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
+    /* default per-player bindings to match input_init defaults */
+    if (SNAKE_MAX_PLAYERS >= 1) { c->key_up_arr[0] = 'w'; c->key_down_arr[0] = 's'; c->key_left_arr[0] = 'a'; c->key_right_arr[0] = 'd'; }
+    if (SNAKE_MAX_PLAYERS >= 2) { c->key_up_arr[1] = 'i'; c->key_down_arr[1] = 'k'; c->key_left_arr[1] = 'j'; c->key_right_arr[1] = 'l'; }
+    if (SNAKE_MAX_PLAYERS >= 3) { c->key_up_arr[2] = '8'; c->key_down_arr[2] = '5'; c->key_left_arr[2] = '4'; c->key_right_arr[2] = '6'; }
+    if (SNAKE_MAX_PLAYERS >= 4) { c->key_up_arr[3] = 't'; c->key_down_arr[3] = 'g'; c->key_left_arr[3] = 'f'; c->key_right_arr[3] = 'h'; }
+    /* keep single-char fields in sync with player 0 */
+    c->key_up = c->key_up_arr[0];
+    c->key_down = c->key_down_arr[0];
+    c->key_left = c->key_left_arr[0];
+    c->key_right = c->key_right_arr[0];
     return c;
 }
 void game_config_destroy(GameConfig* cfg) {
@@ -291,6 +307,7 @@ void game_config_set_key_up(GameConfig* cfg, char c) {
     if (!cfg)
         return;
     cfg->key_up = c;
+    cfg->key_up_arr[0] = c;
 }
 char game_config_get_key_up(const GameConfig* cfg) {
     return cfg ? cfg->key_up : '\0';
@@ -299,6 +316,7 @@ void game_config_set_key_down(GameConfig* cfg, char c) {
     if (!cfg)
         return;
     cfg->key_down = c;
+    cfg->key_down_arr[0] = c;
 }
 char game_config_get_key_down(const GameConfig* cfg) {
     return cfg ? cfg->key_down : '\0';
@@ -307,6 +325,7 @@ void game_config_set_key_left(GameConfig* cfg, char c) {
     if (!cfg)
         return;
     cfg->key_left = c;
+    cfg->key_left_arr[0] = c;
 }
 char game_config_get_key_left(const GameConfig* cfg) {
     return cfg ? cfg->key_left : '\0';
@@ -315,9 +334,60 @@ void game_config_set_key_right(GameConfig* cfg, char c) {
     if (!cfg)
         return;
     cfg->key_right = c;
+    cfg->key_right_arr[0] = c;
 }
 char game_config_get_key_right(const GameConfig* cfg) {
     return cfg ? cfg->key_right : '\0';
+}
+
+/* Per-player key API */
+void game_config_set_player_key_up(GameConfig* cfg, int player_idx, char c) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return;
+    cfg->key_up_arr[player_idx] = c;
+    if (player_idx == 0)
+        cfg->key_up = c;
+}
+char game_config_get_player_key_up(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return '\0';
+    return cfg->key_up_arr[player_idx];
+}
+void game_config_set_player_key_down(GameConfig* cfg, int player_idx, char c) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return;
+    cfg->key_down_arr[player_idx] = c;
+    if (player_idx == 0)
+        cfg->key_down = c;
+}
+char game_config_get_player_key_down(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return '\0';
+    return cfg->key_down_arr[player_idx];
+}
+void game_config_set_player_key_left(GameConfig* cfg, int player_idx, char c) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return;
+    cfg->key_left_arr[player_idx] = c;
+    if (player_idx == 0)
+        cfg->key_left = c;
+}
+char game_config_get_player_key_left(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return '\0';
+    return cfg->key_left_arr[player_idx];
+}
+void game_config_set_player_key_right(GameConfig* cfg, int player_idx, char c) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return;
+    cfg->key_right_arr[player_idx] = c;
+    if (player_idx == 0)
+        cfg->key_right = c;
+}
+char game_config_get_player_key_right(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+        return '\0';
+    return cfg->key_right_arr[player_idx];
 }
 void game_config_set_key_quit(GameConfig* cfg, char c) {
     if (!cfg)
@@ -642,24 +712,61 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
         } else if (strcmp(key, "floor_texture") == 0) {
             snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
             continue;
-        } else if (strcmp(key, "key_up") == 0 || strcmp(key, "key_down") == 0 || strcmp(key, "key_left") == 0 ||
-                   strcmp(key, "key_right") == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 ||
-                   strcmp(key, "key_pause") == 0) {
+        } else if (strncmp(key, "key_up", 6) == 0 || strncmp(key, "key_down", 8) == 0 ||
+                   strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
+            /* support keys like key_left, key_left_2, key_right_3, etc. */
             char c = value[0];
-            if (strcmp(key, "key_up") == 0)
-                config->key_up = c;
-            else if (strcmp(key, "key_down") == 0)
-                config->key_down = c;
-            else if (strcmp(key, "key_left") == 0)
-                config->key_left = c;
-            else if (strcmp(key, "key_right") == 0)
-                config->key_right = c;
-            else if (strcmp(key, "key_quit") == 0)
+            if (strcmp(key, "key_quit") == 0) {
                 config->key_quit = c;
-            else if (strcmp(key, "key_restart") == 0)
+            } else if (strcmp(key, "key_restart") == 0) {
                 config->key_restart = c;
-            else if (strcmp(key, "key_pause") == 0)
+            } else if (strcmp(key, "key_pause") == 0) {
                 config->key_pause = c;
+            } else {
+                /* parse optional suffix _N */
+                int player_idx = 0;
+                const char* base = key;
+                const char* suffix = NULL;
+                const char* p = strchr(key, '_');
+                if (p && p != key) {
+                    /* check if suffix is a number */
+                    suffix = p + 1;
+                    long v = strtol(suffix, &endptr, 10);
+                    if ((endptr != suffix) && *endptr == '\0')
+                        player_idx = (int)(v - 1);
+                    else
+                        player_idx = -1;
+                    /* base now up to '_' */
+                    size_t baselen = (size_t)(p - key);
+                    char basebuf[16];
+                    if (baselen < sizeof(basebuf)) {
+                        memcpy(basebuf, key, baselen);
+                        basebuf[baselen] = '\0';
+                        base = basebuf;
+                    }
+                }
+                if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+                    continue;
+                if (strcmp(base, "key_up") == 0)
+                    config->key_up_arr[player_idx] = c;
+                else if (strcmp(base, "key_down") == 0)
+                    config->key_down_arr[player_idx] = c;
+                else if (strcmp(base, "key_left") == 0)
+                    config->key_left_arr[player_idx] = c;
+                else if (strcmp(base, "key_right") == 0)
+                    config->key_right_arr[player_idx] = c;
+                if (player_idx == 0) {
+                    /* keep single-char legacy fields in sync */
+                    if (strcmp(base, "key_up") == 0)
+                        config->key_up = config->key_up_arr[0];
+                    else if (strcmp(base, "key_down") == 0)
+                        config->key_down = config->key_down_arr[0];
+                    else if (strcmp(base, "key_left") == 0)
+                        config->key_left = config->key_left_arr[0];
+                    else if (strcmp(base, "key_right") == 0)
+                        config->key_right = config->key_right_arr[0];
+                }
+            }
             continue;
         } else if (strcmp(key, "show_sprite_debug") == 0) {
             for (char* p = value; *p; p++)
@@ -793,6 +900,17 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
         goto write_fail;
     if (fprintf(fp, "key_right=%c\n", config->key_right) < 0)
         goto write_fail;
+    /* write per-player bindings for players 2..max_players */
+    for (int p = 1; p < config->max_players; ++p) {
+        if (fprintf(fp, "key_up_%d=%c\n", p + 1, config->key_up_arr[p]) < 0)
+            goto write_fail;
+        if (fprintf(fp, "key_down_%d=%c\n", p + 1, config->key_down_arr[p]) < 0)
+            goto write_fail;
+        if (fprintf(fp, "key_left_%d=%c\n", p + 1, config->key_left_arr[p]) < 0)
+            goto write_fail;
+        if (fprintf(fp, "key_right_%d=%c\n", p + 1, config->key_right_arr[p]) < 0)
+            goto write_fail;
+    }
     if (fprintf(fp, "key_quit=%c\n", config->key_quit) < 0)
         goto write_fail;
     if (fprintf(fp, "key_restart=%c\n", config->key_restart) < 0)
@@ -883,9 +1001,22 @@ static bool is_known_config_key(const char* key) {
         return true;
     if (strcmp(key, "floor_texture") == 0)
         return true;
-    if (strcmp(key, "key_up") == 0 || strcmp(key, "key_down") == 0 || strcmp(key, "key_left") == 0 ||
-        strcmp(key, "key_right") == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 ||
-        strcmp(key, "key_pause") == 0)
+    /* Accept key_up, key_down, key_left, key_right optionally suffixed with _N (player index 1-based) */
+    const char* key_bases[] = {"key_up","key_down","key_left","key_right"};
+    for (size_t i = 0; i < sizeof(key_bases) / sizeof(key_bases[0]); ++i) {
+        const char* b = key_bases[i];
+        size_t bl = strlen(b);
+        if (strcmp(key, b) == 0)
+            return true;
+        if (strncmp(key, b, bl) == 0 && key[bl] == '_') {
+            char* endptr = NULL;
+            errno = 0;
+            long v = strtol(key + bl + 1, &endptr, 10);
+            if (errno == 0 && endptr != key + bl + 1 && *endptr == '\0' && v >= 1 && v <= SNAKE_MAX_PLAYERS)
+                return true;
+        }
+    }
+    if (strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0)
         return true;
     if (strcmp(key, "show_sprite_debug") == 0)
         return true;

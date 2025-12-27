@@ -4,9 +4,10 @@ Flow:
  display_3d->test_game_oom
  display_tty->test_game_oom,tty
  fuzz_stb_image->net,persist
- game->collision,direction,persist,rng,test_game_oom
+ game->collision,direction,persist,player,rng,test_game_oom
  net->test_game_oom
  persist->test_game_oom
+ player->test_game_oom
  projection->test_game_oom
  raycast->test_game_oom
  render->display_tty,persist,platform,render_3d,render_input
@@ -15,7 +16,7 @@ Flow:
  snakegame->console,game,input,persist,platform,render,render_3d,test_game_oom,tty
  sprite->camera,projection,render_3d_sdl,test_game_oom
  test_persist_long_lines->persist
- test_tty_path->collision,console,env,game,input,net,persist,render_input,snakegame,test_game_oom,test_persist_long_lines,texture,tty
+ test_tty_path->collision,console,env,game,input,net,persist,player,render_input,snakegame,test_game_oom,test_persist_long_lines,texture,tty
  texture->test_game_oom
  tty->test_game_oom
 
@@ -33,17 +34,34 @@ Tree(main):
     console_info
     env_bool
     free (see above)
+    game_add_player
+      player_cfg_get_color
+      spawn_player
+        collision_is_wall
+        collision_next_head
+        opposite_dir
+        point_in_player
+        snake_rng_range
+          snake_rng_next_u32
     game_config_destroy
       free (see above)
+    game_config_set_max_players
     game_destroy
       free (see above)
       game_free
         free (see above)
+    game_get_num_players
+      game_state_get_num_players
     highscore_destroy
       free (see above)
+    input_poll_all_from_buf
+      input_poll_all_from_buf_impl
+        ascii_tolower
+        parse_arrow_key
     input_poll_from_buf
       ascii_tolower
       parse_arrow_key
+    input_set_player_key_bindings
     net_disconnect
       free (see above)
     net_free_unpacked_game_state
@@ -62,6 +80,10 @@ Tree(main):
       clamp_int
     persist_read_scores
       free (see above)
+    player_cfg_destroy
+      free (see above)
+    player_cfg_set_color
+    player_cfg_set_name
     render_sanitize_player_name
     run_case
       game_config_destroy (see above)
@@ -117,17 +139,12 @@ Tree(main):
               point_in_player
             point_is_food
             random_point
-              snake_rng_range
-                snake_rng_next_u32
+              snake_rng_range (see above)
             snake_rng_range (see above)
-          spawn_player
-            collision_is_wall
-            collision_next_head
-            opposite_dir
-            point_in_player
-            snake_rng_range (see above)
+          spawn_player (see above)
         snake_dir_turn_left
         snake_dir_turn_right
+      game_get_num_players (see above)
       game_get_status
       game_player_current_score
         game_state_player_current_score
@@ -147,6 +164,8 @@ Tree(main):
       highscore_get_score
       input_poll
         input_poll_from_buf (see above)
+      input_poll_all
+        input_poll_all_from_buf_impl (see above)
       input_shutdown (see above)
       persist_append_score
         highscore_get_score
@@ -288,21 +307,6 @@ Tree(main):
           display_get_size (see above)
           display_put_char (see above)
       render_note_session_score
-      render_prompt_for_highscore_name
-        display_clear (see above)
-        display_get_size (see above)
-        display_present (see above)
-        display_put_char (see above)
-        draw_centered_string (see above)
-        draw_string (see above)
-        platform_sleep_ms
-        render_3d_draw_congrats_overlay
-          render_3d_draw_text_centered (see above)
-          render_3d_sdl_draw_filled_rect (see above)
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-          render_3d_sdl_present
-        render_sanitize_player_name
       render_shutdown (see above)
       tty_size_sufficient_for_board
     texture_destroy (see above)

@@ -3,6 +3,7 @@
 #include "direction.h"
 #include "game_internal.h"
 #include "input.h"
+#include "player.h"
 #include "utils.h"
 #include <limits.h>
 #include <stddef.h>
@@ -17,6 +18,7 @@ static bool game_state_player_is_active(const GameState* game, int player_index)
 static int game_state_player_current_score(const GameState* game, int player_index);
 static bool game_state_player_died_this_tick(const GameState* game, int player_index);
 static int game_state_player_score_at_death(const GameState* game, int player_index);
+static bool spawn_player(GameState* game, int player_index);
 struct Game {
     GameState state;
 };
@@ -116,6 +118,32 @@ int game_get_num_players(const Game* g) {
     if (!g)
         return 0;
     return game_state_get_num_players(&g->state);
+}
+
+int game_add_player(Game* g, const PlayerCfg* cfg) {
+    if (!g || !cfg)
+        return -1;
+    GameState* s = &g->state;
+    if (s->num_players >= s->max_players)
+        return -1;
+    int idx = s->num_players++;
+    const char* name = player_cfg_get_name(cfg);
+    if (name && name[0]) {
+        strncpy(s->players[idx].name, name, PERSIST_PLAYER_NAME_MAX - 1);
+        s->players[idx].name[PERSIST_PLAYER_NAME_MAX - 1] = '\0';
+    } else {
+        s->players[idx].name[0] = '\0';
+    }
+    s->players[idx].color = player_cfg_get_color(cfg);
+    s->players[idx].score = 0;
+    s->players[idx].died_this_tick = false;
+    s->players[idx].score_at_death = 0;
+    s->players[idx].active = false;
+    s->players[idx].needs_reset = false;
+    s->players[idx].length = 0;
+    s->players[idx].max_length = s->max_length;
+    (void)spawn_player(s, idx);
+    return idx;
 }
 bool game_player_is_active(const Game* g, int player_index) {
     if (!g)

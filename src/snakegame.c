@@ -51,6 +51,17 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
                            game_config_get_key_left(config_in), game_config_get_key_right(config_in),
                            game_config_get_key_quit(config_in), game_config_get_key_restart(config_in),
                            game_config_get_key_pause(config_in));
+    /* Apply per-player bindings from config (players 1..max_players) */
+    int cfg_maxp = game_config_get_max_players(config_in);
+    if (cfg_maxp > SNAKE_MAX_PLAYERS)
+        cfg_maxp = SNAKE_MAX_PLAYERS;
+    for (int pi = 0; pi < cfg_maxp; ++pi) {
+        char up = game_config_get_player_key_up(config_in, pi);
+        char down = game_config_get_player_key_down(config_in, pi);
+        char left = game_config_get_player_key_left(config_in, pi);
+        char right = game_config_get_player_key_right(config_in, pi);
+        input_set_player_key_bindings(pi, up, down, left, right, game_config_get_key_quit(config_in), game_config_get_key_restart(config_in), game_config_get_key_pause(config_in));
+    }
     const int board_width = bw;
     const int board_height = bh;
     platform_winch_init();
@@ -192,11 +203,15 @@ int snake_game_run(SnakeGame* s) {
                 }
             }
         }
-        InputState input_state = {0};
-        input_poll(&input_state);
-        if (input_state.quit)
+        int num_players = game_get_num_players(game);
+        InputState inputs[SNAKE_MAX_PLAYERS];
+        for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
+            inputs[i] = (InputState){0};
+        input_poll_all(inputs, num_players);
+        if (num_players > 0 && inputs[0].quit)
             goto clean_done;
-        (void)game_enqueue_input(game, 0, &input_state);
+        for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
+            (void)game_enqueue_input(game, i, &inputs[i]);
         GameEvents events = {0};
         game_step(game, &events);
         if (has_3d)
@@ -222,9 +237,8 @@ int snake_game_run(SnakeGame* s) {
                 }
                 char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
                 if (qualifies) {
-                    render_prompt_for_highscore_name(name_buf, 9, death_score);
-                    if (!name_buf[0])
-                        snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
+                    /* Default highscore name to player id (P1..P4) for now */
+                    snprintf(name_buf, sizeof(name_buf), "P%d", death_player + 1);
                     if (death_player == 0)
                         auto_restart_after_highscore = true;
                 } else {
@@ -306,9 +320,8 @@ clean_done:
         }
         char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
         if (qualifies) {
-            render_prompt_for_highscore_name(name_buf, 9, final_score);
-            if (!name_buf[0])
-                snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
+            /* For now, auto-name final highscores P1 until we add per-player names */
+            snprintf(name_buf, sizeof(name_buf), "P1");
         } else {
             snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
         }

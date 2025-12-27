@@ -9,6 +9,8 @@ SnakeDir current_dir, queued_dir;
 int score;
 bool died_this_tick;
 int score_at_death;
+char name[PERSIST_PLAYER_NAME_MAX];
+uint32_t color;
 SnakePoint* body;
 int length;
 int max_length;

@@ -54,7 +54,7 @@ Edit `snake_cfg.txt` to customize:
 |---------|-------------|---------|
 | `board_width`, `board_height` | Play area size | 18x18 |
 | `tick_rate_ms` | Game speed (lower = faster) | 250 |
-| `num_players` | Number of snakes | 1 |
+| `num_players` | Number of snakes | 2 |
 | `max_length` | Maximum snake length | 64 |
 | `max_food` | Food items on board | 20 |
 | `fov_degrees` | 3D field of view | 80 |

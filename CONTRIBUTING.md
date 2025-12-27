@@ -32,7 +32,8 @@ Formatting is enforced via `.clang-format`. Run before committing.
 
 ## LLM Context Generation
 
-A suite of scripts runs during the build process to generate structural context in `scripts/out/`. These files provide metadata to assist LLMs in project navigation.
+- Regenerate context with: `make analyze` (outputs go to `scripts/out/`).
+- The Makefile calls the project's analysis scripts (Python) in `.venv` so the results are reproducible.
 
 ## Adding Code
 

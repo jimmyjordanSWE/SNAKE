@@ -39,6 +39,8 @@ Tree(main):
       free (see above)
       game_free
         free (see above)
+    highscore_destroy
+      free (see above)
     input_poll_from_buf
       ascii_tolower
       parse_arrow_key
@@ -55,8 +57,7 @@ Tree(main):
     net_unpack_game_state (see above)
     persist_free_scores
       free (see above)
-      highscore_destroy
-        free (see above)
+      highscore_destroy (see above)
     persist_load_config
       clamp_int
     persist_read_scores

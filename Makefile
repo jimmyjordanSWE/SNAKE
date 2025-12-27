@@ -14,6 +14,9 @@ CC ?= gcc
 BUILD_ROOT ?= build
 CONFIG ?= debug-asan
 
+# Python used for running analysis scripts (virtualenv)
+VENV_PYTHON ?= .venv/bin/python3
+
 # NOTE: GNU make defines a built-in variable named `LINT` (default value: `lint`).
 # Use explicit toggles to avoid collisions and keep builds fast.
 PREBUILD :=

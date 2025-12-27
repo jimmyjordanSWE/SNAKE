@@ -88,10 +88,10 @@ This allows an LLM to navigate and reason about the project at a high level, the
 
 ## Orchestrator
 
-**`scripts/analyze_all.sh`** — Runs all scripts on every `make`, outputs to `scripts/out/`.
+**`make analyze`** — Runs the Python analysis scripts (using the project's venv) and emits outputs to `scripts/out/`.
 
 ```bash
-make analyze  # Manual refresh
+make analyze  # Manual refresh (preferred)
 ```
 
 ## Script Registry

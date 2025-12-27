@@ -55,19 +55,18 @@ To provide superior context for LLMs, this project runs a suite of static analys
 
 ## Automated Analysis Suite
 
-The following scripts run automatically during build:
-- `structure_out.txt`: AST-based project structure.
-- `memory_map_out.txt`: Ownership and allocation patterns.
-- `call_chains_out.txt`: Function reachability and comprehensive call tree.
-- `errors_out.txt`: Error handling and safety checks.
-- (And more in `scripts/out/`)
+The project's analysis outputs are generated into `scripts/out/` and include:
+- `structure_out.txt`: AST-based project structure
+- `memory_map_out.txt`: Ownership and allocation patterns
+- `call_chains_out.txt`: Function reachability and comprehensive call tree
+- `errors_out.txt`: Error handling and safety checks
+- (Additional outputs in `scripts/out/`)
 
-If any script fails, the build will halt to ensure the context information is always accurate. You can manually refresh the analysis by running:
+To refresh the analysis run:
 
 ```bash
 make analyze
 ```
-
 
 # C99 agent persona
 <system_prompt>

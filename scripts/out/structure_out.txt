@@ -900,6 +900,8 @@ tests
   f main(_)
  test_net_overflow.c
   f main(_)
+ test_net_unpack.c
+  f main(_)
  test_persist.c
   f main(_)
   f run_case(*content,expect_count)
@@ -924,6 +926,8 @@ tests
  test_texture_path_extra.c
   f main(_)
  test_tty_buffer_cap.c
+  f main(_)
+ test_tty_open.c
   f main(_)
  test_tty_path.c
   f main(_)

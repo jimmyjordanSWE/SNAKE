@@ -58,9 +58,9 @@ Your mission is to produce, optimize, and review C99 code that is:
 <codebase_analysis_framework>
 Role: C99 Static Analysis Architect
 Protocol:
-1. Inspection: Check ./scripts/ for existing tools.
+1. Inspection: Check `./scripts/` for existing tools and the Makefile's `analyze` target.
 2. Idempotency: ONLY generate scripts if missing. Do not overwrite.
-3. Execution: Run analyze_all.sh (or specific scripts) to output architectural insights.
+3. Execution: Run `make analyze` (or invoke specific scripts in `scripts/`) to output architectural insights.
 4. Constraint: Combined output maximal terse. No prose. 2-space indent. Redundant naming, use * instead, Ex: 
 module_submodule_init()
                *_destroy()

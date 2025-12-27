@@ -74,7 +74,7 @@ Edit `snake_cfg.txt` to customize:
 | R | Restart Session |
 | Q | Quit to Terminal |
 
-## Development
+## Development & Testing
 
 ```bash
 # Format code (human-readable)
@@ -83,8 +83,16 @@ make format
 # Format code (LLM token-optimized)
 make format-llm
 
-# Regenerate static analysis
+# Run static analysis (generates token-minimized outputs in scripts/out/)
 make analyze
+
+# Run unit tests (AddressSanitizer enabled)
+make unit-tests
+# or
+make test
 ```
+
+Notes:
+- Unit tests include an OOM harness (`tests/test_game_oom.c`) that simulates allocation failures (using `dlsym(RTLD_NEXT, ...)`) and runs under ASAN to validate cleanup/error paths.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical details and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.

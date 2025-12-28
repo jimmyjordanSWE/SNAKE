@@ -40,6 +40,9 @@ typedef struct {
     float frame_times[60];
     int frame_time_idx;
     float current_fps;
+    float* cos_offsets;
+    float* sin_offsets;
+    int offsets_cap;
 } Render3DContext;
 static Render3DContext g_render_3d = {0};
 /* Return a darker version of `col` by `pct` percent (pct in 0..100). */
@@ -81,6 +84,11 @@ static void render_3d_log(const char* fmt, ...) {
     fprintf(f, "%s", buf);
     fclose(f);
 }
+static double render_3d_now(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+}
 static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
     if (!r || !r->game_state) {
         render_3d_log("minimap: context or game_state NULL\n");
@@ -114,24 +122,16 @@ static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
     uint32_t bg = render_3d_sdl_color(0, 0, 0, 200);
     render_3d_sdl_draw_filled_rect(r->display, x0, y0, map_px_w, map_px_h, bg);
     uint32_t border = render_3d_sdl_color(255, 255, 255, 255);
-    for (int xx = 0; xx < map_px_w; xx++) {
-        render_3d_sdl_set_pixel(r->display, x0 + xx, y0, border);
-        render_3d_sdl_set_pixel(r->display, x0 + xx, y0 + map_px_h - 1, border);
-    }
-    for (int yy = 0; yy < map_px_h; yy++) {
-        render_3d_sdl_set_pixel(r->display, x0, y0 + yy, border);
-        render_3d_sdl_set_pixel(r->display, x0 + map_px_w - 1, y0 + yy, border);
-    }
+    render_3d_sdl_draw_filled_rect(r->display, x0, y0, map_px_w, 1, border);
+    render_3d_sdl_draw_filled_rect(r->display, x0, y0 + map_px_h - 1, map_px_w, 1, border);
+    render_3d_sdl_draw_filled_rect(r->display, x0, y0, 1, map_px_h, border);
+    render_3d_sdl_draw_filled_rect(r->display, x0 + map_px_w - 1, y0, 1, map_px_h, border);
     if (env_bool("SNAKE_DEBUG_MINIMAP", 0)) {
         uint32_t dbgcol = render_3d_sdl_color(255, 0, 255, 255);
-        for (int xx = 0; xx < map_px_w; xx++) {
-            render_3d_sdl_blend_pixel(r->display, x0 + xx, y0, dbgcol);
-            render_3d_sdl_blend_pixel(r->display, x0 + xx, y0 + map_px_h - 1, dbgcol);
-        }
-        for (int yy = 0; yy < map_px_h; yy++) {
-            render_3d_sdl_blend_pixel(r->display, x0, y0 + yy, dbgcol);
-            render_3d_sdl_blend_pixel(r->display, x0 + map_px_w - 1, y0 + yy, dbgcol);
-        }
+        render_3d_sdl_draw_filled_rect(r->display, x0, y0, map_px_w, 1, dbgcol);
+        render_3d_sdl_draw_filled_rect(r->display, x0, y0 + map_px_h - 1, map_px_w, 1, dbgcol);
+        render_3d_sdl_draw_filled_rect(r->display, x0, y0, 1, map_px_h, dbgcol);
+        render_3d_sdl_draw_filled_rect(r->display, x0 + map_px_w - 1, y0, 1, map_px_h, dbgcol);
         render_3d_log("minimap: debug border drawn at %d,%d size %dx%d (display %dx%d)\n", x0, y0, map_px_w, map_px_h,
                       render_3d_sdl_get_width(r->display), render_3d_sdl_get_height(r->display));
     }
@@ -278,15 +278,25 @@ static void render_3d_draw_char(SDL3DContext* disp, int x, int y, char c, uint32
     } else {
         return;
     }
+    uint32_t* pix = render_3d_sdl_get_pixels(disp);
+    int w = render_3d_sdl_get_width(disp);
+    int h = render_3d_sdl_get_height(disp);
+    if (!pix) return;
+
     for (int row = 0; row < 7; row++) {
         uint8_t bits = glyph[row];
         for (int colbit = 0; colbit < 5; colbit++) {
             if (bits & (1 << (4 - colbit))) {
                 int px = x + colbit * scale;
                 int py = y + row * scale;
-                for (int yy = 0; yy < scale; yy++)
-                    for (int xx = 0; xx < scale; xx++)
-                        render_3d_sdl_blend_pixel(disp, px + xx, py + yy, col);
+                for (int yy = 0; yy < scale; yy++) {
+                    if (py + yy < 0 || py + yy >= h) continue;
+                    uint32_t* row_pix = &pix[(py + yy) * w];
+                    for (int xx = 0; xx < scale; xx++) {
+                        if (px + xx < 0 || px + xx >= w) continue;
+                        row_pix[px + xx] = col;
+                    }
+                }
             }
         }
     }
@@ -479,74 +489,41 @@ void render_3d_draw(const GameState* game_state,
     float clamped_delta = delta_seconds;
     if (clamped_delta > MAX_DELTA_SECONDS)
         clamped_delta = MAX_DELTA_SECONDS;
+    int debug_timing = env_bool("SNAKE_DEBUG_3D_TIMING", 0);
+    /* Use faster (nearest) sampling for walls by default. Set SNAKE_3D_FAST_WALLS=0 to force bilinear. */
+    int fast_wall_tex = env_bool("SNAKE_3D_FAST_WALLS", 1);
+    /* Use faster (nearest) sampling for floor (default 1) */
+    int fast_floor_tex = env_bool("SNAKE_3D_FAST_FLOOR", 1);
+    double t0 = debug_timing ? render_3d_now() : 0.0;
     camera_update_interpolation(g_render_3d.camera, clamped_delta);
     render_3d_update_fps(delta_seconds);
     float frame_interp_t = camera_get_interpolation_fraction(g_render_3d.camera);
-    uint32_t sky_color = 0xFF87CEEB;
-    render_3d_sdl_clear(g_render_3d.display, sky_color);
-    uint32_t floor_color = 0xFF8B4513;
-    uint32_t ceiling_color = 0xFF4169E1;
+    uint32_t floor_color = render_3d_sdl_color(139, 69, 19, 255); /* 0xFF8B4513 */
+    uint32_t ceiling_color = render_3d_sdl_color(65, 105, 225, 255); /* 0xFF4169E1 */
     const int screen_w = render_3d_sdl_get_width(g_render_3d.display);
     const int screen_h = render_3d_sdl_get_height(g_render_3d.display);
     uint32_t* pix = render_3d_sdl_get_pixels(g_render_3d.display);
     int horizon = screen_h / 2;
-    const float inv_half_h = (screen_h > 0) ? (2.0f / (float)screen_h) : 0.0f;
     const bool has_floor_tex = texture_has_image(g_render_3d.floor_texture);
     const int map_w = g_render_3d.game_state->width;
     const int map_h = g_render_3d.game_state->height;
+    double t_setup_end = debug_timing ? render_3d_now() : 0.0;
+    double t_before_walls = 0.0, t_after_walls = 0.0, t_after_sprites = 0.0, t_after_overlays = 0.0;
+    double t_before_present = 0.0, t_after_present = 0.0;
 
-    /* Precomputed per-row floor distances (existing) */
-    static float* s_floor_row_dist = NULL;
-    static int s_floor_row_dist_cap = 0;
-    static bool s_floor_row_dist_valid = false;
-    if (screen_h != s_floor_row_dist_cap || !s_floor_row_dist_valid) {
-        float* new_buf = (float*)realloc(s_floor_row_dist, (size_t)screen_h * sizeof(float));
-        if (new_buf) {
-            s_floor_row_dist = new_buf;
-            s_floor_row_dist_cap = screen_h;
-            s_floor_row_dist_valid = true;
-        } else {
-            s_floor_row_dist_valid = false;
+    /* Precompute per-column ray angle offsets and their trig values */
+    camera_prepare_angle_offsets(g_render_3d.camera, screen_w);
+    const float* s_angle_offsets = camera_get_cached_angle_offsets(g_render_3d.camera);
+    if (screen_w != g_render_3d.offsets_cap && s_angle_offsets) {
+        g_render_3d.cos_offsets = realloc(g_render_3d.cos_offsets, (size_t)screen_w * sizeof(float));
+        g_render_3d.sin_offsets = realloc(g_render_3d.sin_offsets, (size_t)screen_w * sizeof(float));
+        for (int i = 0; i < screen_w; i++) {
+            g_render_3d.cos_offsets[i] = cosf(s_angle_offsets[i]);
+            g_render_3d.sin_offsets[i] = sinf(s_angle_offsets[i]);
         }
-    }
-    if (s_floor_row_dist && s_floor_row_dist_valid) {
-        float wall_scale = projection_get_wall_scale(g_render_3d.projector);
-        for (int yy = 0; yy < screen_h; yy++) {
-            if (yy <= horizon) {
-                s_floor_row_dist[yy] = 0.0f;
-                continue;
-            }
-            float p = (float)(yy - horizon) * inv_half_h;
-            if (p < 1e-6f) {
-                s_floor_row_dist[yy] = 0.0f;
-                continue;
-            }
-            float rowDist = (wall_scale / p) - 0.5f;
-            if (!isfinite(rowDist) || rowDist <= 0.0f) {
-                s_floor_row_dist[yy] = 0.0f;
-                continue;
-            }
-            s_floor_row_dist[yy] = rowDist;
-        }
+        g_render_3d.offsets_cap = screen_w;
     }
 
-    /* Precompute per-column ray angle offsets to avoid expensive trig calls in inner loop */
-    static float* s_angle_offsets = NULL;
-    static int s_angle_offsets_cap = 0;
-    static bool s_angle_offsets_valid = false;
-    if (screen_w != s_angle_offsets_cap || !s_angle_offsets_valid) {
-        float* new_buf = (float*)realloc(s_angle_offsets, (size_t)screen_w * sizeof(float));
-        if (new_buf) {
-            s_angle_offsets = new_buf;
-            s_angle_offsets_cap = screen_w;
-            s_angle_offsets_valid = true;
-        } else {
-            s_angle_offsets_valid = false;
-        }
-    }
-    if (s_angle_offsets && s_angle_offsets_valid) {
-        camera_fill_ray_angle_offsets(g_render_3d.camera, s_angle_offsets);
-    }
     if (env_bool("SNAKE_DEBUG_TEXTURES", 0)) {
         const uint32_t* wp = texture_get_pixels(g_render_3d.wall_texture);
         if (wp) {
@@ -579,120 +556,123 @@ void render_3d_draw(const GameState* game_state,
     float interp_cam_x, interp_cam_y;
     camera_get_interpolated_position(g_render_3d.camera, &interp_cam_x, &interp_cam_y);
     float interp_cam_angle = camera_get_interpolated_angle(g_render_3d.camera);
+    float cos_cam = cosf(interp_cam_angle);
+    float sin_cam = sinf(interp_cam_angle);
+
+    /* Floor and Ceiling pass (Row-major) */
+    t_before_walls = debug_timing ? render_3d_now() : 0.0;
+    if (has_floor_tex) {
+        float wall_scale = projection_get_wall_scale(g_render_3d.projector);
+        float half_fov = camera_get_fov_radians(g_render_3d.camera) * 0.5f;
+        float plane_len = tanf(half_fov);
+        float plane_x = -sin_cam * plane_len;
+        float plane_y = cos_cam * plane_len;
+        const uint32_t* floor_pix = texture_get_pixels(g_render_3d.floor_texture);
+        int floor_w = texture_get_img_w(g_render_3d.floor_texture);
+        int floor_h_tex = texture_get_img_h(g_render_3d.floor_texture);
+        float floor_tex_scale = g_render_3d.config.floor_texture_scale;
+
+        for (int y = 0; y < screen_h; y++) {
+            if (y < horizon) {
+                uint32_t* row_pix = &pix[y * screen_w];
+                for (int x = 0; x < screen_w; x++) row_pix[x] = ceiling_color;
+                continue;
+            }
+            float p = (float)(y - horizon);
+            if (p < 1.0f) p = 1.0f;
+            float pos_z = 0.5f * (float)screen_h * wall_scale;
+            float row_distance = pos_z / p;
+
+            float floor_step_x = row_distance * (2.0f * plane_x) / (float)screen_w;
+            float floor_step_y = row_distance * (2.0f * plane_y) / (float)screen_w;
+            float floor_x = interp_cam_x + row_distance * (cos_cam - plane_x);
+            float floor_y = interp_cam_y + row_distance * (sin_cam - plane_y);
+
+            uint32_t* row_pix = &pix[y * screen_w];
+            for (int x = 0; x < screen_w; x++) {
+                /* If we have a floor texture, sample it even when the computed world
+                 * coordinates fall just outside the map bounds. This avoids a 1-pixel
+                 * color border at the base of walls caused by strict bounds checking.
+                 */
+                if (floor_pix) {
+                    if (fast_floor_tex) {
+                        int tx = (int)(floor_x * floor_tex_scale * (float)floor_w) % floor_w;
+                        int ty = (int)(floor_y * floor_tex_scale * (float)floor_h_tex) % floor_h_tex;
+                        if (tx < 0) tx += floor_w;
+                        if (ty < 0) ty += floor_h_tex;
+                        row_pix[x] = floor_pix[ty * floor_w + tx];
+                    } else {
+                        row_pix[x] = texture_sample(g_render_3d.floor_texture, floor_x * floor_tex_scale, floor_y * floor_tex_scale, !fast_floor_tex);
+                    }
+                } else if (floor_x >= 0 && floor_x < (float)map_w && floor_y >= 0 && floor_y < (float)map_h) {
+                    row_pix[x] = floor_color;
+                } else {
+                    row_pix[x] = floor_color;
+                }
+                floor_x += floor_step_x;
+                floor_y += floor_step_y;
+            }
+        }
+    } else {
+        for (int y = 0; y < screen_h; y++) {
+            uint32_t col = (y < horizon) ? ceiling_color : floor_color;
+            uint32_t* row_pix = &pix[y * screen_w];
+            for (int x = 0; x < screen_w; x++) row_pix[x] = col;
+        }
+    }
+
+    /* Wall pass (Column-major) */
     for (int x = 0; x < screen_w; x++) {
-        float ray_angle;
-        if (s_angle_offsets && s_angle_offsets_valid)
-            ray_angle = interp_cam_angle + s_angle_offsets[x];
-        else
-            camera_get_ray_angle(g_render_3d.camera, x, &ray_angle);
+        float cos_a = cos_cam * g_render_3d.cos_offsets[x] - sin_cam * g_render_3d.sin_offsets[x];
+        float sin_a = sin_cam * g_render_3d.cos_offsets[x] + cos_cam * g_render_3d.sin_offsets[x];
+        float ray_angle = interp_cam_angle + s_angle_offsets[x];
         RayHit hit;
-        float cos_a = cosf(ray_angle);
-        float sin_a = sinf(ray_angle);
         float eps_fwd = 0.0002f;
         float eps_perp = 0.0002f;
         float origin_x = interp_cam_x + cos_a * eps_fwd - sin_a * eps_perp;
         float origin_y = interp_cam_y + sin_a * eps_fwd + cos_a * eps_perp;
         if (raycast_cast_ray(g_render_3d.raycaster, origin_x, origin_y, ray_angle, &hit)) {
             WallProjection proj;
-            if (hit.distance < 0.5f) {
-                if (g_render_3d.config.show_sprite_debug) {
-                    fprintf(stderr,
-                            "[ray-debug] col=%d dist=%.4f hit=(%.3f,%.3f) "
-                            "vert=%d\n",
-                            x, hit.distance, hit.hit_x, hit.hit_y, hit.is_vertical);
-                }
-            }
             projection_project_wall_perp(g_render_3d.projector, hit.distance, ray_angle, interp_cam_angle, &proj);
-            render_3d_sdl_draw_column(g_render_3d.display, x, 0, proj.draw_start - 1, ceiling_color);
-            Texel texel;
-            float pd = hit.distance * cosf(ray_angle - interp_cam_angle);
-            if (pd <= 0.1f)
-                pd = 0.1f;
-            if (g_render_3d.column_depths)
-                g_render_3d.column_depths[x] = pd;
+            float cos_angle_diff = g_render_3d.cos_offsets[x];
+            float pd = hit.distance * cos_angle_diff;
+            if (pd <= 0.1f) pd = 0.1f;
+            if (g_render_3d.column_depths) g_render_3d.column_depths[x] = pd;
             float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * g_render_3d.config.wall_texture_scale;
             int wall_h = proj.draw_end - proj.draw_start + 1;
-            if (wall_h <= 0)
-                wall_h = 1;
-            for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
-                float v = (float)(yy - proj.draw_start) / (float)wall_h;
-                float tex_v = v * g_render_3d.config.wall_texture_scale;
-                uint32_t col = 0;
-                if (texture_has_image(g_render_3d.wall_texture)) {
-                    col = texture_sample(g_render_3d.wall_texture, tex_coord, tex_v, true);
-                } else {
-                    texture_get_texel(g_render_3d.texture, pd, hit.is_vertical, tex_coord, &texel);
-                    col = texel.color;
+            if (wall_h <= 0) wall_h = 1;
+            float tex_v_coord = 0.0f;
+            float tex_v_coord_step = (1.0f / (float)wall_h) * g_render_3d.config.wall_texture_scale;
+            
+            const uint32_t* wall_pix = texture_get_pixels(g_render_3d.wall_texture);
+            int wall_w = texture_get_img_w(g_render_3d.wall_texture);
+            int wall_h_tex = texture_get_img_h(g_render_3d.wall_texture);
+
+            if (wall_pix && fast_wall_tex) {
+                int tx = (int)(tex_coord * (float)wall_w) % wall_w;
+                if (tx < 0) tx += wall_w;
+                float ty_f = 0.0f;
+                float ty_step = tex_v_coord_step * (float)wall_h_tex;
+                for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
+                    int ty = (int)ty_f % wall_h_tex;
+                    if (ty < 0) ty += wall_h_tex;
+                    if (pix && yy >= 0 && yy < screen_h)
+                        pix[yy * screen_w + x] = wall_pix[ty * wall_w + tx];
+                    ty_f += ty_step;
                 }
-                if (pix && yy >= 0 && yy < screen_h)
-                    pix[yy * screen_w + x] = col;
-            }
-            int fh0 = proj.draw_end + 1;
-            int fh1 = screen_h - 1;
-            if (fh0 <= fh1) {
-                if (has_floor_tex) {
-                    for (int yy = fh0; yy <= fh1; yy++) {
-                        float rowDist = s_floor_row_dist ? s_floor_row_dist[yy] : 0.0f;
-                        if (rowDist <= 0.0f)
-                            continue;
-                        float angle_diff = ray_angle - interp_cam_angle;
-                        float cos_angle_diff = cosf(angle_diff);
-                        if (fabsf(cos_angle_diff) < 1e-6f)
-                            continue;
-                        float dist_along_ray = rowDist / cos_angle_diff;
-                        float world_x = interp_cam_x + cos_a * dist_along_ray;
-                        float world_y = interp_cam_y + sin_a * dist_along_ray;
-                        if (world_x < 0.0f || world_x >= (float)map_w || world_y < 0.0f || world_y >= (float)map_h) {
-                            if (pix)
-                                pix[yy * screen_w + x] = floor_color;
-                            continue;
-                        }
-                        float u = world_x * g_render_3d.config.floor_texture_scale;
-                        float v = world_y * g_render_3d.config.floor_texture_scale;
-                        uint32_t col = texture_sample(g_render_3d.floor_texture, u, v, false);
-                        if (pix)
-                            pix[yy * screen_w + x] = col;
-                    }
-                } else {
-                    render_3d_sdl_draw_column(g_render_3d.display, x, fh0, fh1, floor_color);
+            } else {
+                for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
+                    uint32_t col = texture_sample(g_render_3d.wall_texture, tex_coord, tex_v_coord, !fast_wall_tex);
+                    if (pix && yy >= 0 && yy < screen_h)
+                        pix[yy * screen_w + x] = col;
+                    tex_v_coord += tex_v_coord_step;
                 }
             }
         } else {
-            if (g_render_3d.column_depths)
-                g_render_3d.column_depths[x] = INFINITY;
-            render_3d_sdl_draw_column(g_render_3d.display, x, 0, horizon - 1, ceiling_color);
-            int fh0b = horizon;
-            int fh1b = screen_h - 1;
-            if (fh0b <= fh1b) {
-                if (has_floor_tex) {
-                    for (int yy = fh0b; yy <= fh1b; yy++) {
-                        float rowDist = s_floor_row_dist ? s_floor_row_dist[yy] : 0.0f;
-                        if (rowDist <= 0.0f)
-                            continue;
-                        float angle_diff = ray_angle - interp_cam_angle;
-                        float cos_angle_diff = cosf(angle_diff);
-                        if (fabsf(cos_angle_diff) < 1e-6f)
-                            continue;
-                        float dist_along_ray = rowDist / cos_angle_diff;
-                        float world_x = interp_cam_x + cos_a * dist_along_ray;
-                        float world_y = interp_cam_y + sin_a * dist_along_ray;
-                        if (world_x < 0.0f || world_x >= (float)map_w || world_y < 0.0f || world_y >= (float)map_h) {
-                            if (pix)
-                                pix[yy * screen_w + x] = floor_color;
-                            continue;
-                        }
-                        float u = world_x * g_render_3d.config.floor_texture_scale;
-                        float v = world_y * g_render_3d.config.floor_texture_scale;
-                        uint32_t col = texture_sample(g_render_3d.floor_texture, u, v, false);
-                        if (pix)
-                            pix[yy * screen_w + x] = col;
-                    }
-                } else {
-                    render_3d_sdl_draw_column(g_render_3d.display, x, fh0b, fh1b, floor_color);
-                }
-            }
+            if (g_render_3d.column_depths) g_render_3d.column_depths[x] = INFINITY;
         }
     }
+    t_after_walls = debug_timing ? render_3d_now() : 0.0;
     if (g_render_3d.sprite_renderer) {
         sprite_clear(g_render_3d.sprite_renderer);
         for (int i = 0; i < game_state->food_count; i++) {
@@ -741,9 +721,31 @@ void render_3d_draw(const GameState* game_state,
     sprite_project_all(g_render_3d.sprite_renderer);
     sprite_sort_by_depth(g_render_3d.sprite_renderer);
     sprite_draw(g_render_3d.sprite_renderer, g_render_3d.display, g_render_3d.column_depths);
+    t_after_sprites = debug_timing ? render_3d_now() : 0.0;
     render_3d_draw_minimap(&g_render_3d, frame_interp_t);
     render_3d_draw_fps_counter();
+    t_after_overlays = debug_timing ? render_3d_now() : 0.0;
+    t_before_present = debug_timing ? render_3d_now() : 0.0;
     if (!render_3d_sdl_present(g_render_3d.display)) {
+    }
+    t_after_present = debug_timing ? render_3d_now() : 0.0;
+    if (debug_timing) {
+        double t_end = (t_after_present > 0.0) ? t_after_present : render_3d_now();
+        double setup_ms = (t_setup_end - t0) * 1000.0;
+        double walls_ms = (t_after_walls - t_before_walls) * 1000.0;
+        double sprites_ms = (t_after_sprites - t_after_walls) * 1000.0;
+        double overlays_ms = (t_after_overlays - t_after_sprites) * 1000.0;
+        double present_ms = (t_after_present - t_before_present) * 1000.0;
+        double total_ms = (t_end - t0) * 1000.0;
+        double pct_setup = (total_ms > 0.0) ? (100.0 * (setup_ms / total_ms)) : 0.0;
+        double pct_walls = (total_ms > 0.0) ? (100.0 * (walls_ms / total_ms)) : 0.0;
+        double pct_sprites = (total_ms > 0.0) ? (100.0 * (sprites_ms / total_ms)) : 0.0;
+        double pct_overlays = (total_ms > 0.0) ? (100.0 * (overlays_ms / total_ms)) : 0.0;
+        double pct_present = (total_ms > 0.0) ? (100.0 * (present_ms / total_ms)) : 0.0;
+        render_3d_log("3D_TIMING: total=%.2fms setup=%.2fms(%.1f%%) walls=%.2fms(%.1f%%) sprites=%.2fms(%.1f%%) \
+                     overlays=%.2fms(%.1f%%) present=%.2fms(%.1f%%) screen=%dx%d map=%dx%d sprites=%d\n",
+                     total_ms, setup_ms, pct_setup, walls_ms, pct_walls, sprites_ms, pct_sprites, overlays_ms, pct_overlays,
+                     present_ms, pct_present, screen_w, screen_h, map_w, map_h, g_render_3d.sprite_renderer ? sprite_get_count(g_render_3d.sprite_renderer) : 0);
     }
 }
 void render_3d_set_active_player(int player_index) __attribute__((used));
@@ -786,6 +788,15 @@ void render_3d_shutdown(void) {
         free(g_render_3d.column_depths);
         g_render_3d.column_depths = NULL;
     }
+    if (g_render_3d.cos_offsets) {
+        free(g_render_3d.cos_offsets);
+        g_render_3d.cos_offsets = NULL;
+    }
+    if (g_render_3d.sin_offsets) {
+        free(g_render_3d.sin_offsets);
+        g_render_3d.sin_offsets = NULL;
+    }
+    g_render_3d.offsets_cap = 0;
     sprite_destroy(g_render_3d.sprite_renderer);
     g_render_3d.sprite_renderer = NULL;
     if (g_render_3d.wall_texture) {

@@ -4,10 +4,10 @@ src/input/input.c: g_initialized->false(L36) g_initialized->true(L63)
 src/net/net.c: out->players[i].active->false(L136)
 src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L115)
 src/platform/tty.c: ctx->dirty->true(L231) ctx->dirty->true(L292) ctx->dirty->true(L306) ctx->dirty->false(L402) ctx->dirty->true(L408) ctx->size_valid->false(L499) ctx->size_valid->true(L501) ctx->dirty->true(L511)
-src/render/render_3d.c: g_render_3d.config.active_player->0(L403) g_render_3d.initialized->true(L464) s_floor_row_dist_valid->true(L507) s_floor_row_dist_valid->false(L509) s_angle_offsets_valid->true(L542) s_angle_offsets_valid->false(L544) g_render_3d.initialized->false(L815) g_render_3d.game_state->NULL(L816)
-src/render/render_3d_sdl.c: ctx_out->initialized->true(L92) ctx_out->initialized->true(L128) ctx_out->initialized->false(L151) ctx->initialized->false(L178)
+src/render/render_3d.c: g_render_3d.config.active_player->0(L413) g_render_3d.initialized->true(L474) g_render_3d.initialized->false(L826) g_render_3d.game_state->NULL(L827)
+src/render/render_3d_sdl.c: ctx_out->initialized->true(L94) ctx_out->initialized->true(L137) ctx_out->initialized->false(L160) ctx->initialized->false(L188)
 tests/unity/test_collision.c: g.players[0].active->true(L26) g.players[1].active->true(L28)
 tests/unity/test_game_reset_lives.c: gs->players[0].active->false(L19)
 tests/unity/test_net_integration.c: gs.status->GAME_STATUS_RUNNING(L34) gs.players[0].active->true(L38)
 tests/unity/test_render_minimap.c: gs.players[0].active->true(L19)
-# Total: 43 transitions in 11 files
+# Total: 39 transitions in 11 files

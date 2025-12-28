@@ -14,7 +14,14 @@ struct Texture3D {
     uint32_t* pixels;
     int img_w;
     int img_h;
+    /* Derived / hoisted constants for hot code paths */
+    int pitch;         /* equals img_w */
+    int w_minus1;
+    int h_minus1;
+    float mul_x;       /* (float)(w_minus1) */
+    float mul_y;       /* (float)(h_minus1) */
 };
+static void texture_update_derived(Texture3D* tex);
 Texture3D* texture_create(void) {
     Texture3D* t = calloc(1, sizeof *t);
     if (!t)
@@ -36,6 +43,8 @@ Texture3D* texture_create_procedural(int w, int h) {
             t->pixels[y * w + x] = 0xFF000000 | ((uint32_t)(y & 0xFF) << 8) | (uint32_t)(x & 0xFF);
         }
     }
+    /* update hoisted/derived values for fast sampling */
+    texture_update_derived(t);
     return t;
 }
 void texture_destroy(Texture3D* tex) {
@@ -274,6 +283,8 @@ bool texture_load_from_file(Texture3D* tex, const char* filename) {
             tex->pixels[y * w + x] = ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)g << 8) | (uint32_t)r;
         }
     }
+    /* update derived values used by hot sampling paths */
+    texture_update_derived(tex);
     stbi_image_free(data);
     return true;
 }
@@ -285,10 +296,44 @@ void texture_free_image(Texture3D* tex) {
         tex->pixels = NULL;
     }
     tex->img_w = tex->img_h = 0;
+    /* clear derived values */
+    tex->pitch = tex->w_minus1 = tex->h_minus1 = 0;
+    tex->mul_x = tex->mul_y = 0.0f;
 }
+static void texture_update_derived(Texture3D* tex) {
+    if (!tex)
+        return;
+    if (tex->pixels && tex->img_w > 0 && tex->img_h > 0) {
+        tex->pitch = tex->img_w;
+        tex->w_minus1 = tex->img_w - 1;
+        tex->h_minus1 = tex->img_h - 1;
+        tex->mul_x = (float)tex->w_minus1;
+        tex->mul_y = (float)tex->h_minus1;
+    } else {
+        tex->pitch = tex->w_minus1 = tex->h_minus1 = 0;
+        tex->mul_x = tex->mul_y = 0.0f;
+    }
+}
+
+static inline bool uv_in_unit_range(float u, float v) {
+    return u >= 0.0f && u < 1.0f && v >= 0.0f && v < 1.0f;
+}
+
+static uint32_t sample_nearest_norm(const Texture3D* tex, float u, float v) {
+    int x = (int)(u * (float)tex->img_w);
+    int y = (int)(v * (float)tex->img_h);
+    if (x < 0) x = 0; else if (x >= tex->img_w) x = tex->img_w - 1;
+    if (y < 0) y = 0; else if (y >= tex->img_h) y = tex->img_h - 1;
+    return tex->pixels[y * tex->img_w + x];
+}
+
 static uint32_t sample_nearest(const Texture3D* tex, float u, float v) {
     if (!tex || !tex->pixels || tex->img_w <= 0 || tex->img_h <= 0)
         return 0;
+    /* Fast path when coords already in [0,1): avoid normalization branching */
+    if (uv_in_unit_range(u, v))
+        return sample_nearest_norm(tex, u, v);
+    /* Normalize and then sample */
     if (u >= 0.0f && u < 16777216.0f) {
         u -= (float)(int)u;
     } else {
@@ -303,42 +348,34 @@ static uint32_t sample_nearest(const Texture3D* tex, float u, float v) {
         if (v < 0.0f)
             v += 1.0f;
     }
-    int x = (int)(u * (float)tex->img_w);
-    int y = (int)(v * (float)tex->img_h);
-    if (x < 0) {
-        x = 0;
-    }
-    if (x >= tex->img_w) {
-        x = tex->img_w - 1;
-    }
-    if (y < 0) {
-        y = 0;
-    }
-    if (y >= tex->img_h) {
-        y = tex->img_h - 1;
-    }
-    return tex->pixels[y * tex->img_w + x];
+    return sample_nearest_norm(tex, u, v);
 }
 /* Fast integer bilinear sampler for u,v in [0,1).
  * Uses Q8 fixed-point interpolation (weights 0..255). Falls back to float path
  * when coordinates fall outside 0..1 or for other safety cases. */
 static inline uint32_t sample_bilinear_fast(const Texture3D* tex, float u, float v) {
-    int w = tex->img_w;
-    int h = tex->img_h;
-    float x = u * (float)(w - 1);
-    float y = v * (float)(h - 1);
-    int x0 = (int)x;
-    int y0 = (int)y;
+    /* Assumes u,v in [0,1) and img_w/img_h > 1 */
+    const int pitch = tex->pitch;
+    const int w_m1 = tex->w_minus1;
+    const int h_m1 = tex->h_minus1;
+    const float mul_x = tex->mul_x;
+    const float mul_y = tex->mul_y;
+    float xf = u * mul_x;
+    float yf = v * mul_y;
+    int x0 = (int)xf;
+    int y0 = (int)yf;
     int x1 = x0 + 1;
-    if (x1 >= w) x1 = w - 1;
+    if (x1 > w_m1) x1 = w_m1;
     int y1 = y0 + 1;
-    if (y1 >= h) y1 = h - 1;
-    int sx = (int)((x - (float)x0) * 256.0f + 0.5f);
-    int sy = (int)((y - (float)y0) * 256.0f + 0.5f);
-    uint32_t c00 = tex->pixels[y0 * w + x0];
-    uint32_t c10 = tex->pixels[y0 * w + x1];
-    uint32_t c01 = tex->pixels[y1 * w + x0];
-    uint32_t c11 = tex->pixels[y1 * w + x1];
+    if (y1 > h_m1) y1 = h_m1;
+    int sx = (int)((xf - (float)x0) * 256.0f + 0.5f);
+    int sy = (int)((yf - (float)y0) * 256.0f + 0.5f);
+    int row0 = y0 * pitch;
+    int row1 = y1 * pitch;
+    uint32_t c00 = tex->pixels[row0 + x0];
+    uint32_t c10 = tex->pixels[row0 + x1];
+    uint32_t c01 = tex->pixels[row1 + x0];
+    uint32_t c11 = tex->pixels[row1 + x1];
     int a00 = (int)((c00 >> 24) & 0xFF);
     int b00 = (int)((c00 >> 16) & 0xFF);
     int g00 = (int)((c00 >> 8) & 0xFF);
@@ -370,42 +407,27 @@ static inline uint32_t sample_bilinear_fast(const Texture3D* tex, float u, float
     return ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)g << 8) | (uint32_t)r;
 }
 
-static uint32_t sample_bilinear(const Texture3D* tex, float u, float v) {
-    if (!tex || !tex->pixels || tex->img_w <= 0 || tex->img_h <= 0)
-        return 0;
-    if (u >= 0.0f && u < 16777216.0f) {
-        u -= (float)(int)u;
-    } else {
-        u -= floorf(u);
-        if (u < 0.0f)
-            u += 1.0f;
-    }
-    if (v >= 0.0f && v < 16777216.0f) {
-        v -= (float)(int)v;
-    } else {
-        v -= floorf(v);
-        if (v < 0.0f)
-            v += 1.0f;
-    }
-    /* Fast path: if u,v are already in [0,1) use integer bilinear for speed */
-    if (u >= 0.0f && u < 1.0f && v >= 0.0f && v < 1.0f && tex->img_w > 1 && tex->img_h > 1)
-        return sample_bilinear_fast(tex, u, v);
-    float x = u * (float)(tex->img_w - 1);
-    float y = v * (float)(tex->img_h - 1);
+static uint32_t sample_bilinear_slow_normalized(const Texture3D* tex, float u, float v) {
+    /* Assumes u,v normalized into [0,1) */
+    const int pitch = tex->pitch;
+    const float mul_x = tex->mul_x;
+    const float mul_y = tex->mul_y;
+    float x = u * mul_x;
+    float y = v * mul_y;
     int x0 = (int)x;
     int x1 = x0 + 1;
-    if (x1 >= tex->img_w)
-        x1 = tex->img_w - 1;
+    if (x1 > tex->w_minus1) x1 = tex->w_minus1;
     int y0 = (int)y;
     int y1 = y0 + 1;
-    if (y1 >= tex->img_h)
-        y1 = tex->img_h - 1;
+    if (y1 > tex->h_minus1) y1 = tex->h_minus1;
     float sx = x - (float)x0;
     float sy = y - (float)y0;
-    uint32_t c00 = tex->pixels[y0 * tex->img_w + x0];
-    uint32_t c10 = tex->pixels[y0 * tex->img_w + x1];
-    uint32_t c01 = tex->pixels[y1 * tex->img_w + x0];
-    uint32_t c11 = tex->pixels[y1 * tex->img_w + x1];
+    int row0 = y0 * pitch;
+    int row1 = y1 * pitch;
+    uint32_t c00 = tex->pixels[row0 + x0];
+    uint32_t c10 = tex->pixels[row0 + x1];
+    uint32_t c01 = tex->pixels[row1 + x0];
+    uint32_t c11 = tex->pixels[row1 + x1];
     float a00 = (float)((c00 >> 24) & 0xFF);
     float b00 = (float)((c00 >> 16) & 0xFF);
     float g00 = (float)((c00 >> 8) & 0xFF);
@@ -439,6 +461,32 @@ static uint32_t sample_bilinear(const Texture3D* tex, float u, float v) {
     uint32_t ig = (uint32_t)(g + 0.5f);
     uint32_t ib = (uint32_t)(b + 0.5f);
     return (ia << 24) | (ib << 16) | (ig << 8) | ir;
+}
+
+static uint32_t sample_bilinear(const Texture3D* tex, float u, float v) {
+    if (!tex || !tex->pixels || tex->img_w <= 0 || tex->img_h <= 0)
+        return 0;
+    /* Fast path when coords already in [0,1): avoid normalization cost */
+    if (uv_in_unit_range(u, v) && tex->img_w > 1 && tex->img_h > 1)
+        return sample_bilinear_fast(tex, u, v);
+    /* Normalize coords and try fast path again */
+    if (u >= 0.0f && u < 16777216.0f) {
+        u -= (float)(int)u;
+    } else {
+        u -= floorf(u);
+        if (u < 0.0f)
+            u += 1.0f;
+    }
+    if (v >= 0.0f && v < 16777216.0f) {
+        v -= (float)(int)v;
+    } else {
+        v -= floorf(v);
+        if (v < 0.0f)
+            v += 1.0f;
+    }
+    if (uv_in_unit_range(u, v) && tex->img_w > 1 && tex->img_h > 1)
+        return sample_bilinear_fast(tex, u, v);
+    return sample_bilinear_slow_normalized(tex, u, v);
 }
 uint32_t texture_sample(const Texture3D* tex, float u, float v, bool bilinear) {
     if (!tex || !tex->pixels)

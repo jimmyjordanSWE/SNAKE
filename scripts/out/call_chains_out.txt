@@ -16,12 +16,15 @@ Flow:
  render_3d_sdl->oom_overrides
  snakegame->console,game,input,oom_overrides,persist,platform,render,render_3d,tty
  sprite->camera,oom_overrides,projection,render_3d_sdl
+ test_camera_angles->camera
  test_game_colors->game,persist
  test_game_reset_lives->game,persist
  test_persist_long_lines->oom_overrides,persist
+ test_projection->projection
  test_render_lives_ui->display_tty,game,persist,render
  test_render_minimap->oom_overrides,render_3d,render_3d_sdl
  test_runner->camera,console,oom_overrides,persist,projection,raycast,render_3d_sdl,snakegame,sprite,texture,tty,tty_bench
+ test_texture_sample->texture
  test_tty_resize_overflow->tty
  texture->oom_overrides
  tty->oom_overrides
@@ -172,11 +175,11 @@ Tree(main):
       platform_sleep_ms
       platform_was_resized
       render_3d_draw
-        camera_fill_ray_angle_offsets
+        camera_get_fov_radians
         camera_get_interpolated_angle (see above)
         camera_get_interpolated_position
         camera_get_interpolation_fraction
-        camera_get_ray_angle (see above)
+        camera_prepare_angle_offsets
         camera_update_interpolation
         env_bool
         projection_get_wall_scale
@@ -185,25 +188,26 @@ Tree(main):
         raycast_get_texture_coord
         render_3d_draw_fps_counter
           render_3d_draw_char
-            render_3d_sdl_blend_pixel
+            render_3d_sdl_get_height
+            render_3d_sdl_get_width
         render_3d_draw_minimap
           env_bool
           render_3d_compute_minimap_cell_px
           render_3d_log
-          render_3d_sdl_blend_pixel
           render_3d_sdl_draw_filled_circle
             render_3d_sdl_blend_pixel
+              blend_px
           render_3d_sdl_draw_filled_rect
-            render_3d_sdl_blend_pixel
+            render_3d_sdl_blend_pixel (see above)
           render_3d_sdl_get_height
           render_3d_sdl_get_width
-          render_3d_sdl_set_pixel
           render_3d_shade_color
-        render_3d_sdl_clear
-        render_3d_sdl_draw_column
+        render_3d_log
+        render_3d_now
         render_3d_sdl_get_height
         render_3d_sdl_get_width
         render_3d_sdl_present
+          free (see above)
         render_3d_shade_color
         render_3d_update_fps
         sprite_add_color
@@ -224,14 +228,19 @@ Tree(main):
           projection_project_wall
         sprite_sort_by_depth
           now_ns
-        texture_get_texel
-          texture_sample
-            sample_bilinear
-              sample_bilinear_fast
-            sample_nearest
-          texture_shade_from_distance
+          sprite_insertion_sort
+            sprite_cmp_direct
+        texture_get_img_h
+        texture_get_img_w
         texture_has_image
-        texture_sample (see above)
+        texture_sample
+          sample_bilinear
+            sample_bilinear_fast
+            sample_bilinear_slow_normalized
+            uv_in_unit_range
+          sample_nearest
+            sample_nearest_norm
+            uv_in_unit_range
       render_3d_draw_death_overlay
         render_3d_draw_text_centered
           render_3d_draw_char (see above)
@@ -239,13 +248,13 @@ Tree(main):
         render_3d_sdl_draw_filled_rect (see above)
         render_3d_sdl_get_height
         render_3d_sdl_get_width
-        render_3d_sdl_present
+        render_3d_sdl_present (see above)
       render_3d_draw_winner_overlay
         render_3d_draw_text_centered (see above)
         render_3d_sdl_draw_filled_rect (see above)
         render_3d_sdl_get_height
         render_3d_sdl_get_width
-        render_3d_sdl_present
+        render_3d_sdl_present (see above)
       render_3d_on_tick
         camera_set_from_player
           normalize_angle
@@ -326,7 +335,7 @@ Tree(main):
           render_3d_sdl_draw_filled_rect (see above)
           render_3d_sdl_get_height
           render_3d_sdl_get_width
-          render_3d_sdl_present
+          render_3d_sdl_present (see above)
         render_sanitize_player_name
       render_shutdown (see above)
       tty_size_sufficient_for_board
@@ -337,7 +346,9 @@ Tree(main):
     sprite_sort_by_depth (see above)
     tests_count
     texture_destroy (see above)
-    texture_get_texel (see above)
+    texture_get_texel
+      texture_sample (see above)
+      texture_shade_from_distance
     texture_has_image
     texture_sample (see above)
     timespec_diff_ms

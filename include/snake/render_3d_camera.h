@@ -31,6 +31,16 @@ float camera_get_update_interval(const Camera3D* cam);
  * (angle offset relative to camera pointing direction). Caller must provide array
  * sized to camera->screen_width. */
 void camera_fill_ray_angle_offsets(const Camera3D* camera, float* out_array);
+
+/* Cached per-column angle offsets API:
+ * - Call `camera_prepare_angle_offsets()` once per-frame (after interpolation) to allocate
+ *   and (re)compute offsets if `screen_width` or FOV changed.
+ * - Use `camera_get_cached_angle_offsets()` and `camera_get_cached_angle_offsets_width()`
+ *   to access the cached array (may be NULL on OOM). */
+void camera_prepare_angle_offsets(Camera3D* camera, int screen_width);
+const float* camera_get_cached_angle_offsets(const Camera3D* camera);
+int camera_get_cached_angle_offsets_width(const Camera3D* camera);
+
 float camera_get_interpolation_fraction(const Camera3D* cam);
 float camera_get_interp_time(const Camera3D* cam);
 void camera_get_position(const Camera3D* cam, float* x_out, float* y_out);

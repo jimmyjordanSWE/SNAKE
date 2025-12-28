@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 typedef void (*lsan_fn_t)(void);
 static void call_lsan_disable(void) {
     static lsan_fn_t fn = (lsan_fn_t)(-1);
@@ -39,6 +40,7 @@ struct SDL3DContext {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* texture;
+    Uint32 texture_format;
     bool initialized;
 };
 SDL3DContext* render_3d_sdl_create(int width, int height) {
@@ -112,11 +114,18 @@ bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
     SDL_SetRenderDrawColor(ctx_out->renderer, 0, 0, 0, 255);
     SDL_RenderClear(ctx_out->renderer);
     SDL_RenderPresent(ctx_out->renderer);
-    ctx_out->texture =
-        SDL_CreateTexture(ctx_out->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (!ctx_out->texture) {
-        err = 4;
-        goto out;
+    {
+        SDL_RendererInfo info;
+        SDL_GetRendererInfo(ctx_out->renderer, &info);
+        Uint32 fmt = SDL_PIXELFORMAT_ARGB8888;
+        if (info.num_texture_formats > 0)
+            fmt = info.texture_formats[0];
+        ctx_out->texture = SDL_CreateTexture(ctx_out->renderer, fmt, SDL_TEXTUREACCESS_STREAMING, width, height);
+        if (!ctx_out->texture) {
+            err = 4;
+            goto out;
+        }
+        ctx_out->texture_format = fmt;
     }
     ctx_out->pixels = malloc((size_t)width * (size_t)height * sizeof *ctx_out->pixels);
     if (!ctx_out->pixels) {
@@ -163,6 +172,7 @@ void render_3d_sdl_shutdown(SDL3DContext* ctx) {
     if (ctx->texture) {
         SDL_DestroyTexture(ctx->texture);
         ctx->texture = NULL;
+        ctx->texture_format = 0;
     }
     if (ctx->renderer) {
         SDL_DestroyRenderer(ctx->renderer);
@@ -182,30 +192,25 @@ void render_3d_sdl_set_pixel(SDL3DContext* ctx, int x, int y, uint32_t col) {
         return;
     ctx->pixels[y * ctx->width + x] = col;
 }
+static inline uint32_t blend_px(uint32_t dst, uint32_t src) {
+    uint8_t sa = (uint8_t)((src >> 24) & 0xFFu);
+    if (sa == 255) return src;
+    if (sa == 0) return dst;
+    uint8_t sr = (uint8_t)((src >> 16) & 0xFFu), sg = (uint8_t)((src >> 8) & 0xFFu), sb = (uint8_t)(src & 0xFFu);
+    uint8_t dr = (uint8_t)((dst >> 16) & 0xFFu), dg = (uint8_t)((dst >> 8) & 0xFFu), db = (uint8_t)(dst & 0xFFu);
+    int inv = 255 - sa;
+    uint8_t rr = (uint8_t)((sr * sa + dr * inv) / 255);
+    uint8_t rg = (uint8_t)((sg * sa + dg * inv) / 255);
+    uint8_t rb = (uint8_t)((sb * sa + db * inv) / 255);
+    return (0xFFu << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
+}
+
 void render_3d_sdl_blend_pixel(SDL3DContext* ctx, int x, int y, uint32_t src_col) {
     if (!ctx || !ctx->pixels || x < 0 || x >= ctx->width || y < 0 || y >= ctx->height)
         return;
-    uint32_t dst = ctx->pixels[y * ctx->width + x];
-    uint8_t sa = (uint8_t)((src_col >> 24) & 0xFFu);
-    if (sa == 255) {
-        ctx->pixels[y * ctx->width + x] = src_col;
-        return;
-    }
-    if (sa == 0)
-        return;
-    uint8_t sr = (uint8_t)((src_col >> 16) & 0xFFu);
-    uint8_t sg = (uint8_t)((src_col >> 8) & 0xFFu);
-    uint8_t sb = (uint8_t)(src_col & 0xFFu);
-    uint8_t dr = (uint8_t)((dst >> 16) & 0xFFu);
-    uint8_t dg = (uint8_t)((dst >> 8) & 0xFFu);
-    uint8_t db = (uint8_t)(dst & 0xFFu);
-    float a = (float)sa / 255.0f;
-    uint8_t out_r = (uint8_t)(sr * a + dr * (1.0f - a));
-    uint8_t out_g = (uint8_t)(sg * a + dg * (1.0f - a));
-    uint8_t out_b = (uint8_t)(sb * a + db * (1.0f - a));
-    ctx->pixels[y * ctx->width + x] =
-        (0xFFu << 24) | ((uint32_t)out_r << 16) | ((uint32_t)out_g << 8) | (uint32_t)out_b;
-}
+    uint32_t* p = &ctx->pixels[y * ctx->width + x];
+    *p = blend_px(*p, src_col);
+} 
 void render_3d_sdl_draw_column(SDL3DContext* ctx, int x, int y_start, int y_end, uint32_t col) {
     if (!ctx || !ctx->pixels || x < 0 || x >= ctx->width)
         return;
@@ -301,8 +306,40 @@ bool render_3d_sdl_present(SDL3DContext* ctx) {
             break;
         }
     }
-    SDL_UpdateTexture(ctx->texture, NULL, ctx->pixels, ctx->width * (int)sizeof(uint32_t));
-    SDL_RenderClear(ctx->renderer);
+    /* Try lock+write path first; fall back to SDL_UpdateTexture if needed. */
+    void* tex_pixels = NULL;
+    int tex_pitch = 0;
+    if (SDL_LockTexture(ctx->texture, NULL, &tex_pixels, &tex_pitch) == 0) {
+        if (ctx->texture_format == SDL_PIXELFORMAT_ARGB8888) {
+            uint8_t* dst = (uint8_t*)tex_pixels;
+            uint8_t* src = (uint8_t*)ctx->pixels;
+            size_t row_bytes = (size_t)ctx->width * sizeof(uint32_t);
+            for (int y = 0; y < ctx->height; ++y) {
+                memcpy(dst, src + (size_t)y * row_bytes, row_bytes);
+                dst += tex_pitch;
+            }
+        } else {
+            SDL_ConvertPixels(ctx->width, ctx->height, SDL_PIXELFORMAT_ARGB8888, ctx->pixels,
+                              ctx->width * (int)sizeof(uint32_t), ctx->texture_format, tex_pixels, tex_pitch);
+        }
+        SDL_UnlockTexture(ctx->texture);
+    } else {
+        if (ctx->texture_format == SDL_PIXELFORMAT_ARGB8888) {
+            SDL_UpdateTexture(ctx->texture, NULL, ctx->pixels, ctx->width * (int)sizeof(uint32_t));
+        } else {
+            size_t bufsize = (size_t)ctx->width * (size_t)ctx->height * 4;
+            uint8_t* tmp = malloc(bufsize);
+            if (tmp) {
+                SDL_ConvertPixels(ctx->width, ctx->height, SDL_PIXELFORMAT_ARGB8888, ctx->pixels,
+                                  ctx->width * (int)sizeof(uint32_t), ctx->texture_format, tmp, ctx->width * 4);
+                SDL_UpdateTexture(ctx->texture, NULL, tmp, ctx->width * 4);
+                free(tmp);
+            } else {
+                SDL_UpdateTexture(ctx->texture, NULL, ctx->pixels, ctx->width * (int)sizeof(uint32_t));
+            }
+        }
+    }
+    /* texture covers full target; no need to clear the renderer first */
     SDL_RenderCopy(ctx->renderer, ctx->texture, NULL, NULL);
     SDL_RenderPresent(ctx->renderer);
     return true;

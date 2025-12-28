@@ -38,8 +38,9 @@ void projection_project_wall(const Projection3D* proj, float distance, WallProje
         wall_height = (float)proj->screen_height;
     result_out->wall_height = (int)wall_height;
     int center = proj->horizon_y;
-    result_out->draw_start = center - (int)(wall_height / 2);
-    result_out->draw_end = result_out->draw_start + (int)wall_height;
+    /* Ensure draw_start/draw_end define an inclusive pixel range of length wall_height */
+    result_out->draw_start = center - (result_out->wall_height / 2);
+    result_out->draw_end = result_out->draw_start + result_out->wall_height - 1;
     if (result_out->draw_start < 0)
         result_out->draw_start = 0;
     if (result_out->draw_end >= proj->screen_height)

@@ -17,6 +17,11 @@ struct Camera3D {
     float plane_x, plane_y;
     float interp_time;
     float update_interval;
+
+    /* Cached per-column angle offsets (length = cached_width) */
+    float* cached_angle_offsets;
+    int cached_width;
+    float cached_fov_radians;
 };
 static float normalize_angle(float angle) {
     float result = fmodf(angle, 2.0f * (float)M_PI);
@@ -54,6 +59,10 @@ Camera3D* camera_create(float fov_degrees, int screen_width, float update_interv
     return c;
 }
 void camera_destroy(Camera3D* camera) {
+    if (!camera)
+        return;
+    free(camera->cached_angle_offsets);
+    camera->cached_angle_offsets = NULL;
     free(camera);
 }
 void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float update_interval) {
@@ -70,6 +79,10 @@ void camera_init(Camera3D* camera, float fov_degrees, int screen_width, float up
     camera->screen_width = screen_width;
     camera->update_interval = update_interval > 0.0f ? update_interval : 0.5f;
     camera->interp_time = 0.0f;
+    /* Init cached angle offsets state */
+    camera->cached_angle_offsets = NULL;
+    camera->cached_width = 0;
+    camera->cached_fov_radians = -1.0f;
     update_vectors(camera);
 }
 void camera_set_from_player(Camera3D* camera, int x, int y, int dir) {
@@ -206,6 +219,37 @@ void camera_fill_ray_angle_offsets(const Camera3D* camera, float* out_array) {
         float cameraX = (2.0f * ((float)col + 0.5f) / (float)camera->screen_width) - 1.0f;
         out_array[col] = atanf(cameraX * tan_half);
     }
+}
+
+void camera_prepare_angle_offsets(Camera3D* camera, int screen_width) {
+    if (!camera || screen_width <= 0)
+        return;
+    /* If width and fov unchanged, keep cached buffer as-is */
+    if (camera->cached_angle_offsets && camera->cached_width == screen_width && camera->cached_fov_radians == camera->fov_radians)
+        return;
+    float* new_buf = (float*)realloc(camera->cached_angle_offsets, (size_t)screen_width * sizeof(float));
+    if (!new_buf) {
+        /* Allocation failed: leave previous buffer intact and return */
+        return;
+    }
+    camera->cached_angle_offsets = new_buf;
+    camera->cached_width = screen_width;
+    camera->cached_fov_radians = camera->fov_radians;
+
+    float half_fov = camera->fov_radians * 0.5f;
+    float tan_half = tanf(half_fov);
+    for (int col = 0; col < screen_width; col++) {
+        float cameraX = (2.0f * ((float)col + 0.5f) / (float)screen_width) - 1.0f;
+        camera->cached_angle_offsets[col] = atanf(cameraX * tan_half);
+    }
+}
+
+const float* camera_get_cached_angle_offsets(const Camera3D* camera) {
+    return camera ? camera->cached_angle_offsets : NULL;
+}
+
+int camera_get_cached_angle_offsets_width(const Camera3D* camera) {
+    return camera ? camera->cached_width : 0;
 }
 void camera_world_to_camera(const Camera3D* camera, float world_x, float world_y, float* cam_x_out, float* cam_y_out) {
     if (!camera || !cam_x_out || !cam_y_out)

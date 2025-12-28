@@ -262,6 +262,7 @@ include
     distance_to_point(*camera,x,y)
     fill_ray_angle_offsets(*camera,*out_array)
     get_
+     cached_angle_offsets_width(*camera)
      dir(*cam,*dx_out,*dy_out)
      fov_radians(*cam)
      interp_time(*cam)
@@ -274,6 +275,7 @@ include
      update_interval(*cam)
     init(*camera,fov_degrees,screen_width,update_interval)
     point_in_front(*camera,x,y)
+    prepare_angle_offsets(*camera,screen_width)
     set_
      angle(*cam,angle)
      from_player(*camera,x,y,dir)
@@ -715,6 +717,7 @@ src
     distance_to_point(*camera,x,y)
     fill_ray_angle_offsets(*camera,*out_array)
     get_
+     cached_angle_offsets_width(*camera)
      dir(*cam,*dx_out,*dy_out)
      fov_radians(*cam)
      interp_time(*cam)
@@ -727,6 +730,7 @@ src
      update_interval(*cam)
     init(*camera,fov_degrees,screen_width,update_interval)
     point_in_front(*camera,x,y)
+    prepare_angle_offsets(*camera,screen_width)
     set_
      angle(*cam,angle)
      from_player(*camera,x,y,dir)
@@ -743,7 +747,7 @@ src
    f interpolate_angle(from,to,t)
    f normalize_angle(angle)
    f update_vectors(*camera)
-   s Camera3D{x,angle,prev_x,fov_radians,screen_width,dir_x,plane_x,interp_time,update_interval}
+   s Camera3D{x,angle,prev_x,fov_radians,screen_width,dir_x,plane_x,interp_time,update_interval,*cached_angle_offsets,cached_width,cached_fov_radians}
   display_3d.c
    f display_3d_
     clear(*disp,ch,color)
@@ -856,6 +860,7 @@ src
      winner_overlay(*game,winner,score)
     init(*game_state,*config)
     log(*fmt)
+    now(_)
     on_tick(*game_state)
     set_
      active_player(player_index)
@@ -864,11 +869,12 @@ src
     shade_color(col,pct)
     shutdown(_)
     update_fps(delta_seconds)
-   s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps}
+   s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps,*cos_offsets,*sin_offsets,offsets_cap}
    s SDL3DContext
    t Render3DContext
    t RenderMode
   render_3d_sdl.c
+   f blend_px(dst,src)
    f call_lsan_
     disable(_)
     enable(_)
@@ -889,7 +895,7 @@ src
     set_pixel(*ctx,x,y,col)
     shutdown(*ctx)
    s <anon>{*window,*renderer,*texture,width,height}
-   s SDL3DContext{width,height,*pixels,*window,*renderer,*texture,initialized}
+   s SDL3DContext{width,height,*pixels,*window,*renderer,*texture,texture_format,initialized}
    t SDLState
   render_input.c
    f render_sanitize_player_name(*input,*out,out_len)
@@ -902,6 +908,7 @@ src
      rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
     clear(*sr)
     cmp(*pa,*pb)
+    cmp_direct(*a,*b)
     destroy(*sr)
     draw(*sr,*ctx,*column_depths)
     get_
@@ -909,6 +916,7 @@ src
      screen_info(*sr,idx,*screen_x_out,*screen_h_out,*visible_out)
      texture_id(*sr,idx,*texture_id_out)
     init(*sr,max_sprites,*camera,*proj)
+    insertion_sort(*arr,n)
     project_all(*sr)
     shutdown(*sr)
     sort_by_depth(*sr)
@@ -917,8 +925,11 @@ src
    f is_safe_texture_filename(*filename)
    f sample_
     bilinear(*tex,u,v)
-    bilinear_fast(*tex,u,v)
+    bilinear_
+     fast(*tex,u,v)
+     slow_normalized(*tex,u,v)
     nearest(*tex,u,v)
+    nearest_norm(*tex,u,v)
    f texture_
     destroy(*tex)
     free_image(*tex)
@@ -935,7 +946,9 @@ src
      chars(*tex,*chars)
      colors(*tex,*colors)
     shade_from_distance(distance)
-   s Texture3D{TEXTURE_MAX_SHADES,TEXTURE_MAX_SHADES,*pixels,img_w,img_h}
+    update_derived(*tex)
+   f uv_in_unit_range(u,v)
+   s Texture3D{TEXTURE_MAX_SHADES,TEXTURE_MAX_SHADES,*pixels,img_w,img_h,pitch,w_minus1,h_minus1,mul_x,mul_y}
   wall_perspective.c
    f render_3d_compute_wall_u(interp_cam_x,interp_cam_y,ray_angle,yy,horizon,screen_height,pd,is_vertical,wall_world_height,*out_rowDist)
  snakegame.c
@@ -986,6 +999,9 @@ tests
    f oom_
     reset(_)
     set_fail_after(f)
+  test_camera_angles.c
+   f angle_diff(a,b)
+   f test_camera_cached_offsets_match_direct_per_column(_)
   test_collision.c
   test_default_key_bindings.c
   test_env.c
@@ -1014,6 +1030,8 @@ tests
   test_persist_player_keys.c
   test_persist_player_meta.c
   test_persist_truncation.c
+  test_projection.c
+   f test_projection_wall_pixel_count_consistent(_)
   test_render_lives_ui.c
    f test_render_draw_shows_hearts_for_multiplayer(_)
   test_render_minimap.c
@@ -1069,6 +1087,9 @@ tests
   test_stb_leak_plte.c
   test_texture_path.c
   test_texture_path_extra.c
+  test_texture_sample.c
+   f reference_bilinear(*tex,u,v)
+   f test_texture_bilinear_fast_matches_reference_for_inrange(_)
   test_tty_buffer_cap.c
   test_tty_oom.c
   test_tty_open.c

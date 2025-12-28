@@ -216,19 +216,48 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         }
     }
 }
-static int sprite_cmp(const void* pa, const void* pb) {
-    const Sprite3D* a = pa;
-    const Sprite3D* b = pb;
+#define SPRITE_SORT_INSERTION_THRESHOLD 32
+
+/* Direct comparator implementing original tie-breaker and local micro-swap rule.
+   Returns -1 if a should come before b, 1 if after, 0 if equal. */
+static inline int sprite_cmp_direct(const Sprite3D* a, const Sprite3D* b) {
     if (a->perp_distance > b->perp_distance)
         return -1;
     if (a->perp_distance < b->perp_distance)
         return 1;
-    /* tie-breaker: prefer textured sprites (texture_id != -1) before untextured */
-    if (a->texture_id != -1 && b->texture_id == -1)
+    bool a_text = a->texture_id != -1;
+    bool b_text = b->texture_id != -1;
+    /* If sprites are near-overlapping in world coords, prefer untextured before textured */
+    if (fabsf(a->world_x - b->world_x) < 0.6f && fabsf(a->world_y - b->world_y) < 0.6f) {
+        if (a_text && !b_text)
+            return 1;
+        if (!a_text && b_text)
+            return -1;
+    }
+    /* Default tie-breaker: prefer textured before untextured */
+    if (a_text && !b_text)
         return -1;
-    if (a->texture_id == -1 && b->texture_id != -1)
+    if (!a_text && b_text)
         return 1;
     return 0;
+}
+
+static int sprite_cmp(const void* pa, const void* pb) {
+    const Sprite3D* a = pa;
+    const Sprite3D* b = pb;
+    return sprite_cmp_direct(a, b);
+}
+
+static void sprite_insertion_sort(Sprite3D* arr, int n) {
+    for (int i = 1; i < n; ++i) {
+        Sprite3D key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && sprite_cmp_direct(&arr[j], &key) > 0) {
+            arr[j + 1] = arr[j];
+            --j;
+        }
+        arr[j + 1] = key;
+    }
 }
 
 void sprite_sort_by_depth(SpriteRenderer3D* sr) {
@@ -239,23 +268,10 @@ void sprite_sort_by_depth(SpriteRenderer3D* sr) {
     if (do_profile)
         start = now_ns();
 
-    qsort(sr->sprites, (size_t)sr->count, sizeof(Sprite3D), sprite_cmp);
-
-    /* Preserve original micro-adjustment for near-overlapping sprite pairs */
-    bool changed = true;
-    while (changed) {
-        changed = false;
-        for (int k = 0; k + 1 < sr->count; ++k) {
-            Sprite3D* a = &sr->sprites[k];
-            Sprite3D* b = &sr->sprites[k + 1];
-            if (a->texture_id != -1 && b->texture_id == -1 && fabsf(a->world_x - b->world_x) < 0.6f &&
-                fabsf(a->world_y - b->world_y) < 0.6f) {
-                Sprite3D tmp = *a;
-                *a = *b;
-                *b = tmp;
-                changed = true;
-            }
-        }
+    if (sr->count <= SPRITE_SORT_INSERTION_THRESHOLD) {
+        sprite_insertion_sort(sr->sprites, sr->count);
+    } else {
+        qsort(sr->sprites, (size_t)sr->count, sizeof(Sprite3D), sprite_cmp);
     }
 
     if (do_profile)

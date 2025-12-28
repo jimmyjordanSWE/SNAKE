@@ -94,6 +94,8 @@ include
    s <anon>{quit,any_key,move_up,turn_left}
    s GameConfig
    t InputState
+  math_fast.h
+   f fast_inv_sqrt(x)
   net.h
    f net_
     disconnect(*client)
@@ -258,6 +260,7 @@ include
     camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
     destroy(*camera)
     distance_to_point(*camera,x,y)
+    fill_ray_angle_offsets(*camera,*out_array)
     get_
      dir(*cam,*dx_out,*dy_out)
      fov_radians(*cam)
@@ -671,6 +674,9 @@ src
     winch_init(_)
   tty.c
    f ascii_pixel_equal(a,b)
+   f buf_
+    append_uint(*buf,*pos,*remaining,v)
+    safe_append_char(*buf,*pos,*remaining,c)
    f get_terminal_size(fd,*width,*height)
    f sigwinch_handler(sig)
    f tty_
@@ -707,6 +713,7 @@ src
     camera_to_world(*camera,cam_x,cam_y,*world_x_out,*world_y_out)
     destroy(*camera)
     distance_to_point(*camera,x,y)
+    fill_ray_angle_offsets(*camera,*out_array)
     get_
      dir(*cam,*dx_out,*dy_out)
      fov_radians(*cam)
@@ -887,12 +894,14 @@ src
   render_input.c
    f render_sanitize_player_name(*input,*out,out_len)
   sprite.c
+   f now_ns(_)
    f sprite_
     add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
     add_
      color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
      rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
     clear(*sr)
+    cmp(*pa,*pb)
     destroy(*sr)
     draw(*sr,*ctx,*column_depths)
     get_
@@ -908,6 +917,7 @@ src
    f is_safe_texture_filename(*filename)
    f sample_
     bilinear(*tex,u,v)
+    bilinear_fast(*tex,u,v)
     nearest(*tex,u,v)
    f texture_
     destroy(*tex)
@@ -933,6 +943,18 @@ src
    free(*s)
    run(*s)
   s SnakeGame{*cfg,*game,has_3d}
+ tools
+  render_bench.c
+   f main(_)
+   f timespec_diff_ms(*a,*b)
+  sprite_bench.c
+   f main(argc,*argv)
+  texture_bench.c
+   f main(_)
+   f timespec_diff_ms(*a,*b)
+  tty_bench.c
+   f main(_)
+   f timespec_diff_ms(*a,*b)
  utils
   bounds.c
    f snake_in_bounds(x,y,width,height)

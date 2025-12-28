@@ -21,19 +21,46 @@ Flow:
  test_persist_long_lines->oom_overrides,persist
  test_render_lives_ui->display_tty,game,persist,render
  test_render_minimap->oom_overrides,render_3d,render_3d_sdl
- test_runner->console,persist,snakegame
+ test_runner->camera,console,oom_overrides,persist,projection,raycast,render_3d_sdl,snakegame,sprite,texture,tty,tty_bench
  test_tty_resize_overflow->tty
  texture->oom_overrides
  tty->oom_overrides
 
 Tree(main):
   main
-    console_info
-    game_config_destroy
+    camera_destroy
       free
         ensure_real_fns
+    camera_fill_ray_angle_offsets
+    camera_get_fov_radians
+    camera_get_interpolated_angle
+      interpolate_angle
+        angle_difference
+        normalize_angle
+    camera_get_ray_angle
+      camera_get_interpolated_angle (see above)
+    camera_set_angle
+      normalize_angle
+      update_vectors
+    camera_set_position
+    console_info
+    free (see above)
+    game_config_destroy
+      free (see above)
     persist_load_config
       clamp_int
+    projection_destroy
+      free (see above)
+    projection_project_wall_perp
+      projection_project_wall
+    raycast_cast_ray
+    raycast_get_texture_coord
+    raycaster_destroy
+      free (see above)
+    render_3d_sdl_destroy
+      free (see above)
+      render_3d_sdl_shutdown
+        free (see above)
     run_single_by_name
       tests_count
     snake_game_free
@@ -46,17 +73,11 @@ Tree(main):
       input_shutdown
         restore_terminal
       render_3d_shutdown
-        camera_destroy
-          free (see above)
+        camera_destroy (see above)
         free (see above)
-        projection_destroy
-          free (see above)
-        raycaster_destroy
-          free (see above)
-        render_3d_sdl_destroy
-          free (see above)
-          render_3d_sdl_shutdown
-            free (see above)
+        projection_destroy (see above)
+        raycaster_destroy (see above)
+        render_3d_sdl_destroy (see above)
         sprite_destroy
           free (see above)
           sprite_shutdown
@@ -151,19 +172,15 @@ Tree(main):
       platform_sleep_ms
       platform_was_resized
       render_3d_draw
-        camera_get_interpolated_angle
-          interpolate_angle
-            angle_difference
-            normalize_angle
+        camera_fill_ray_angle_offsets
+        camera_get_interpolated_angle (see above)
         camera_get_interpolated_position
         camera_get_interpolation_fraction
-        camera_get_ray_angle
-          camera_get_interpolated_angle (see above)
+        camera_get_ray_angle (see above)
         camera_update_interpolation
         env_bool
         projection_get_wall_scale
-        projection_project_wall_perp
-          projection_project_wall
+        projection_project_wall_perp (see above)
         raycast_cast_ray
         raycast_get_texture_coord
         render_3d_draw_fps_counter
@@ -192,6 +209,7 @@ Tree(main):
         sprite_add_color
         sprite_clear
         sprite_draw
+          now_ns
           render_3d_sdl_draw_column
           render_3d_sdl_get_height
           render_3d_sdl_get_width
@@ -200,13 +218,16 @@ Tree(main):
         sprite_project_all
           camera_get_interpolated_angle (see above)
           camera_get_interpolated_position
+          now_ns
           projection_get_fov_radians
           projection_get_screen_width
-          projection_project_wall_perp (see above)
+          projection_project_wall
         sprite_sort_by_depth
+          now_ns
         texture_get_texel
           texture_sample
             sample_bilinear
+              sample_bilinear_fast
             sample_nearest
           texture_shade_from_distance
         texture_has_image
@@ -240,6 +261,8 @@ Tree(main):
         display_present
           tty_flip
             ascii_pixel_equal
+            buf_append_uint
+            buf_safe_append_char
             utf16_surrogate_pair_to_utf8
             utf16_to_utf8
         display_put_char
@@ -307,4 +330,17 @@ Tree(main):
         render_sanitize_player_name
       render_shutdown (see above)
       tty_size_sufficient_for_board
+    sprite_add_color
+    sprite_destroy (see above)
+    sprite_draw (see above)
+    sprite_project_all (see above)
+    sprite_sort_by_depth (see above)
     tests_count
+    texture_destroy (see above)
+    texture_get_texel (see above)
+    texture_has_image
+    texture_sample (see above)
+    timespec_diff_ms
+    tty_close (see above)
+    tty_flip (see above)
+    tty_put_pixel

@@ -44,7 +44,7 @@ LDFLAGS_BASE ?=
 LDLIBS ?= $(shell pkg-config --libs sdl2) -lm -lz -ldl
 
 DEBUG_FLAGS ?= -O0 -g3
-RELEASE_FLAGS ?= -O3 -DNDEBUG
+RELEASE_FLAGS ?= -O3 -DNDEBUG -march=native -flto -fdata-sections -ffunction-sections -fno-plt
 ASAN_FLAGS ?= -fsanitize=address -fno-omit-frame-pointer
 
 VALGRIND ?= valgrind
@@ -66,7 +66,7 @@ else ifeq ($(CONFIG),release)
 BUILD_DIR := $(BUILD_ROOT)/release
 CPPFLAGS := $(CPPFLAGS_BASE)
 	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(RELEASE_FLAGS)
-LDFLAGS := $(LDFLAGS_BASE)
+LDFLAGS := $(LDFLAGS_BASE) -flto -Wl,--gc-sections
 else ifeq ($(CONFIG),valgrind)
 BUILD_DIR := $(BUILD_ROOT)/valgrind
 CPPFLAGS := $(CPPFLAGS_BASE)
@@ -81,7 +81,7 @@ BIN := snakegame.out
 LOG_DIR := $(BUILD_ROOT)/logs
 
 # Source file scanning
-SRC_FILES := $(shell find src -type f -name "*.c")
+SRC_FILES := $(shell find src -type f -name "*.c" ! -path "src/tools/*")
 SRC := $(SRC_FILES) main.c
 OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
@@ -171,8 +171,35 @@ unit-tests:
 	exit $${PIPESTATUS[0]};
 
 test: unit-tests
-	@echo "All unit tests completed";
+	@echo "All unit tests completed"
 
+.PHONY: bench-tty bench
+bench-tty:
+	@mkdir -p build
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -D_POSIX_C_SOURCE=200809L src/platform/tty.c src/tools/tty_bench.c -o build/tty_bench.out $(LDLIBS) || true
+	@echo "built build/tty_bench.out"
+
+bench:
+	@mkdir -p build/logs
+	@script -q -c "env SDL_VIDEODRIVER=dummy build/tty_bench.out" build/logs/perf_tty_bench_latest.txt || true
+	@echo "bench completed: build/logs/perf_tty_bench_latest.txt";
+
+bench-render:
+	@mkdir -p build
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Isrc/vendor -D_POSIX_C_SOURCE=200809L src/render/raycast.c src/render/projection.c src/render/texture.c src/render/camera.c src/tools/render_bench.c src/vendor/stb_image.c -o build/render_bench.out $(LDLIBS) || true
+	@script -q -c "build/render_bench.out" build/logs/perf_render_bench_latest.txt || true
+	@echo "bench-render completed: build/logs/perf_render_bench_latest.txt";
+bench-texture:
+	@mkdir -p build
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -D_POSIX_C_SOURCE=200809L src/render/texture.c src/tools/texture_bench.c src/vendor/stb_image.c -o build/texture_bench.out $(LDLIBS) || true
+	@script -q -c "build/texture_bench.out" build/logs/perf_texture_bench_latest.txt || true
+	@echo "bench-texture completed: build/logs/perf_texture_bench_latest.txt";
+
+bench-sprite:
+	@mkdir -p build
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Isrc/vendor -D_POSIX_C_SOURCE=200809L src/render/sprite.c src/render/render_3d_sdl.c src/render/camera.c src/render/projection.c src/tools/sprite_bench.c -o build/sprite_bench.out $(LDLIBS) || true
+	@script -q -c "env SNAKE_SPRITE_PROFILE=1 build/sprite_bench.out" build/logs/perf_sprite_bench_latest.txt || true
+	@echo "bench-sprite completed: build/logs/perf_sprite_bench_latest.txt";
 context: llvm-context
 
 llvm-context:

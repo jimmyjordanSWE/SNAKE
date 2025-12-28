@@ -22,3 +22,6 @@ const uint32_t* texture_get_pixels(const Texture3D* tex);
 int texture_get_img_w(const Texture3D* tex);
 int texture_get_img_h(const Texture3D* tex);
 bool texture_has_image(const Texture3D* tex);
+
+/* Helpers for benchmarking and tests */
+Texture3D* texture_create_procedural(int w, int h);

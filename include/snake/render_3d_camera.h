@@ -26,6 +26,11 @@ void camera_set_update_interval(Camera3D* cam, float update_interval);
 float camera_get_fov_radians(const Camera3D* cam);
 void camera_get_dir(const Camera3D* cam, float* dx_out, float* dy_out);
 float camera_get_update_interval(const Camera3D* cam);
+
+/* Fill an array of length `camera->screen_width` with per-column ray angle offsets
+ * (angle offset relative to camera pointing direction). Caller must provide array
+ * sized to camera->screen_width. */
+void camera_fill_ray_angle_offsets(const Camera3D* camera, float* out_array);
 float camera_get_interpolation_fraction(const Camera3D* cam);
 float camera_get_interp_time(const Camera3D* cam);
 void camera_get_position(const Camera3D* cam, float* x_out, float* y_out);

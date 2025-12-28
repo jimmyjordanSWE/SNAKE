@@ -5,6 +5,9 @@
 #include "render_3d_sprite_internal.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <time.h>
+#include <stdint.h>
+#include <stdio.h>
 struct SpriteRenderer3D {
     Sprite3D* sprites;
     int max_sprites;
@@ -15,6 +18,7 @@ struct SpriteRenderer3D {
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "math_fast.h"
 void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, const Projection3D* proj) {
     if (!sr)
         return;
@@ -112,35 +116,61 @@ bool sprite_add_rect_color(SpriteRenderer3D* sr,
     s->is_rect = true;
     return true;
 }
+/* Profiling helpers */
+static inline uint64_t now_ns(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
+}
+
+/* Accumulators (nanoseconds) */
+static uint64_t sprite_time_project_ns = 0;
+static uint64_t sprite_time_sort_ns = 0;
+static uint64_t sprite_time_draw_ns = 0;
+
 void sprite_project_all(SpriteRenderer3D* sr) {
     if (!sr || !sr->camera || !sr->proj)
         return;
+    uint64_t start = 0;
+    int do_profile = getenv("SNAKE_SPRITE_PROFILE") != NULL;
+    if (do_profile)
+        start = now_ns();
     float cam_x, cam_y;
     camera_get_interpolated_position(sr->camera, &cam_x, &cam_y);
     float cam_angle = camera_get_interpolated_angle(sr->camera);
     float half_fov = projection_get_fov_radians(sr->proj) * 0.5f;
+    /* Precompute trig once per frame */
+    float cos_cam = cosf(cam_angle);
+    float sin_cam = sinf(cam_angle);
+    float sin_half = sinf(half_fov);
+    float sin_half_sq = sin_half * sin_half;
+
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* s = &sr->sprites[i];
         float dx = s->world_x - cam_x;
         float dy = s->world_y - cam_y;
-        float dist = sqrtf(dx * dx + dy * dy);
-        float angle_to_sprite = atan2f(dy, dx);
-        float delta = angle_to_sprite - cam_angle;
-        while (delta > 3.14159265358979323846f)
-            delta -= 2.0f * 3.14159265358979323846f;
-        while (delta < -3.14159265358979323846f)
-            delta += 2.0f * 3.14159265358979323846f;
-        if (cosf(delta) <= 0.0f || fabsf(delta) > half_fov) {
+        float dist2 = dx * dx + dy * dy;
+        if (dist2 <= 1e-8f) {
             s->visible = false;
             continue;
         }
-        float perp = dist * cosf(delta);
-        if (perp <= 0.0f) {
+        /* Camera-space components: forward (along cam dir) and right (lateral)
+           forward == perp (distance along camera forward vector) */
+        float forward = dx * cos_cam + dy * sin_cam;
+        if (forward <= 0.0f) {
             s->visible = false;
             continue;
         }
+        float right = -dx * sin_cam + dy * cos_cam;
+        /* Check FOV without atan2 by comparing sin(delta) = right/dist <= sin(half_fov) */
+        if (right * right > dist2 * sin_half_sq) {
+            s->visible = false;
+            continue;
+        }
+        float perp = forward;
         WallProjection wp;
-        projection_project_wall_perp(sr->proj, perp, angle_to_sprite, cam_angle, &wp);
+        /* Use direct wall projection with perp (already in camera axis) */
+        projection_project_wall(sr->proj, perp, &wp);
         int screen_h = (int)((float)wp.wall_height * s->world_height + 0.5f);
         if (screen_h <= 0) {
             s->visible = false;
@@ -150,7 +180,9 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         if (s->is_rect) {
             screen_w = (int)((float)screen_h * 1.5f + 0.5f);
         }
-        float nx = delta / half_fov;
+        /* compute normalized screen position from right/forward ratio without atan2 */
+        float inv = fast_inv_sqrt(dist2);
+        float nx = (right * inv) / sin_half; /* in [-1,1] roughly */
         if (nx < -1.0f)
             nx = -1.0f;
         if (nx > 1.0f)
@@ -164,6 +196,9 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         s->screen_y_top = top;
         s->visible = true;
     }
+    if (do_profile)
+        sprite_time_project_ns += now_ns() - start;
+
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* a = &sr->sprites[i];
         if (a->texture_id == -1)
@@ -181,20 +216,32 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         }
     }
 }
+static int sprite_cmp(const void* pa, const void* pb) {
+    const Sprite3D* a = pa;
+    const Sprite3D* b = pb;
+    if (a->perp_distance > b->perp_distance)
+        return -1;
+    if (a->perp_distance < b->perp_distance)
+        return 1;
+    /* tie-breaker: prefer textured sprites (texture_id != -1) before untextured */
+    if (a->texture_id != -1 && b->texture_id == -1)
+        return -1;
+    if (a->texture_id == -1 && b->texture_id != -1)
+        return 1;
+    return 0;
+}
+
 void sprite_sort_by_depth(SpriteRenderer3D* sr) {
     if (!sr)
         return;
-    for (int i = 1; i < sr->count; ++i) {
-        Sprite3D key = sr->sprites[i];
-        int j = i - 1;
-        while (j >= 0 && (sr->sprites[j].perp_distance < key.perp_distance ||
-                          (fabsf(sr->sprites[j].perp_distance - key.perp_distance) < 1e-4f &&
-                           sr->sprites[j].texture_id != -1 && key.texture_id == -1))) {
-            sr->sprites[j + 1] = sr->sprites[j];
-            --j;
-        }
-        sr->sprites[j + 1] = key;
-    }
+    uint64_t start = 0;
+    int do_profile = getenv("SNAKE_SPRITE_PROFILE") != NULL;
+    if (do_profile)
+        start = now_ns();
+
+    qsort(sr->sprites, (size_t)sr->count, sizeof(Sprite3D), sprite_cmp);
+
+    /* Preserve original micro-adjustment for near-overlapping sprite pairs */
     bool changed = true;
     while (changed) {
         changed = false;
@@ -210,10 +257,21 @@ void sprite_sort_by_depth(SpriteRenderer3D* sr) {
             }
         }
     }
+
+    if (do_profile)
+        sprite_time_sort_ns += now_ns() - start;
 }
 void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_depths) {
     if (!sr || !ctx || !column_depths)
         return;
+    uint64_t start = 0;
+    int do_profile = getenv("SNAKE_SPRITE_PROFILE") != NULL;
+    if (do_profile)
+        start = now_ns();
+
+    const int scr_w = render_3d_sdl_get_width(ctx);
+    const int scr_h = render_3d_sdl_get_height(ctx);
+
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* s = &sr->sprites[i];
         if (!s->visible)
@@ -223,14 +281,14 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
         int x2 = s->screen_x + half_w;
         if (x1 < 0)
             x1 = 0;
-        if (x2 >= render_3d_sdl_get_width(ctx))
-            x2 = render_3d_sdl_get_width(ctx) - 1;
+        if (x2 >= scr_w)
+            x2 = scr_w - 1;
         int y0 = s->screen_y_top;
         int y1 = y0 + s->screen_h - 1;
         if (y0 < 0)
             y0 = 0;
-        if (y1 >= render_3d_sdl_get_height(ctx))
-            y1 = render_3d_sdl_get_height(ctx) - 1;
+        if (y1 >= scr_h)
+            y1 = scr_h - 1;
         uint32_t col = s->color ? s->color : render_3d_sdl_color(0, 128, 0, 255);
         if (s->texture_id == -1) {
             int center_x = s->screen_x;
@@ -243,12 +301,14 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 int rh = s->screen_h;
                 int rx0 = center_x - rw / 2;
                 int ry0 = center_y - rh / 2;
-                for (int yy = ry0; yy < ry0 + rh; ++yy) {
-                    if (yy < 0 || yy >= render_3d_sdl_get_height(ctx))
-                        continue;
-                    for (int xx = rx0; xx < rx0 + rw; ++xx) {
-                        if (xx < 0 || xx >= render_3d_sdl_get_width(ctx))
-                            continue;
+                int rx1 = rx0 + rw - 1;
+                int ry1 = ry0 + rh - 1;
+                if (rx0 < 0) rx0 = 0;
+                if (ry0 < 0) ry0 = 0;
+                if (rx1 >= scr_w) rx1 = scr_w - 1;
+                if (ry1 >= scr_h) ry1 = scr_h - 1;
+                for (int yy = ry0; yy <= ry1; ++yy) {
+                    for (int xx = rx0; xx <= rx1; ++xx) {
                         if (s->perp_distance < column_depths[xx]) {
                             render_3d_sdl_set_pixel(ctx, xx, yy, col);
                         }
@@ -256,22 +316,22 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 }
             } else {
                 int bx0 = center_x - radius;
-                if (bx0 < 0)
-                    bx0 = 0;
                 int bx1 = center_x + radius;
-                if (bx1 >= render_3d_sdl_get_width(ctx))
-                    bx1 = render_3d_sdl_get_width(ctx) - 1;
                 int by0 = center_y - radius;
-                if (by0 < 0)
-                    by0 = 0;
                 int by1 = center_y + radius;
-                if (by1 >= render_3d_sdl_get_height(ctx))
-                    by1 = render_3d_sdl_get_height(ctx) - 1;
+                if (bx0 < 0) bx0 = 0;
+                if (by0 < 0) by0 = 0;
+                if (bx1 >= scr_w) bx1 = scr_w - 1;
+                if (by1 >= scr_h) by1 = scr_h - 1;
+                const int r2 = radius * radius;
                 for (int yy = by0; yy <= by1; ++yy) {
+                    int dy = yy - center_y;
+                    int dy2 = dy * dy;
                     for (int xx = bx0; xx <= bx1; ++xx) {
                         int dx = xx - center_x;
-                        int dy = yy - center_y;
-                        if (dx * dx + dy * dy <= radius * radius) {
+                        if (dx > radius || dx < -radius)
+                            continue;
+                        if (dx * dx + dy2 <= r2) {
                             if (s->perp_distance < column_depths[xx]) {
                                 render_3d_sdl_set_pixel(ctx, xx, yy, col);
                             }
@@ -286,6 +346,22 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 }
             }
         }
+    }
+    if (do_profile) {
+        sprite_time_draw_ns += now_ns() - start;
+        /* Append raw profile to a log file and also print to stderr for quick inspection */
+        FILE* f = fopen("build/logs/sprite_profile.log", "a");
+        if (f) {
+            fprintf(f, "sprite_profile: project_ns=%llu sort_ns=%llu draw_ns=%llu count=%d\n",
+                    (unsigned long long)sprite_time_project_ns, (unsigned long long)sprite_time_sort_ns,
+                    (unsigned long long)sprite_time_draw_ns, sr->count);
+            fclose(f);
+        }
+        fprintf(stderr, "sprite_profile: project_ns=%llu sort_ns=%llu draw_ns=%llu count=%d\n",
+                (unsigned long long)sprite_time_project_ns, (unsigned long long)sprite_time_sort_ns,
+                (unsigned long long)sprite_time_draw_ns, sr->count);
+        /* Reset accumulators for next frame */
+        sprite_time_project_ns = sprite_time_sort_ns = sprite_time_draw_ns = 0;
     }
 }
 void sprite_shutdown(SpriteRenderer3D* sr) {

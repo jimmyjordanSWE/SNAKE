@@ -494,6 +494,8 @@ void render_3d_draw(const GameState* game_state,
     const bool has_floor_tex = texture_has_image(g_render_3d.floor_texture);
     const int map_w = g_render_3d.game_state->width;
     const int map_h = g_render_3d.game_state->height;
+
+    /* Precomputed per-row floor distances (existing) */
     static float* s_floor_row_dist = NULL;
     static int s_floor_row_dist_cap = 0;
     static bool s_floor_row_dist_valid = false;
@@ -526,6 +528,24 @@ void render_3d_draw(const GameState* game_state,
             }
             s_floor_row_dist[yy] = rowDist;
         }
+    }
+
+    /* Precompute per-column ray angle offsets to avoid expensive trig calls in inner loop */
+    static float* s_angle_offsets = NULL;
+    static int s_angle_offsets_cap = 0;
+    static bool s_angle_offsets_valid = false;
+    if (screen_w != s_angle_offsets_cap || !s_angle_offsets_valid) {
+        float* new_buf = (float*)realloc(s_angle_offsets, (size_t)screen_w * sizeof(float));
+        if (new_buf) {
+            s_angle_offsets = new_buf;
+            s_angle_offsets_cap = screen_w;
+            s_angle_offsets_valid = true;
+        } else {
+            s_angle_offsets_valid = false;
+        }
+    }
+    if (s_angle_offsets && s_angle_offsets_valid) {
+        camera_fill_ray_angle_offsets(g_render_3d.camera, s_angle_offsets);
     }
     if (env_bool("SNAKE_DEBUG_TEXTURES", 0)) {
         const uint32_t* wp = texture_get_pixels(g_render_3d.wall_texture);
@@ -561,7 +581,10 @@ void render_3d_draw(const GameState* game_state,
     float interp_cam_angle = camera_get_interpolated_angle(g_render_3d.camera);
     for (int x = 0; x < screen_w; x++) {
         float ray_angle;
-        camera_get_ray_angle(g_render_3d.camera, x, &ray_angle);
+        if (s_angle_offsets && s_angle_offsets_valid)
+            ray_angle = interp_cam_angle + s_angle_offsets[x];
+        else
+            camera_get_ray_angle(g_render_3d.camera, x, &ray_angle);
         RayHit hit;
         float cos_a = cosf(ray_angle);
         float sin_a = sinf(ray_angle);

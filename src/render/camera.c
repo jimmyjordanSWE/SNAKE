@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "math_fast.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -195,6 +196,17 @@ void camera_get_ray_angle(const Camera3D* camera, int col, float* ray_angle_out)
     float angle_offset = atanf(cameraX * tan_half);
     *ray_angle_out = interp_angle + angle_offset;
 }
+
+void camera_fill_ray_angle_offsets(const Camera3D* camera, float* out_array) {
+    if (!camera || !out_array)
+        return;
+    float half_fov = camera->fov_radians * 0.5f;
+    float tan_half = tanf(half_fov);
+    for (int col = 0; col < camera->screen_width; col++) {
+        float cameraX = (2.0f * ((float)col + 0.5f) / (float)camera->screen_width) - 1.0f;
+        out_array[col] = atanf(cameraX * tan_half);
+    }
+}
 void camera_world_to_camera(const Camera3D* camera, float world_x, float world_y, float* cam_x_out, float* cam_y_out) {
     if (!camera || !cam_x_out || !cam_y_out)
         return;
@@ -230,7 +242,14 @@ float camera_distance_to_point(const Camera3D* camera, float x, float y) {
     camera_get_interpolated_position(camera, &cam_x, &cam_y);
     float dx = x - cam_x;
     float dy = y - cam_y;
-    return sqrtf(dx * dx + dy * dy);
+    float d2 = dx * dx + dy * dy;
+    if (d2 <= 0.0f)
+        return 0.0f;
+    /* Use fast inverse sqrt and invert to get distance */
+    float inv = fast_inv_sqrt(d2);
+    if (inv == 0.0f)
+        return 0.0f;
+    return 1.0f / inv;
 }
 bool camera_point_in_front(const Camera3D* camera, float x, float y) {
     if (!camera)

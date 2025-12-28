@@ -75,6 +75,54 @@ static int utf16_surrogate_pair_to_utf8(uint16_t high, uint16_t low, char* out) 
 static inline bool ascii_pixel_equal(struct ascii_pixel a, struct ascii_pixel b) {
     return a.pixel == b.pixel && a.color == b.color;
 }
+/* Small, fast buffer append helpers to avoid snprintf overhead in hot path */
+static inline int buf_safe_append_char(char* buf, size_t* pos, size_t* remaining, char c) {
+    if (*remaining == 0)
+        return -1;
+    buf[*pos] = c;
+    (*pos)++;
+    (*remaining)--;
+    return 0;
+}
+static int buf_append_uint(char* buf, size_t* pos, size_t* remaining, unsigned int v) {
+    char tmp[16];
+    int len = 0;
+    if (v == 0) {
+        tmp[len++] = '0';
+    } else {
+        unsigned int t = v;
+        while (t) {
+            tmp[len++] = (char)('0' + (t % 10));
+            t /= 10;
+        }
+        /* reverse */
+        for (int i = 0; i < len / 2; i++) {
+            char c = tmp[i];
+            tmp[i] = tmp[len - 1 - i];
+            tmp[len - 1 - i] = c;
+        }
+    }
+    if (*remaining < (size_t)len)
+        return -1;
+    memcpy(buf + *pos, tmp, (size_t)len);
+    *pos += (size_t)len;
+    *remaining -= (size_t)len;
+    return len;
+}
+static const char* const ANSI_FG[16] = {
+    "\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m",
+    "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m",
+    "\x1b[90m", "\x1b[91m", "\x1b[92m", "\x1b[93m",
+    "\x1b[94m", "\x1b[95m", "\x1b[96m", "\x1b[97m"
+};
+static const char* const ANSI_BG[16] = {
+    "\x1b[40m", "\x1b[41m", "\x1b[42m", "\x1b[43m",
+    "\x1b[44m", "\x1b[45m", "\x1b[46m", "\x1b[47m",
+    "\x1b[100m", "\x1b[101m", "\x1b[102m", "\x1b[103m",
+    "\x1b[104m", "\x1b[105m", "\x1b[106m", "\x1b[107m"
+};
+static const size_t ANSI_FG_LEN[16] = {5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
+static const size_t ANSI_BG_LEN[16] = {5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6};
 static bool get_terminal_size(int fd, int* width, int* height) {
     struct winsize ws;
     if (ioctl(fd, TIOCGWINSZ, &ws) == -1)
@@ -282,32 +330,47 @@ void tty_flip(tty_context* ctx) {
                    ctx->back[y * ctx->width + x].color == span_color)
                 x++;
             int span_end = x;
-            int n = snprintf(buf + pos, remaining, "\x1b[%d;%dH", y + 1, span_start + 1);
-            if (n < 0 || (size_t)n >= remaining)
+            /* Cursor move: "\x1b[%d;%dH" (fast append)
+             * Use the small helpers to avoid snprintf overhead. */
+            if (buf_safe_append_char(buf, &pos, &remaining, '\x1b') < 0)
                 return;
-            pos += (size_t)n;
-            remaining -= (size_t)n;
+            if (buf_safe_append_char(buf, &pos, &remaining, '[') < 0)
+                return;
+            if (buf_append_uint(buf, &pos, &remaining, (unsigned int)(y + 1)) < 0)
+                return;
+            if (buf_safe_append_char(buf, &pos, &remaining, ';') < 0)
+                return;
+            if (buf_append_uint(buf, &pos, &remaining, (unsigned int)(span_start + 1)) < 0)
+                return;
+            if (buf_safe_append_char(buf, &pos, &remaining, 'H') < 0)
+                return;
+
             uint8_t fg = COLOR_FG(span_color);
             uint8_t bg = COLOR_BG(span_color);
             if (fg != (uint8_t)current_fg || bg != (uint8_t)current_bg) {
                 current_fg = (int)fg;
                 current_bg = (int)bg;
-                if (fg < 8)
-                    n = snprintf(buf + pos, remaining, "\x1b[3%um", (unsigned int)fg);
-                else
-                    n = snprintf(buf + pos, remaining, "\x1b[9%um", (unsigned int)(fg - 8));
-                if (n < 0 || (size_t)n >= remaining)
-                    return;
-                pos += (size_t)n;
-                remaining -= (size_t)n;
-                if (bg < 8)
-                    n = snprintf(buf + pos, remaining, "\x1b[4%um", (unsigned int)bg);
-                else
-                    n = snprintf(buf + pos, remaining, "\x1b[10%um", (unsigned int)(bg - 8));
-                if (n < 0 || (size_t)n >= remaining)
-                    return;
-                pos += (size_t)n;
-                remaining -= (size_t)n;
+                /* Append precomputed ANSI sequences for fg/bg */
+                {
+                    const unsigned idx_fg = fg & 0x0F;
+                    const char* seq = ANSI_FG[idx_fg];
+                    size_t len = ANSI_FG_LEN[idx_fg];
+                    if (len > remaining)
+                        return;
+                    memcpy(buf + pos, seq, len);
+                    pos += len;
+                    remaining -= len;
+                }
+                {
+                    const unsigned idx_bg = bg & 0x0F;
+                    const char* seq = ANSI_BG[idx_bg];
+                    size_t len = ANSI_BG_LEN[idx_bg];
+                    if (len > remaining)
+                        return;
+                    memcpy(buf + pos, seq, len);
+                    pos += len;
+                    remaining -= len;
+                }
             }
             for (int i = span_start; i < span_end; i++) {
                 uint16_t ch = ctx->back[y * ctx->width + i].pixel;

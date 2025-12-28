@@ -681,8 +681,8 @@ void render_3d_draw(const GameState* game_state,
         sprite_clear(g_render_3d.sprite_renderer);
         for (int i = 0; i < game_state->food_count; i++) {
             uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
-            sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
-                             (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col);
+            sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
+                                    (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col);
         }
         for (int p = 0; p < game_state->num_players; p++) {
             if (p == g_render_3d.config.active_player)
@@ -695,7 +695,7 @@ void render_3d_draw(const GameState* game_state,
             float head_y =
                 player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
             uint32_t pcol = player->color ? player->color : render_3d_sdl_color(0, 128, 0, 255);
-            sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
+            sprite_add_color_shaded(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
         }
         for (int p = 0; p < game_state->num_players; p++) {
             const PlayerState* player = &game_state->players[p];

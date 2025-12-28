@@ -368,7 +368,10 @@ include
     add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
     add_
      color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-     rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     color_shaded(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     rect_
+      color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+      color_shaded(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
     clear(*sr)
     destroy(*sr)
     draw(*sr,*ctx,*column_depths)
@@ -781,7 +784,7 @@ src
    s ascii_pixel
   internal
    render_3d_sprite_internal.h
-    s Sprite3D{world_x,world_height,pivot,face_camera,texture_id,frame,color,perp_distance,screen_x,screen_w,screen_h,screen_y_top,visible,is_rect}
+    s Sprite3D{world_x,world_height,pivot,face_camera,texture_id,frame,color,perp_distance,screen_x,screen_w,screen_h,screen_y_top,visible,is_rect,shaded}
   projection.c
    f projection_
     destroy(*proj)
@@ -900,12 +903,16 @@ src
   render_input.c
    f render_sanitize_player_name(*input,*out,out_len)
   sprite.c
+   f clamp_u8(v)
    f now_ns(_)
    f sprite_
     add(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame)
     add_
      color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
-     rect_color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     color_shaded(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+     rect_
+      color(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
+      color_shaded(*sr,world_x,world_y,world_height,pivot,face_camera,texture_id,frame,color)
     clear(*sr)
     cmp(*pa,*pb)
     cmp_direct(*a,*b)

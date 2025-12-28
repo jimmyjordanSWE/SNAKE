@@ -8,6 +8,14 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdio.h>
+
+/* Small helper: clamp float to 0..255 and return uint8_t */
+static inline uint8_t clamp_u8(float v) {
+    if (v <= 0.0f) return 0;
+    if (v >= 255.0f) return 255;
+    return (uint8_t)(v + 0.5f);
+}
+
 struct SpriteRenderer3D {
     Sprite3D* sprites;
     int max_sprites;
@@ -114,6 +122,41 @@ bool sprite_add_rect_color(SpriteRenderer3D* sr,
     s->screen_x = s->screen_w = s->screen_h = s->screen_y_top = 0;
     s->visible = false;
     s->is_rect = true;
+    return true;
+}
+
+/* Shaded sprite helpers: reuse add_* then mark shaded */
+bool sprite_add_color_shaded(SpriteRenderer3D* sr,
+                              float world_x,
+                              float world_y,
+                              float world_height,
+                              float pivot,
+                              bool face_camera,
+                              int texture_id,
+                              int frame,
+                              uint32_t color) {
+    if (!sr || sr->count >= sr->max_sprites) return false;
+    bool ok = sprite_add_color(sr, world_x, world_y, world_height, pivot, face_camera, texture_id, frame, color);
+    if (!ok) return false;
+    Sprite3D* s = &sr->sprites[sr->count - 1];
+    s->shaded = true;
+    return true;
+}
+
+bool sprite_add_rect_color_shaded(SpriteRenderer3D* sr,
+                                  float world_x,
+                                  float world_y,
+                                  float world_height,
+                                  float pivot,
+                                  bool face_camera,
+                                  int texture_id,
+                                  int frame,
+                                  uint32_t color) {
+    if (!sr || sr->count >= sr->max_sprites) return false;
+    bool ok = sprite_add_rect_color(sr, world_x, world_y, world_height, pivot, face_camera, texture_id, frame, color);
+    if (!ok) return false;
+    Sprite3D* s = &sr->sprites[sr->count - 1];
+    s->shaded = true;
     return true;
 }
 /* Profiling helpers */
@@ -349,7 +392,45 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                             continue;
                         if (dx * dx + dy2 <= r2) {
                             if (s->perp_distance < column_depths[xx]) {
-                                render_3d_sdl_set_pixel(ctx, xx, yy, col);
+                                if (s->shaded) {
+                                    /* Faux sphere lighting */
+                                    float nx = (float)dx / (float)radius;
+                                    float ny = (float)dy / (float)radius;
+                                    float n2 = nx * nx + ny * ny;
+                                    if (n2 > 1.0f) continue;
+                                    float nz = sqrtf(1.0f - n2);
+                                    /* Light: top-left-ish */
+                                    const float lx = -0.5f, ly = -0.5f, lz = 1.0f;
+                                    float lnorm = sqrtf(lx*lx + ly*ly + lz*lz);
+                                    float lnx = lx / lnorm, lny = ly / lnorm, lnz = lz / lnorm;
+                                    float diffuse = nx * lnx + ny * lny + nz * lnz;
+                                    if (diffuse < 0.0f) diffuse = 0.0f;
+                                    const float ambient = 0.25f;
+                                    const float spec_strength = 0.5f;
+                                    const float shininess = 24.0f;
+                                    /* Half-vector H since view=(0,0,1) */
+                                    float hx = lnx;
+                                    float hy = lny;
+                                    float hz = lnz + 1.0f;
+                                    float hnorm = sqrtf(hx*hx + hy*hy + hz*hz);
+                                    hx /= hnorm; hy /= hnorm; hz /= hnorm;
+                                    float spec = nx*hx + ny*hy + nz*hz;
+                                    if (spec < 0.0f) spec = 0.0f;
+                                    spec = powf(spec, shininess) * spec_strength;
+                                    float intensity = ambient + (1.0f - ambient) * diffuse + spec;
+                                    if (intensity > 1.0f) intensity = 1.0f;
+                                    uint8_t a = (uint8_t)((col >> 24) & 0xFFu);
+                                    uint8_t br = (uint8_t)((col >> 16) & 0xFFu);
+                                    uint8_t bg = (uint8_t)((col >> 8) & 0xFFu);
+                                    uint8_t bb = (uint8_t)(col & 0xFFu);
+                                    uint8_t rr = clamp_u8((float)br * intensity);
+                                    uint8_t rg = clamp_u8((float)bg * intensity);
+                                    uint8_t rb = clamp_u8((float)bb * intensity);
+                                    uint32_t shaded_col = ((uint32_t)a << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
+                                    render_3d_sdl_set_pixel(ctx, xx, yy, shaded_col);
+                                } else {
+                                    render_3d_sdl_set_pixel(ctx, xx, yy, col);
+                                }
                             }
                         }
                     }

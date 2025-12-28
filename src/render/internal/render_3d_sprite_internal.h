@@ -17,4 +17,6 @@ int screen_h;
 int screen_y_top;
 bool visible;
 bool is_rect;
+/* New: enable faux-sphere shading for untextured sprites */
+bool shaded;
 };

@@ -211,8 +211,11 @@ Tree(main):
         render_3d_shade_color
         render_3d_update_fps
         sprite_add_color
+        sprite_add_color_shaded
+          sprite_add_color
         sprite_clear
         sprite_draw
+          clamp_u8
           now_ns
           render_3d_sdl_draw_column
           render_3d_sdl_get_height

@@ -15,6 +15,9 @@ void sprite_clear(SpriteRenderer3D* sr);
 bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame);
 bool sprite_add_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
 bool sprite_add_rect_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
+/* New shaded variants: draw as faux spheres with simple lighting */
+bool sprite_add_color_shaded(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
+bool sprite_add_rect_color_shaded(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color);
 void sprite_project_all(SpriteRenderer3D* sr);
 void sprite_sort_by_depth(SpriteRenderer3D* sr);
 void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_depths);

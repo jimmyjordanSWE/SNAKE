@@ -41,3 +41,6 @@ void display_put_hline(DisplayContext* ctx, int x, int y, int len, uint16_t ch, 
 void display_put_vline(DisplayContext* ctx, int x, int y, int len, uint16_t ch, uint16_t fg, uint16_t bg);
 void display_present(DisplayContext* ctx);
 void display_force_redraw(DisplayContext* ctx);
+
+/* Testing helper: return pointer to the back buffer (array of struct ascii_pixel) or NULL. */
+struct ascii_pixel* display_get_back_buffer(DisplayContext* ctx);

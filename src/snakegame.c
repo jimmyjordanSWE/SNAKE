@@ -246,18 +246,51 @@ int snake_game_run(SnakeGame* s) {
                 highscore_count = persist_read_scores(".snake_scores", &highscores);
             }
         }
-        bool player0_died = false;
-        for (int ei = 0; ei < events.died_count; ei++)
-            if (events.died_players[ei] == 0)
-                player0_died = true;
-        if (player0_died) {
-            render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-            render_draw_death_overlay(game_get_state(game), 0, true);
-            if (has_3d)
-                render_3d_draw_death_overlay(game_get_state(game), 0, true);
-            if (auto_restart_after_highscore) {
-                game_reset(game);
-            } else {
+        /* Multiplayer mode: end when <= 1 active players remain (last man standing).
+           Handle end-of-match overlays and highscore saving to a multiplayer list. */
+        if (game_get_num_players(game) > 1) {
+            const GameState* gs = game_get_state(game);
+            int active_count = 0;
+            int last_active = -1;
+            int np = game_get_num_players(game);
+            for (int i = 0; i < np; i++) {
+                if (gs->players[i].active) {
+                    active_count++;
+                    last_active = i;
+                }
+            }
+            if (active_count <= 1) {
+                /* Render final board */
+                render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
+                if (has_3d) {
+                    if (active_count == 1)
+                        render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+                    else
+                        render_3d_draw_death_overlay(game_get_state(game), 0, true);
+                } else {
+                    if (active_count == 1)
+                        render_draw_winner_overlay(game_get_state(game), last_active, gs->players[last_active].score);
+                    else
+                        render_draw_death_overlay(game_get_state(game), 0, true);
+                }
+                /* If there is a winner and a non-zero score, prompt for name and append to multiplayer scores. */
+                if (active_count == 1) {
+                    int final_score = gs->players[last_active].score;
+                    if (final_score > 0) {
+                        char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
+                        render_prompt_for_highscore_name(name_buf, (int)sizeof(name_buf), final_score);
+                        if (!persist_append_score(".snake_scores_multi", name_buf, final_score))
+                            console_warn("Failed to append multiplayer highscore for %s\n", name_buf);
+                        /* Treat the Enter used to confirm the name as an implicit restart command. */
+                        auto_restart_after_highscore = true;
+                    }
+                }
+                /* If player already confirmed name with Enter, restart immediately. */
+                if (auto_restart_after_highscore) {
+                    game_reset(game);
+                    continue;
+                }
+                /* Wait for user input to restart or quit. */
                 while (1) {
                     InputState in = {0};
                     input_poll(&in);
@@ -267,9 +300,48 @@ int snake_game_run(SnakeGame* s) {
                         game_reset(game);
                         break;
                     }
-                    if (has_3d)
-                        render_3d_draw_death_overlay(game_get_state(game), 0, true);
+                    if (has_3d) {
+                        if (active_count == 1)
+                            render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+                        else
+                            render_3d_draw_death_overlay(game_get_state(game), 0, true);
+                    } else {
+                        if (active_count == 1)
+                            render_draw_winner_overlay(game_get_state(game), last_active,
+                                                       gs->players[last_active].score);
+                        else
+                            render_draw_death_overlay(game_get_state(game), 0, true);
+                    }
                     platform_sleep_ms(20);
+                }
+            }
+        } else {
+            /* Single-player existing behavior: if player 0 died, show death overlay and optionally restart. */
+            bool player0_died = false;
+            for (int ei = 0; ei < events.died_count; ei++)
+                if (events.died_players[ei] == 0)
+                    player0_died = true;
+            if (player0_died) {
+                render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
+                render_draw_death_overlay(game_get_state(game), 0, true);
+                if (has_3d)
+                    render_3d_draw_death_overlay(game_get_state(game), 0, true);
+                if (auto_restart_after_highscore) {
+                    game_reset(game);
+                } else {
+                    while (1) {
+                        InputState in = {0};
+                        input_poll(&in);
+                        if (in.quit)
+                            goto clean_done;
+                        if (in.any_key) {
+                            game_reset(game);
+                            break;
+                        }
+                        if (has_3d)
+                            render_3d_draw_death_overlay(game_get_state(game), 0, true);
+                        platform_sleep_ms(20);
+                    }
                 }
             }
         }

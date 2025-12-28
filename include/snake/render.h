@@ -14,3 +14,4 @@ void render_draw_startup_screen(char* player_name_out, int max_len);
 void render_prompt_for_highscore_name(char* player_name_out, int max_len, int score);
 void render_note_session_score(const char* name, int score);
 void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
+void render_draw_winner_overlay(const GameState* game, int winner, int score);

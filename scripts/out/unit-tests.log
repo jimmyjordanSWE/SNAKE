@@ -38,7 +38,24 @@ texture_load_from_file: failed to load 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
   '../../../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
   '../../../../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
   'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
-FAIL: tests/unity/test_persist.c:22: expected 2 but was -1
+RUN: test_game_oom
+PASS: test_game_oom
+ALL TESTS PASSED (1)
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
+persist: cwd=/home/jimmy/SNAKE
 RUN: test_env
 PASS: test_env
 RUN: test_input
@@ -65,6 +82,26 @@ RUN: test_collision
 PASS: test_collision
 RUN: test_game_multi
 PASS: test_game_multi
-RUN: test_game_oom
-PASS: test_game_oom
 RUN: test_persist
+PASS: test_persist
+RUN: test_persist_config
+PASS: test_persist_config
+RUN: test_persist_long_lines
+PASS: test_persist_long_lines
+RUN: test_persist_truncation
+PASS: test_persist_truncation
+RUN: test_stb_artifacts
+PASS: test_stb_artifacts
+RUN: test_stb_chunk_size_limit
+PASS: test_stb_chunk_size_limit
+RUN: test_stb_image_fuzz
+PASS: test_stb_image_fuzz
+RUN: test_stb_leak_plte
+PASS: test_stb_leak_plte
+RUN: test_tty_buffer_cap
+PASS: test_tty_buffer_cap
+RUN: test_tty_open
+PASS: test_tty_open
+RUN: test_tty_path
+PASS: test_tty_path
+ALL TESTS PASSED (24)

@@ -256,12 +256,19 @@ static SnakeDir opposite_dir(SnakeDir dir) {
         return SNAKE_DIR_UP;
     }
 }
+/* Default palette used when player color is not set via PlayerCfg. */
+static const uint32_t DEFAULT_PLAYER_COLS[] = {0xFF008000u, 0xFF00C8FFu, 0xFFFFF700u, 0xFFFF00FFu};
 static bool spawn_player(GameState* game, int player_index) {
     if (game == NULL || player_index < 0 || player_index >= game->max_players)
         return false;
     if (game->width < 2 || game->height < 1)
         return false;
     PlayerState* player = &game->players[player_index];
+    /* If color has not been configured, assign a palette color based on index. */
+    if (player->color == 0) {
+        player->color =
+            DEFAULT_PLAYER_COLS[player_index % (int)(sizeof(DEFAULT_PLAYER_COLS) / sizeof(DEFAULT_PLAYER_COLS[0]))];
+    }
     player->active = true;
     player->needs_reset = false;
     player->length = 2;
@@ -371,6 +378,9 @@ void game_init(GameState* game, int width, int height, const GameConfig* cfg) {
         game->players[i].needs_reset = false;
         game->players[i].length = 0;
         game->players[i].max_length = game->max_length;
+        /* Initialize multiplayer lives: 3 when starting a multiplayer match; 0 in single-player mode. */
+        game->players[i].lives = (game->num_players > 1) ? 3 : 0;
+        game->players[i].eliminated = false;
         game->players[i].body = (SnakePoint*)all_bodies + (size_t)i * (size_t)game->max_length;
         game->players[i].prev_segment_x = (float*)all_prev_x + (size_t)i * (size_t)game->max_length;
         game->players[i].prev_segment_y = (float*)all_prev_y + (size_t)i * (size_t)game->max_length;
@@ -415,6 +425,11 @@ static void game_state_reset(GameState* game) {
         game->players[i].needs_reset = false;
         game->players[i].length = 0;
         game->players[i].max_length = game->max_length;
+        /* Restore multiplayer lives and clear elimination state on reset. */
+        game->players[i].lives = (game->num_players > 1) ? 3 : 0;
+        game->players[i].eliminated = false;
+        game->players[i].prev_head_x = 0.0f;
+        game->players[i].prev_head_y = 0.0f;
     }
     for (int i = 0; i < game->num_players; i++)
         (void)spawn_player(game, i);
@@ -449,6 +464,7 @@ void game_tick(GameState* game) {
             player->current_dir = player->queued_dir;
     }
     collision_detect_and_resolve(game);
+    /* Handle deaths: decrement lives in multiplayer mode and respawn/eliminate accordingly. */
     for (int i = 0; i < num_players; i++) {
         PlayerState* player = &game->players[i];
         if (!player->active)
@@ -458,19 +474,52 @@ void game_tick(GameState* game) {
         player->died_this_tick = true;
         player->score_at_death = player->score;
         player->score = 0;
+        if (game->num_players > 1) {
+            /* Multiplayer elimination mode: decrement lives and eliminate when 0. */
+            player->lives--;
+            if (player->lives <= 0) {
+                player->eliminated = true;
+                player->active = false;
+                player->length = 0;
+                player->needs_reset = false;
+            } else {
+                /* Respawn immediately if lives remain. */
+                player->needs_reset = false;
+                (void)spawn_player(game, i);
+            }
+        }
     }
+    /* Single-player fallback: respawn any players that need reset. In multiplayer, respawn was handled above. */
     for (int i = 0; i < num_players; i++) {
         PlayerState* player = &game->players[i];
-        if (player->needs_reset)
-            (void)spawn_player(game, i);
+        if (player->needs_reset) {
+            if (game->num_players > 1) {
+                if (player->lives > 0)
+                    (void)spawn_player(game, i);
+                else {
+                    player->active = false;
+                    player->length = 0;
+                    player->needs_reset = false;
+                }
+            } else {
+                (void)spawn_player(game, i);
+            }
+        }
     }
     {
         int active_count = 0;
         for (int i = 0; i < num_players; i++)
             if (game->players[i].active)
                 active_count++;
-        if (active_count == 0)
-            game->status = GAME_STATUS_GAME_OVER;
+        /* Multiplayer: end when <= 1 active players remain (last man standing).
+           Single-player: end when no active players remain. */
+        if (game->num_players > 1) {
+            if (active_count <= 1)
+                game->status = GAME_STATUS_GAME_OVER;
+        } else {
+            if (active_count == 0)
+                game->status = GAME_STATUS_GAME_OVER;
+        }
     }
     bool food_consumed = false;
     for (int i = 0; i < num_players; i++) {

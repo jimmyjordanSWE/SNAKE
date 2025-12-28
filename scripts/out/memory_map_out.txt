@@ -1,6 +1,6 @@
 # Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
-src/core/game.c: 28m 44f 345c 349m 351f 357m 358m 359m 361f 362f 363f 380f 381f 395f 396f 397f 399f 403f
+src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 405f 406f 407f 409f 413f
 src/core/player.c: 12c 22f
 src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 246m 251f 255f
 src/persist/persist.c: 39c 50f 103c 170f 459c 517f 576r 611f 955m 956m 970f 971f
@@ -10,16 +10,19 @@ src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 422c 465r 724f
+src/render/render_3d.c: 459c 502r 760f
 src/render/render_3d_sdl.c: 45c 49f 58f 85m 121m 132f 160f
 src/render/sprite.c: 21c 294f 302c 312f
 src/render/texture.c: 19c 29f 228f 246m 268f
-src/snakegame.c: 28m 33f 146f 348f
-tests/test_collision.c: 25c 28c 40f 42f
-tests/test_net_integration.c: 40c 49f
-tests/test_persist_long_lines.c: 21m 32f
-tests/test_persist_truncation.c: 14m 22f
-tests/test_texture_path.c: 17m 23f
-tests/test_texture_path_extra.c: 26m 32f
-tests/test_tty_path.c: 10m 16f
-# Mem: 51a, 75f (23 files)
+src/snakegame.c: 28m 33f 146f 419f
+tests/unity/test_collision.c: 21c 24c 34f 35f
+tests/unity/test_net_integration.c: 36c 44f
+tests/unity/test_persist.c: 74f
+tests/unity/test_persist_config.c: 65f
+tests/unity/test_persist_long_lines.c: 20m 27f
+tests/unity/test_persist_truncation.c: 13m 18f
+tests/unity/test_render_minimap.c: 16c 21c 48f 49f
+tests/unity/test_texture_path.c: 14m 20f
+tests/unity/test_texture_path_extra.c: 21m 27f
+tests/unity/test_tty_path.c: 8m 14f
+# Mem: 53a, 79f (26 files)

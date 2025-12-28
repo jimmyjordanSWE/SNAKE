@@ -16,119 +16,32 @@ Flow:
  render_3d_sdl->test_game_oom
  snakegame->console,game,input,persist,platform,render,render_3d,test_game_oom,tty
  sprite->camera,projection,render_3d_sdl,test_game_oom
- test_persist_long_lines->persist
- test_tty_path->collision,console,env,game,input,net,persist,player,render_input,snakegame,test_game_oom,test_persist_long_lines,texture,tty
+ test_game_colors->game,persist
+ test_game_reset_lives->game,persist
+ test_persist_long_lines->persist,test_game_oom
+ test_render_lives_ui->display_tty,game,persist,render
+ test_render_minimap->render_3d,render_3d_sdl,test_game_oom
+ test_runner->console,persist,snakegame
  texture->test_game_oom
  tty->test_game_oom
 
 Tree(main):
   main
-    collision_detect_and_resolve
-      collision_is_self
-      collision_is_snake
-      collision_is_wall
-      collision_next_head
+    console_info
+    game_config_destroy
       free
         ensure_real_fns
-    collision_is_wall
-    collision_next_head
-    console_info
-    env_bool
-    free (see above)
-    game_add_player
-      player_cfg_get_color
-      spawn_player
-        collision_is_wall
-        collision_next_head
-        opposite_dir
-        point_in_player
-        snake_rng_range
-          snake_rng_next_u32
-    game_config_destroy
-      free (see above)
-    game_config_get_key_down
-    game_config_get_key_left
-    game_config_get_key_pause
-    game_config_get_key_quit
-    game_config_get_key_restart
-    game_config_get_key_right
-    game_config_get_key_up
-    game_config_get_player_key_up
-    game_config_set_key_down
-    game_config_set_key_left
-    game_config_set_key_pause
-    game_config_set_key_quit
-    game_config_set_key_restart
-    game_config_set_key_right
-    game_config_set_key_up
-    game_config_set_max_players
-    game_config_set_player_key_down
-    game_config_set_player_key_left
-    game_config_set_player_key_right
-    game_config_set_player_key_up
-    game_destroy
-      free (see above)
-      game_free
-        free (see above)
-    game_get_num_players
-      game_state_get_num_players
-    highscore_destroy
-      free (see above)
-    input_poll_all_from_buf
-      input_poll_all_from_buf_impl
-        ascii_tolower
-        parse_arrow_key
-    input_poll_from_buf
-      ascii_tolower
-      parse_arrow_key
-    input_set_bindings_from_config
-      game_config_get_key_down
-      game_config_get_key_left
-      game_config_get_key_pause
-      game_config_get_key_quit
-      game_config_get_key_restart
-      game_config_get_key_right
-      game_config_get_key_up
-      game_config_get_max_players
-      game_config_get_player_key_down
-      game_config_get_player_key_left
-      game_config_get_player_key_right
-      game_config_get_player_key_up
-      input_set_key_bindings
-      input_set_player_key_bindings
-    input_set_player_key_bindings
-    net_disconnect
-      free (see above)
-    net_free_unpacked_game_state
-      free (see above)
-    net_recv_state
-      free (see above)
-      net_unpack_game_state
-        free (see above)
-    net_send_input
-      net_pack_input
-    net_unpack_game_state (see above)
-    persist_free_scores
-      free (see above)
-      highscore_destroy (see above)
     persist_load_config
       clamp_int
-    persist_read_scores
-      free (see above)
-    player_cfg_destroy
-      free (see above)
-    player_cfg_set_color
-    player_cfg_set_name
-    render_sanitize_player_name
-    run_case
-      game_config_destroy (see above)
-      persist_free_scores (see above)
-      persist_load_config (see above)
-      persist_read_scores (see above)
+    run_single_by_name
+      tests_count
     snake_game_free
       free (see above)
       game_config_destroy (see above)
-      game_destroy (see above)
+      game_destroy
+        free (see above)
+        game_free
+          free (see above)
       input_shutdown
         restore_terminal
       render_3d_shutdown
@@ -174,12 +87,19 @@ Tree(main):
               point_in_player
             point_is_food
             random_point
-              snake_rng_range (see above)
+              snake_rng_range
+                snake_rng_next_u32
             snake_rng_range (see above)
-          spawn_player (see above)
+          spawn_player
+            collision_is_wall
+            collision_next_head
+            opposite_dir
+            point_in_player
+            snake_rng_range (see above)
         snake_dir_turn_left
         snake_dir_turn_right
-      game_get_num_players (see above)
+      game_get_num_players
+        game_state_get_num_players
       game_get_status
       game_player_current_score
         game_state_player_current_score
@@ -190,7 +110,12 @@ Tree(main):
       game_step
         game_state_get_num_players
         game_tick
-          collision_detect_and_resolve (see above)
+          collision_detect_and_resolve
+            collision_is_self
+            collision_is_snake
+            collision_is_wall
+            collision_next_head
+            free (see above)
           collision_next_head
           food_respawn (see above)
           opposite_dir
@@ -198,16 +123,24 @@ Tree(main):
           spawn_player (see above)
       highscore_get_score
       input_poll
-        input_poll_from_buf (see above)
+        input_poll_from_buf
+          ascii_tolower
+          parse_arrow_key
       input_poll_all
-        input_poll_all_from_buf_impl (see above)
+        input_poll_all_from_buf_impl
+          ascii_tolower
+          parse_arrow_key
       input_shutdown (see above)
       persist_append_score
         highscore_get_score
         highscore_set_name
         highscore_set_score
-        persist_free_scores (see above)
-        persist_read_scores (see above)
+        persist_free_scores
+          free (see above)
+          highscore_destroy
+            free (see above)
+        persist_read_scores
+          free (see above)
         persist_write_scores
           highscore_get_score
       persist_free_scores (see above)
@@ -247,11 +180,13 @@ Tree(main):
           render_3d_sdl_get_height
           render_3d_sdl_get_width
           render_3d_sdl_set_pixel
+          render_3d_shade_color
         render_3d_sdl_clear
         render_3d_sdl_draw_column
         render_3d_sdl_get_height
         render_3d_sdl_get_width
         render_3d_sdl_present
+        render_3d_shade_color
         render_3d_update_fps
         sprite_add_color
         sprite_clear
@@ -279,6 +214,12 @@ Tree(main):
         render_3d_draw_text_centered
           render_3d_draw_char (see above)
           render_3d_sdl_get_width
+        render_3d_sdl_draw_filled_rect (see above)
+        render_3d_sdl_get_height
+        render_3d_sdl_get_width
+        render_3d_sdl_present
+      render_3d_draw_winner_overlay
+        render_3d_draw_text_centered (see above)
         render_3d_sdl_draw_filled_rect (see above)
         render_3d_sdl_get_height
         render_3d_sdl_get_width
@@ -341,12 +282,28 @@ Tree(main):
         fill_rect
           display_get_size (see above)
           display_put_char (see above)
+      render_draw_winner_overlay
+        display_get_size (see above)
+        display_present (see above)
+        draw_box (see above)
+        draw_centered_string (see above)
+        fill_rect (see above)
       render_note_session_score
+      render_prompt_for_highscore_name
+        display_clear (see above)
+        display_get_size (see above)
+        display_present (see above)
+        display_put_char (see above)
+        draw_centered_string (see above)
+        draw_string (see above)
+        platform_sleep_ms
+        render_3d_draw_congrats_overlay
+          render_3d_draw_text_centered (see above)
+          render_3d_sdl_draw_filled_rect (see above)
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          render_3d_sdl_present
+        render_sanitize_player_name
       render_shutdown (see above)
       tty_size_sufficient_for_board
-    texture_destroy (see above)
-    texture_load_from_file
-      free (see above)
-      is_safe_texture_filename
-    tty_close (see above)
-    tty_get_write_buffer_size
+    tests_count

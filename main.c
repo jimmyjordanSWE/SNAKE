@@ -1,10 +1,10 @@
 #include "console.h"
 #include "persist.h"
 #include "snakegame.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #define CONFIG_FILENAME "snake_cfg.txt"
 

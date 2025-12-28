@@ -65,3 +65,5 @@ size_t tty_get_write_buffer_size(tty_context* ctx);
 #define PIXEL_BOX_TR 0x2510
 #define PIXEL_BOX_BL 0x2514
 #define PIXEL_BOX_BR 0x2518
+#define PIXEL_HEART 0x2665
+#define PIXEL_HEART_EMPTY 0x2661

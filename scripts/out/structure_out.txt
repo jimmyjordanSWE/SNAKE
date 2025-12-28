@@ -51,6 +51,7 @@ include
     shutdown(*ctx)
     size_valid(*ctx)
    s DisplayContext
+   s ascii_pixel
    t DisplayContext
   env.h
    f env_bool(*name,default_val)
@@ -235,6 +236,7 @@ include
     draw_
      death_overlay(*game,anim_frame,show_prompt)
      startup_screen(*player_name_out,max_len)
+     winner_overlay(*game,winner,score)
     init(min_width,min_height)
     note_session_score(*name,score)
     prompt_for_highscore_name(*player_name_out,max_len,score)
@@ -249,6 +251,7 @@ include
      congrats_overlay(score,*name_entered)
      death_overlay(*game,anim_frame,show_prompt)
      minimap_into(*ctx,*gs)
+     winner_overlay(*game,winner,score)
     init(*game_state,*config)
     on_tick(*game_state)
     set_
@@ -524,7 +527,7 @@ src
     init(*game,width,height,*cfg)
     tick(*game)
    s GameState{width,rng_state,status,num_players,max_players,*food,food_count,max_food,last_food_respawned,*players,max_length}
-   s PlayerState{current_dir,score,died_this_tick,score_at_death,PERSIST_PLAYER_NAME_MAX,color,*body,length,max_length,active,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
+   s PlayerState{current_dir,score,died_this_tick,score_at_death,PERSIST_PLAYER_NAME_MAX,color,*body,length,max_length,active,lives,eliminated,prev_head_x,prev_head_y,*prev_segment_x,*prev_segment_y}
   player.c
    f player_cfg_
     destroy(*cfg)
@@ -780,6 +783,7 @@ src
     size_valid(*ctx)
    f map_color(display_color)
    s DisplayContext{*tty}
+   s ascii_pixel
   internal
    render_3d_sprite_internal.h
     s Sprite3D{world_x,world_height,pivot,face_camera,texture_id,frame,color,perp_distance,screen_x,screen_w,screen_h,screen_y_top,visible,is_rect}
@@ -835,6 +839,7 @@ src
     draw_
      death_overlay(*game,anim_frame,show_prompt)
      startup_screen(*player_name_out,max_len)
+     winner_overlay(*game,winner,score)
     init(min_width,min_height)
     note_session_score(*name,score)
     prompt_for_highscore_name(*player_name_out,max_len,score)
@@ -857,6 +862,7 @@ src
      minimap(*r,interp_t)
      minimap_into(*ctx,*gs)
      text_centered(*disp,y,*text,col,scale)
+     winner_overlay(*game,winner,score)
     init(*game_state,*config)
     log(*fmt)
     on_tick(*game_state)
@@ -864,6 +870,7 @@ src
      active_player(player_index)
      fov(fov_degrees)
      tick_rate_ms(ms)
+    shade_color(col,pct)
     shutdown(_)
     update_fps(delta_seconds)
    s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps}
@@ -962,60 +969,82 @@ src
     copy_and_null(*dst,dst_size,*src,len)
     snprintf(*buf,buf_size,*fmt)
 tests
- test_collision.c
-  f main(_)
- test_default_key_bindings.c
-  f main(_)
- test_env.c
-  f main(_)
- test_game_multi.c
-  f main(_)
- test_game_oom.c
-  f ensure_real_fns(_)
-  f free(*p)
-  f main(_)
- test_highscore_name.c
-  f main(_)
- test_input.c
-  f main(_)
- test_input_bindings.c
-  f main(_)
- test_input_multi.c
-  f main(_)
- test_net.c
-  f main(_)
- test_net_integration.c
-  f main(_)
- test_net_overflow.c
-  f main(_)
- test_net_unpack.c
-  f main(_)
- test_persist.c
-  f main(_)
-  f run_case(*content,expect_count)
- test_persist_config.c
-  f main(_)
-  f run_case(*content,expect_ok)
- test_persist_long_lines.c
-  f main(_)
-  f run_case(*fn)
- test_persist_truncation.c
-  f main(_)
- test_stb_artifacts.c
-  f main(_)
- test_stb_chunk_size_limit.c
-  f main(_)
- test_stb_image_fuzz.c
-  f main(_)
- test_stb_leak_plte.c
-  f main(_)
- test_texture_path.c
-  f main(_)
- test_texture_path_extra.c
-  f main(_)
- test_tty_buffer_cap.c
-  f main(_)
- test_tty_open.c
-  f main(_)
- test_tty_path.c
-  f main(_)
+ unity
+  test_collision.c
+  test_default_key_bindings.c
+  test_env.c
+  test_game_colors.c
+   f test_default_player_colors_differ(_)
+  test_game_multi.c
+  test_game_oom.c
+   f ensure_real_fns(_)
+   f free(*p)
+  test_game_reset_lives.c
+   f test_game_reset_restores_lives_and_clears_elimination(_)
+  test_highscore_name.c
+  test_input.c
+  test_input_bindings.c
+  test_input_multi.c
+  test_net.c
+  test_net_integration.c
+  test_net_overflow.c
+  test_net_unpack.c
+  test_persist.c
+   f run_case(*content,expect_count)
+  test_persist_config.c
+   f run_case(*content,expect_ok)
+  test_persist_long_lines.c
+   f run_case(*fn)
+  test_persist_truncation.c
+  test_render_lives_ui.c
+   f test_render_draw_shows_hearts_for_multiplayer(_)
+  test_render_minimap.c
+   f test_render_minimap_uses_player_color(_)
+  test_runner.c
+   f main(argc,*argv)
+   f run_single_by_name(*name)
+   f test_
+    collision(_)
+    env(_)
+    game_
+     multi(_)
+     oom(_)
+    highscore_name(_)
+    input(_)
+    input_
+     bindings(_)
+     multi(_)
+    net(_)
+    net_
+     integration(_)
+     overflow(_)
+     unpack(_)
+    persist(_)
+    persist_
+     config(_)
+     long_lines(_)
+     truncation(_)
+    stb_
+     artifacts(_)
+     chunk_size_limit(_)
+     image_fuzz(_)
+     leak_plte(_)
+    texture_
+     path(_)
+     path_extra(_)
+    tty_
+     buffer_cap(_)
+     open(_)
+     path(_)
+   f tests_count(_)
+   s test_entry{*name,func,isolated}
+   t test_entry
+  test_stb_artifacts.c
+  test_stb_chunk_size_limit.c
+  test_stb_image_fuzz.c
+  test_stb_leak_plte.c
+  test_texture_path.c
+  test_texture_path_extra.c
+  test_tty_buffer_cap.c
+  test_tty_open.c
+  test_tty_path.c

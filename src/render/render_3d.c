@@ -42,6 +42,19 @@ typedef struct {
     float current_fps;
 } Render3DContext;
 static Render3DContext g_render_3d = {0};
+
+/* Return a darker version of `col` by `pct` percent (pct in 0..100). */
+static uint32_t render_3d_shade_color(uint32_t col, int pct) {
+    uint8_t a = (uint8_t)(col >> 24);
+    uint8_t r = (uint8_t)((col >> 16) & 0xFF);
+    uint8_t g = (uint8_t)((col >> 8) & 0xFF);
+    uint8_t b = (uint8_t)(col & 0xFF);
+    r = (uint8_t)((r * pct) / 100);
+    g = (uint8_t)((g * pct) / 100);
+    b = (uint8_t)((b * pct) / 100);
+    return render_3d_sdl_color(r, g, b, a);
+}
+
 static void render_3d_draw_char(SDL3DContext* disp, int x, int y, char c, uint32_t col, int scale);
 static void render_3d_log(const char* fmt, ...) {
     char buf[512];
@@ -131,13 +144,13 @@ static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
         int radius = cell_px > 2 ? (cell_px / 3) : 1;
         render_3d_sdl_draw_filled_circle(r->display, fx, fy, radius, food_col);
     }
-    uint32_t player_cols[3] = {render_3d_sdl_color(0, 128, 0, 255), render_3d_sdl_color(0, 200, 255, 255),
-                               render_3d_sdl_color(255, 255, 0, 255)};
-    uint32_t tail_col = render_3d_sdl_color(0, 128, 0, 255);
     for (int p = 0; p < gs->num_players; p++) {
         const PlayerState* pl = &gs->players[p];
         if (!pl->active || pl->length <= 0)
             continue;
+        /* Use player-configured color (0 means fallback). Tail is a darker shaded variant. */
+        uint32_t pcol = pl->color ? pl->color : render_3d_sdl_color(0, 128, 0, 255);
+        uint32_t tail_col_local = render_3d_shade_color(pcol, 60);
         for (int bi = 1; bi < pl->length; bi++) {
             float seg_x_f, seg_y_f;
             if (pl->prev_segment_x && pl->prev_segment_y) {
@@ -153,7 +166,7 @@ static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
             int radius = bw / 2;
             if (radius <= 0)
                 radius = 1;
-            render_3d_sdl_draw_filled_circle(r->display, tx, ty, radius, tail_col);
+            render_3d_sdl_draw_filled_circle(r->display, tx, ty, radius, tail_col_local);
             (void)bi;
         }
         float head_x = pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * interp_t;
@@ -161,7 +174,6 @@ static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
         int hx = x0 + (int)(head_x * (float)cell_px + 0.5f);
         int hy = y0 + (int)(head_y * (float)cell_px + 0.5f);
         int hr = cell_px > 2 ? (cell_px / 2) : 1;
-        uint32_t pcol = player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
         render_3d_sdl_draw_filled_circle(r->display, hx, hy, hr, pcol);
         int dir_off_x = 0, dir_off_y = 0;
         int off = (cell_px / 2) + 1;
@@ -314,6 +326,32 @@ void render_3d_draw_death_overlay(const GameState* game, int anim_frame, bool sh
         ly += 2 * 7 + 2 * 7;
         render_3d_draw_text_centered(d, ly, "OR Q TO QUIT", render_3d_sdl_color(160, 255, 160, 255), 2);
     }
+    (void)render_3d_sdl_present(d);
+}
+void render_3d_draw_winner_overlay(const GameState* game, int winner, int score) {
+    if (!g_render_3d.initialized || !g_render_3d.display)
+        return;
+    SDL3DContext* d = g_render_3d.display;
+    int w = render_3d_sdl_get_width(d) * 2 / 3;
+    int h = render_3d_sdl_get_height(d) / 3;
+    int x = (render_3d_sdl_get_width(d) - w) / 2;
+    int y = (render_3d_sdl_get_height(d) - h) / 2;
+    uint32_t bg = render_3d_sdl_color(0, 0, 0, 200);
+    render_3d_sdl_draw_filled_rect(d, x, y, w, h, bg);
+    int ly = y + 6;
+    char title[64];
+    if (game && game->players[winner].name[0])
+        snprintf(title, sizeof(title), "PLAYER %d (%.*s) WON", winner + 1, (int)sizeof(game->players[winner].name) - 1,
+                 game->players[winner].name);
+    else
+        snprintf(title, sizeof(title), "PLAYER %d WON", winner + 1);
+    render_3d_draw_text_centered(d, ly, title, render_3d_sdl_color(255, 255, 0, 255), 3);
+    ly += 3 * 7 + 3 * 7;
+    char buf[64];
+    snprintf(buf, sizeof(buf), "SCORE: %d", score);
+    render_3d_draw_text_centered(d, ly, buf, render_3d_sdl_color(200, 200, 255, 255), 2);
+    ly += 2 * 7 + 2 * 7;
+    render_3d_draw_text_centered(d, ly, "PRESS ANY KEY TO CONTINUE", render_3d_sdl_color(160, 255, 160, 255), 2);
     (void)render_3d_sdl_present(d);
 }
 void render_3d_draw_congrats_overlay(int score, const char* name_entered) {
@@ -648,15 +686,15 @@ void render_3d_draw(const GameState* game_state,
             continue;
         float head_x = player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
         float head_y = player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
-        uint32_t player_cols[3] = {render_3d_sdl_color(0, 128, 0, 255), render_3d_sdl_color(0, 200, 255, 255),
-                                   render_3d_sdl_color(255, 255, 0, 255)};
-        uint32_t pcol = player_cols[p % (int)(sizeof(player_cols) / sizeof(player_cols[0]))];
+        uint32_t pcol = player->color ? player->color : render_3d_sdl_color(0, 128, 0, 255);
         sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
     }
     for (int p = 0; p < game_state->num_players; p++) {
         const PlayerState* player = &game_state->players[p];
         if (!player->active || player->length <= 1)
             continue;
+        uint32_t body_col =
+            player->color ? render_3d_shade_color(player->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
         for (int bi = 1; bi < player->length; bi++) {
             float seg_x = (float)player->body[bi].x + 0.5f;
             float seg_y = (float)player->body[bi].y + 0.5f;
@@ -667,7 +705,6 @@ void render_3d_draw(const GameState* game_state,
                         (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
             }
             float tail_h = g_render_3d.config.tail_height_scale;
-            uint32_t body_col = render_3d_sdl_color(0, 128, 0, 255);
             sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, body_col);
         }
     }

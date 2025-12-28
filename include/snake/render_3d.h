@@ -26,5 +26,6 @@ struct SDL3DContext* render_3d_get_display(void);
 void render_3d_shutdown(void);
 void render_3d_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
 void render_3d_draw_congrats_overlay(int score, const char* name_entered);
+void render_3d_draw_winner_overlay(const GameState* game, int winner, int score);
 void render_3d_draw_minimap_into(struct SDL3DContext* ctx, const GameState* gs);
 int render_3d_compute_minimap_cell_px(int display_w, int display_h, int map_w, int map_h);

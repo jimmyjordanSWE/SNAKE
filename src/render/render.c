@@ -5,6 +5,7 @@
 #include "persist.h"
 #include "platform.h"
 #include "render_3d.h"
+#include "tty.h"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #include <ctype.h>
@@ -300,7 +301,19 @@ void render_draw(const GameState* game, const char* player_name, HighScore** sco
             else
                 snprintf(score_str, sizeof(score_str), "P%d: %d", p + 1, game->players[p].score);
             uint16_t color = (p == 0) ? DISPLAY_COLOR_BRIGHT_YELLOW : DISPLAY_COLOR_BRIGHT_RED;
-            draw_string(field_x + field_width + 2, field_y + p * 2, score_str, color);
+            int sx = field_x + field_width + 2;
+            int sy = field_y + p * 2;
+            draw_string(sx, sy, score_str, color);
+            /* Draw hearts (lives) to the right of the score. Show up to 3 hearts. */
+            if (game->players[p].lives > 0) {
+                int heart_x = sx + (int)strlen(score_str) + 1;
+                int max_hearts = 3;
+                for (int h = 0; h < max_hearts; h++) {
+                    uint16_t ch = (h < game->players[p].lives) ? PIXEL_HEART : PIXEL_HEART_EMPTY;
+                    uint16_t fg = (h < game->players[p].lives) ? DISPLAY_COLOR_BRIGHT_RED : DISPLAY_COLOR_BRIGHT_BLACK;
+                    display_put_char(g_display, heart_x + h, sy, ch, fg, DISPLAY_COLOR_BLACK);
+                }
+            }
         }
     }
     if (!scores)
@@ -551,5 +564,46 @@ void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_
         draw_string(box_x + 3, box_y + 4, "Press any key to restart", DISPLAY_COLOR_BRIGHT_GREEN);
         draw_string(box_x + 10, box_y + 5, "or Q to quit", DISPLAY_COLOR_BRIGHT_GREEN);
     }
+    display_present(g_display);
+}
+
+void render_draw_winner_overlay(const GameState* game, int winner, int score) {
+    if (!g_display)
+        return;
+    int display_width = 0, display_height = 0;
+    display_get_size(g_display, &display_width, &display_height);
+    int box_w = 40;
+    int box_h = 8;
+    int box_x = (display_width - box_w) / 2;
+    int box_y = (display_height - box_h) / 2;
+    if (box_x < 1)
+        box_x = 1;
+    if (box_y < 1)
+        box_y = 1;
+    /* Clear the play field under the overlay for visibility */
+    if (game) {
+        int field_width = game->width + 2;
+        int field_height = game->height + 2;
+        int field_x = (display_width - field_width) / 2;
+        int field_y = (display_height - field_height) / 2;
+        if (field_x < 1)
+            field_x = 1;
+        if (field_y < 2)
+            field_y = 2;
+        fill_rect(field_x, field_y, field_width, field_height, DISPLAY_COLOR_BLACK, DISPLAY_COLOR_BLACK, ' ');
+    }
+    draw_box(box_x, box_y, box_w, box_h, DISPLAY_COLOR_BRIGHT_YELLOW);
+    fill_rect(box_x + 1, box_y + 1, box_w - 2, box_h - 2, DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK, ' ');
+    char title[64];
+    if (game && game->players[winner].name[0])
+        snprintf(title, sizeof(title), "PLAYER %d (%.*s) WON", winner + 1, (int)sizeof(game->players[winner].name) - 1,
+                 game->players[winner].name);
+    else
+        snprintf(title, sizeof(title), "PLAYER %d WON", winner + 1);
+    draw_centered_string(box_y + 2, title, DISPLAY_COLOR_BRIGHT_YELLOW);
+    char score_s[32];
+    snprintf(score_s, sizeof(score_s), "Score: %d", score);
+    draw_centered_string(box_y + 4, score_s, DISPLAY_COLOR_CYAN);
+    draw_centered_string(box_y + 6, "Press any key to continue", DISPLAY_COLOR_BRIGHT_GREEN);
     display_present(g_display);
 }

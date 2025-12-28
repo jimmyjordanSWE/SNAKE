@@ -63,5 +63,8 @@ TEST(test_game_oom) {
     TEST_ASSERT_TRUE(hs == NULL);
 
     game_config_destroy(cfg);
+    /* Restore normal allocation behavior for subsequent tests */
+    fail_after = -1;
+    alloc_count = 0;
 }
 

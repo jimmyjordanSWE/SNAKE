@@ -15,6 +15,11 @@ SnakePoint* body;
 int length;
 int max_length;
 bool active, needs_reset;
+/* Multiplayer lives: number of remaining lives (0 for single-player mode).
+   Decremented on death; player is eliminated when reaches 0. */
+int lives;
+/* Mark permanently eliminated (no further respawns) for clarity. */
+bool eliminated;
 float prev_head_x;
 float prev_head_y;
 float* prev_segment_x;

@@ -1,11 +1,13 @@
 # State Transitions (state/status/mode/active/valid/etc)
-src/core/game.c: g->state.last_food_respawned->false(L75) g->state.last_food_respawned->false(L79) s->players[idx].active->false(L140) player->active->true(L265) player->active->false(L323) game->status->GAME_STATUS_RUNNING(L333) game->players[i].active->false(L370) game->players[i].active->false(L414) game->status->GAME_STATUS_RUNNING(L421) game->status->GAME_STATUS_GAME_OVER(L473)
+src/core/game.c: g->state.last_food_respawned->false(L75) g->state.last_food_respawned->false(L79) s->players[idx].active->false(L140) player->active->true(L272) player->active->false(L330) game->status->GAME_STATUS_RUNNING(L340) game->players[i].active->false(L377) game->players[i].active->false(L424) game->status->GAME_STATUS_RUNNING(L436) player->active->false(L482) player->active->false(L500) game->status->GAME_STATUS_GAME_OVER(L518) game->status->GAME_STATUS_GAME_OVER(L521)
 src/input/input.c: g_initialized->false(L40) g_initialized->true(L67)
 src/net/net.c: out->players[i].active->false(L136)
 src/persist/persist.c: c->active_player->PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER(L116)
 src/platform/tty.c: ctx->dirty->true(L176) ctx->dirty->true(L225) ctx->dirty->true(L239) ctx->dirty->false(L320) ctx->dirty->true(L326) ctx->size_valid->false(L383) ctx->size_valid->true(L385) ctx->dirty->true(L390)
-src/render/render_3d.c: g_render_3d.config.active_player->0(L367) g_render_3d.initialized->true(L428) s_floor_row_dist_valid->true(L469) s_floor_row_dist_valid->false(L471) g_render_3d.initialized->false(L753) g_render_3d.game_state->NULL(L754)
+src/render/render_3d.c: g_render_3d.config.active_player->0(L404) g_render_3d.initialized->true(L465) s_floor_row_dist_valid->true(L506) s_floor_row_dist_valid->false(L508) g_render_3d.initialized->false(L789) g_render_3d.game_state->NULL(L790)
 src/render/render_3d_sdl.c: ctx_out->initialized->true(L92) ctx_out->initialized->true(L128) ctx_out->initialized->false(L151) ctx->initialized->false(L178)
-tests/test_collision.c: g.players[0].active->true(L31) g.players[1].active->true(L33)
-tests/test_net_integration.c: gs.status->GAME_STATUS_RUNNING(L38) gs.players[0].active->true(L41)
-# Total: 36 transitions in 9 files
+tests/unity/test_collision.c: g.players[0].active->true(L26) g.players[1].active->true(L28)
+tests/unity/test_game_reset_lives.c: gs->players[0].active->false(L19)
+tests/unity/test_net_integration.c: gs.status->GAME_STATUS_RUNNING(L34) gs.players[0].active->true(L38)
+tests/unity/test_render_minimap.c: gs.players[0].active->true(L19)
+# Total: 41 transitions in 11 files

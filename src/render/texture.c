@@ -15,11 +15,11 @@ struct Texture3D {
     int img_w;
     int img_h;
     /* Derived / hoisted constants for hot code paths */
-    int pitch;         /* equals img_w */
+    int pitch; /* equals img_w */
     int w_minus1;
     int h_minus1;
-    float mul_x;       /* (float)(w_minus1) */
-    float mul_y;       /* (float)(h_minus1) */
+    float mul_x; /* (float)(w_minus1) */
+    float mul_y; /* (float)(h_minus1) */
 };
 static void texture_update_derived(Texture3D* tex);
 Texture3D* texture_create(void) {
@@ -31,13 +31,18 @@ Texture3D* texture_create(void) {
 }
 Texture3D* texture_create_procedural(int w, int h) {
     Texture3D* t = texture_create();
-    if (!t) return NULL;
-    if (w <= 0 || h <= 0) return t;
+    if (!t)
+        return NULL;
+    if (w <= 0 || h <= 0)
+        return t;
     size_t n = (size_t)w * (size_t)h;
     t->img_w = w;
     t->img_h = h;
     t->pixels = malloc(n * sizeof *t->pixels);
-    if (!t->pixels) { texture_destroy(t); return NULL; }
+    if (!t->pixels) {
+        texture_destroy(t);
+        return NULL;
+    }
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             t->pixels[y * w + x] = 0xFF000000 | ((uint32_t)(y & 0xFF) << 8) | (uint32_t)(x & 0xFF);
@@ -322,8 +327,14 @@ static inline bool uv_in_unit_range(float u, float v) {
 static uint32_t sample_nearest_norm(const Texture3D* tex, float u, float v) {
     int x = (int)(u * (float)tex->img_w);
     int y = (int)(v * (float)tex->img_h);
-    if (x < 0) x = 0; else if (x >= tex->img_w) x = tex->img_w - 1;
-    if (y < 0) y = 0; else if (y >= tex->img_h) y = tex->img_h - 1;
+    if (x < 0)
+        x = 0;
+    else if (x >= tex->img_w)
+        x = tex->img_w - 1;
+    if (y < 0)
+        y = 0;
+    else if (y >= tex->img_h)
+        y = tex->img_h - 1;
     return tex->pixels[y * tex->img_w + x];
 }
 
@@ -365,9 +376,11 @@ static inline uint32_t sample_bilinear_fast(const Texture3D* tex, float u, float
     int x0 = (int)xf;
     int y0 = (int)yf;
     int x1 = x0 + 1;
-    if (x1 > w_m1) x1 = w_m1;
+    if (x1 > w_m1)
+        x1 = w_m1;
     int y1 = y0 + 1;
-    if (y1 > h_m1) y1 = h_m1;
+    if (y1 > h_m1)
+        y1 = h_m1;
     int sx = (int)((xf - (float)x0) * 256.0f + 0.5f);
     int sy = (int)((yf - (float)y0) * 256.0f + 0.5f);
     int row0 = y0 * pitch;
@@ -416,10 +429,12 @@ static uint32_t sample_bilinear_slow_normalized(const Texture3D* tex, float u, f
     float y = v * mul_y;
     int x0 = (int)x;
     int x1 = x0 + 1;
-    if (x1 > tex->w_minus1) x1 = tex->w_minus1;
+    if (x1 > tex->w_minus1)
+        x1 = tex->w_minus1;
     int y0 = (int)y;
     int y1 = y0 + 1;
-    if (y1 > tex->h_minus1) y1 = tex->h_minus1;
+    if (y1 > tex->h_minus1)
+        y1 = tex->h_minus1;
     float sx = x - (float)x0;
     float sy = y - (float)y0;
     int row0 = y0 * pitch;

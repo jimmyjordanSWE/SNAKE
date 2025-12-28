@@ -194,8 +194,10 @@ void render_3d_sdl_set_pixel(SDL3DContext* ctx, int x, int y, uint32_t col) {
 }
 static inline uint32_t blend_px(uint32_t dst, uint32_t src) {
     uint8_t sa = (uint8_t)((src >> 24) & 0xFFu);
-    if (sa == 255) return src;
-    if (sa == 0) return dst;
+    if (sa == 255)
+        return src;
+    if (sa == 0)
+        return dst;
     uint8_t sr = (uint8_t)((src >> 16) & 0xFFu), sg = (uint8_t)((src >> 8) & 0xFFu), sb = (uint8_t)(src & 0xFFu);
     uint8_t dr = (uint8_t)((dst >> 16) & 0xFFu), dg = (uint8_t)((dst >> 8) & 0xFFu), db = (uint8_t)(dst & 0xFFu);
     int inv = 255 - sa;
@@ -210,7 +212,7 @@ void render_3d_sdl_blend_pixel(SDL3DContext* ctx, int x, int y, uint32_t src_col
         return;
     uint32_t* p = &ctx->pixels[y * ctx->width + x];
     *p = blend_px(*p, src_col);
-} 
+}
 void render_3d_sdl_draw_column(SDL3DContext* ctx, int x, int y_start, int y_end, uint32_t col) {
     if (!ctx || !ctx->pixels || x < 0 || x >= ctx->width)
         return;

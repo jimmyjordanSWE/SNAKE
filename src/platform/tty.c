@@ -109,20 +109,14 @@ static int buf_append_uint(char* buf, size_t* pos, size_t* remaining, unsigned i
     *remaining -= (size_t)len;
     return len;
 }
-static const char* const ANSI_FG[16] = {
-    "\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m",
-    "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m",
-    "\x1b[90m", "\x1b[91m", "\x1b[92m", "\x1b[93m",
-    "\x1b[94m", "\x1b[95m", "\x1b[96m", "\x1b[97m"
-};
-static const char* const ANSI_BG[16] = {
-    "\x1b[40m", "\x1b[41m", "\x1b[42m", "\x1b[43m",
-    "\x1b[44m", "\x1b[45m", "\x1b[46m", "\x1b[47m",
-    "\x1b[100m", "\x1b[101m", "\x1b[102m", "\x1b[103m",
-    "\x1b[104m", "\x1b[105m", "\x1b[106m", "\x1b[107m"
-};
-static const size_t ANSI_FG_LEN[16] = {5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
-static const size_t ANSI_BG_LEN[16] = {5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6};
+static const char* const ANSI_FG[16] = {"\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m",
+                                        "\x1b[36m", "\x1b[37m", "\x1b[90m", "\x1b[91m", "\x1b[92m", "\x1b[93m",
+                                        "\x1b[94m", "\x1b[95m", "\x1b[96m", "\x1b[97m"};
+static const char* const ANSI_BG[16] = {"\x1b[40m",  "\x1b[41m",  "\x1b[42m",  "\x1b[43m",  "\x1b[44m",  "\x1b[45m",
+                                        "\x1b[46m",  "\x1b[47m",  "\x1b[100m", "\x1b[101m", "\x1b[102m", "\x1b[103m",
+                                        "\x1b[104m", "\x1b[105m", "\x1b[106m", "\x1b[107m"};
+static const size_t ANSI_FG_LEN[16] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+static const size_t ANSI_BG_LEN[16] = {5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6};
 static bool get_terminal_size(int fd, int* width, int* height) {
     struct winsize ws;
     if (ioctl(fd, TIOCGWINSZ, &ws) == -1)

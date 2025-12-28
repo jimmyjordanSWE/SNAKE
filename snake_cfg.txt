@@ -28,7 +28,7 @@ p4_right=o
 wall_height_scale=1.50
 tail_height_scale=0.50
 wall_texture_scale=1.0
-floor_texture_scale=2.0
+floor_texture_scale=1.0
 wall_texture=assets/wall.png
 floor_texture=assets/floor.png
 # Note: p1 defaults to arrow keys; p1_left/p1_right can override

@@ -4,15 +4,17 @@
 #include "render_3d_sprite.h"
 #include "render_3d_sprite_internal.h"
 #include <stddef.h>
-#include <stdlib.h>
-#include <time.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 /* Small helper: clamp float to 0..255 and return uint8_t */
 static inline uint8_t clamp_u8(float v) {
-    if (v <= 0.0f) return 0;
-    if (v >= 255.0f) return 255;
+    if (v <= 0.0f)
+        return 0;
+    if (v >= 255.0f)
+        return 255;
     return (uint8_t)(v + 0.5f);
 }
 
@@ -23,10 +25,10 @@ struct SpriteRenderer3D {
     const Camera3D* camera;
     const Projection3D* proj;
 };
+#include "math_fast.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "math_fast.h"
 void sprite_init(SpriteRenderer3D* sr, int max_sprites, const Camera3D* camera, const Projection3D* proj) {
     if (!sr)
         return;
@@ -127,17 +129,19 @@ bool sprite_add_rect_color(SpriteRenderer3D* sr,
 
 /* Shaded sprite helpers: reuse add_* then mark shaded */
 bool sprite_add_color_shaded(SpriteRenderer3D* sr,
-                              float world_x,
-                              float world_y,
-                              float world_height,
-                              float pivot,
-                              bool face_camera,
-                              int texture_id,
-                              int frame,
-                              uint32_t color) {
-    if (!sr || sr->count >= sr->max_sprites) return false;
+                             float world_x,
+                             float world_y,
+                             float world_height,
+                             float pivot,
+                             bool face_camera,
+                             int texture_id,
+                             int frame,
+                             uint32_t color) {
+    if (!sr || sr->count >= sr->max_sprites)
+        return false;
     bool ok = sprite_add_color(sr, world_x, world_y, world_height, pivot, face_camera, texture_id, frame, color);
-    if (!ok) return false;
+    if (!ok)
+        return false;
     Sprite3D* s = &sr->sprites[sr->count - 1];
     s->shaded = true;
     return true;
@@ -152,9 +156,11 @@ bool sprite_add_rect_color_shaded(SpriteRenderer3D* sr,
                                   int texture_id,
                                   int frame,
                                   uint32_t color) {
-    if (!sr || sr->count >= sr->max_sprites) return false;
+    if (!sr || sr->count >= sr->max_sprites)
+        return false;
     bool ok = sprite_add_rect_color(sr, world_x, world_y, world_height, pivot, face_camera, texture_id, frame, color);
-    if (!ok) return false;
+    if (!ok)
+        return false;
     Sprite3D* s = &sr->sprites[sr->count - 1];
     s->shaded = true;
     return true;
@@ -362,10 +368,14 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 int ry0 = center_y - rh / 2;
                 int rx1 = rx0 + rw - 1;
                 int ry1 = ry0 + rh - 1;
-                if (rx0 < 0) rx0 = 0;
-                if (ry0 < 0) ry0 = 0;
-                if (rx1 >= scr_w) rx1 = scr_w - 1;
-                if (ry1 >= scr_h) ry1 = scr_h - 1;
+                if (rx0 < 0)
+                    rx0 = 0;
+                if (ry0 < 0)
+                    ry0 = 0;
+                if (rx1 >= scr_w)
+                    rx1 = scr_w - 1;
+                if (ry1 >= scr_h)
+                    ry1 = scr_h - 1;
                 for (int yy = ry0; yy <= ry1; ++yy) {
                     for (int xx = rx0; xx <= rx1; ++xx) {
                         if (s->perp_distance < column_depths[xx]) {
@@ -378,10 +388,14 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 int bx1 = center_x + radius;
                 int by0 = center_y - radius;
                 int by1 = center_y + radius;
-                if (bx0 < 0) bx0 = 0;
-                if (by0 < 0) by0 = 0;
-                if (bx1 >= scr_w) bx1 = scr_w - 1;
-                if (by1 >= scr_h) by1 = scr_h - 1;
+                if (bx0 < 0)
+                    bx0 = 0;
+                if (by0 < 0)
+                    by0 = 0;
+                if (bx1 >= scr_w)
+                    bx1 = scr_w - 1;
+                if (by1 >= scr_h)
+                    by1 = scr_h - 1;
                 const int r2 = radius * radius;
                 for (int yy = by0; yy <= by1; ++yy) {
                     int dy = yy - center_y;
@@ -397,14 +411,16 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                                     float nx = (float)dx / (float)radius;
                                     float ny = (float)dy / (float)radius;
                                     float n2 = nx * nx + ny * ny;
-                                    if (n2 > 1.0f) continue;
+                                    if (n2 > 1.0f)
+                                        continue;
                                     float nz = sqrtf(1.0f - n2);
                                     /* Light: top-left-ish */
                                     const float lx = -0.5f, ly = -0.5f, lz = 1.0f;
-                                    float lnorm = sqrtf(lx*lx + ly*ly + lz*lz);
+                                    float lnorm = sqrtf(lx * lx + ly * ly + lz * lz);
                                     float lnx = lx / lnorm, lny = ly / lnorm, lnz = lz / lnorm;
                                     float diffuse = nx * lnx + ny * lny + nz * lnz;
-                                    if (diffuse < 0.0f) diffuse = 0.0f;
+                                    if (diffuse < 0.0f)
+                                        diffuse = 0.0f;
                                     const float ambient = 0.25f;
                                     const float spec_strength = 0.5f;
                                     const float shininess = 24.0f;
@@ -412,13 +428,17 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                                     float hx = lnx;
                                     float hy = lny;
                                     float hz = lnz + 1.0f;
-                                    float hnorm = sqrtf(hx*hx + hy*hy + hz*hz);
-                                    hx /= hnorm; hy /= hnorm; hz /= hnorm;
-                                    float spec = nx*hx + ny*hy + nz*hz;
-                                    if (spec < 0.0f) spec = 0.0f;
+                                    float hnorm = sqrtf(hx * hx + hy * hy + hz * hz);
+                                    hx /= hnorm;
+                                    hy /= hnorm;
+                                    hz /= hnorm;
+                                    float spec = nx * hx + ny * hy + nz * hz;
+                                    if (spec < 0.0f)
+                                        spec = 0.0f;
                                     spec = powf(spec, shininess) * spec_strength;
                                     float intensity = ambient + (1.0f - ambient) * diffuse + spec;
-                                    if (intensity > 1.0f) intensity = 1.0f;
+                                    if (intensity > 1.0f)
+                                        intensity = 1.0f;
                                     uint8_t a = (uint8_t)((col >> 24) & 0xFFu);
                                     uint8_t br = (uint8_t)((col >> 16) & 0xFFu);
                                     uint8_t bg = (uint8_t)((col >> 8) & 0xFFu);
@@ -426,7 +446,8 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                                     uint8_t rr = clamp_u8((float)br * intensity);
                                     uint8_t rg = clamp_u8((float)bg * intensity);
                                     uint8_t rb = clamp_u8((float)bb * intensity);
-                                    uint32_t shaded_col = ((uint32_t)a << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
+                                    uint32_t shaded_col =
+                                        ((uint32_t)a << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
                                     render_3d_sdl_set_pixel(ctx, xx, yy, shaded_col);
                                 } else {
                                     render_3d_sdl_set_pixel(ctx, xx, yy, col);

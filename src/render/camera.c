@@ -1,9 +1,9 @@
+#include "math_fast.h"
 #include "render_3d_camera.h"
 #include "types.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "math_fast.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -225,7 +225,8 @@ void camera_prepare_angle_offsets(Camera3D* camera, int screen_width) {
     if (!camera || screen_width <= 0)
         return;
     /* If width and fov unchanged, keep cached buffer as-is */
-    if (camera->cached_angle_offsets && camera->cached_width == screen_width && camera->cached_fov_radians == camera->fov_radians)
+    if (camera->cached_angle_offsets && camera->cached_width == screen_width &&
+        camera->cached_fov_radians == camera->fov_radians)
         return;
     float* new_buf = (float*)realloc(camera->cached_angle_offsets, (size_t)screen_width * sizeof(float));
     if (!new_buf) {

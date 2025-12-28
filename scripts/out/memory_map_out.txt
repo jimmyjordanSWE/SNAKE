@@ -4,16 +4,16 @@ src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 
 src/core/player.c: 12c 22f
 src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 246m 251f 255f
 src/persist/persist.c: 39c 50f 102c 168f 421c 479f 538r 573f 946m 947m 961f 962f
-src/platform/tty.c: 138m 195c 196c 210m 235f 236f 237f 245f 272f 273f 274f 276f 466c 467c 468m 470f 471f 472f 488f 489f 490f
-src/render/camera.c: 55c 64f 66f 230r
+src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 460c 461c 462m 464f 465f 466f 482f 483f 484f
+src/render/camera.c: 55c 64f 66f 231r
 src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 472c 522r 523r 792f 796f 800f
-src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 331m 336f
-src/render/sprite.c: 33c 467f 475c 485f
-src/render/texture.c: 26c 39m 54f 253f 271m 295f
+src/render/render_3d.c: 475c 525r 526r 812f 816f 820f
+src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 333m 338f
+src/render/sprite.c: 35c 488f 496c 506f
+src/render/texture.c: 26c 41m 59f 258f 276m 300f
 src/snakegame.c: 28m 33f 146f 435f
 src/tools/render_bench.c: 43m 86f
 src/tools/sprite_bench.c: 45c 61f

@@ -1,14 +1,6 @@
-#include <dlfcn.h>
-#include <stddef.h>
+/* Legacy test moved to Unity: tests/unity/test_game_oom.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-/* Simple allocation-failure simulator: override malloc/calloc/realloc using dlsym(RTLD_NEXT).
-   Set `fail_after` to X to cause allocations 1..X to succeed and allocation X+1 to fail.
-*/
-static size_t alloc_count = 0;
-static long fail_after = -1; /* -1 means never fail */
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_game_oom.c\n"); return 77; }
 
 typedef void* (*malloc_fn)(size_t);
 typedef void* (*calloc_fn)(size_t, size_t);

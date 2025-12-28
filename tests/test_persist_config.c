@@ -1,21 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_persist_config.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "persist.h"
-
-static int run_case(const char* content, bool expect_ok) {
-    const char* fn = "test_config.tmp";
-    FILE* f = fopen(fn, "w");
-    if (!f) return -1;
-    fputs(content, f);
-    fclose(f);
-    GameConfig* cfg = NULL;
-    bool ok = persist_load_config(fn, &cfg);
-    remove(fn);
-    if (cfg) game_config_destroy(cfg);
-    return (ok == expect_ok) ? 1 : 0;
-}
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_persist_config.c\n"); return 77; }
 
 int main(void) {
     /* well-formed */

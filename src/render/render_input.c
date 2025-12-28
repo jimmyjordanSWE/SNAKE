@@ -1,7 +1,6 @@
 #include "render_input.h"
 #include <ctype.h>
 #include <string.h>
-
 int render_sanitize_player_name(const char* input, char* out, size_t out_len) {
     if (!out || out_len == 0)
         return 0;

@@ -5,6 +5,7 @@ Flow:
  display_tty->test_game_oom,tty
  fuzz_stb_image->net,persist
  game->collision,direction,persist,player,rng,test_game_oom
+ input->persist
  net->test_game_oom
  persist->test_game_oom
  player->test_game_oom
@@ -45,7 +46,26 @@ Tree(main):
           snake_rng_next_u32
     game_config_destroy
       free (see above)
+    game_config_get_key_down
+    game_config_get_key_left
+    game_config_get_key_pause
+    game_config_get_key_quit
+    game_config_get_key_restart
+    game_config_get_key_right
+    game_config_get_key_up
+    game_config_get_player_key_up
+    game_config_set_key_down
+    game_config_set_key_left
+    game_config_set_key_pause
+    game_config_set_key_quit
+    game_config_set_key_restart
+    game_config_set_key_right
+    game_config_set_key_up
     game_config_set_max_players
+    game_config_set_player_key_down
+    game_config_set_player_key_left
+    game_config_set_player_key_right
+    game_config_set_player_key_up
     game_destroy
       free (see above)
       game_free
@@ -61,6 +81,21 @@ Tree(main):
     input_poll_from_buf
       ascii_tolower
       parse_arrow_key
+    input_set_bindings_from_config
+      game_config_get_key_down
+      game_config_get_key_left
+      game_config_get_key_pause
+      game_config_get_key_quit
+      game_config_get_key_restart
+      game_config_get_key_right
+      game_config_get_key_up
+      game_config_get_max_players
+      game_config_get_player_key_down
+      game_config_get_player_key_left
+      game_config_get_player_key_right
+      game_config_get_player_key_up
+      input_set_key_bindings
+      input_set_player_key_bindings
     input_set_player_key_bindings
     net_disconnect
       free (see above)

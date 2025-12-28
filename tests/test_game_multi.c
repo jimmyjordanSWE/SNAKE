@@ -1,20 +1,6 @@
-#include "snake/game.h"
-#include "snake/player.h"
-#include <assert.h>
-#include <string.h>
+/* Legacy test moved to Unity: tests/unity/test_game_multi.c */
 #include <stdio.h>
-
-/* Access internals for validation */
-#include "game_internal.h"
-
-int main(void) {
-    GameConfig* cfg = game_config_create();
-    assert(cfg);
-    game_config_set_max_players(cfg, 4);
-    Game* g = game_create(cfg, 0);
-    assert(g);
-    // initial num players from config
-    int initial = game_get_num_players(g);
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_game_multi.c\n"); return 77; }
 
     PlayerCfg* pc0 = player_cfg_create();
     player_cfg_set_name(pc0, "P0");

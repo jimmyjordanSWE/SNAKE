@@ -1,0 +1,70 @@
+texture_load_from_file: failed to load 'this_file_does_not_exist.png' (stb_image returned NULL). Existence check:
+  'this_file_does_not_exist.png' -> missing
+  './this_file_does_not_exist.png' -> missing
+  '../this_file_does_not_exist.png' -> missing
+  '../../this_file_does_not_exist.png' -> missing
+  '../../../this_file_does_not_exist.png' -> missing
+  '../../../../this_file_does_not_exist.png' -> missing
+  '../../../../../this_file_does_not_exist.png' -> missing
+  '../../../../../../this_file_does_not_exist.png' -> missing
+  'this_file_does_not_exist.png' -> missing
+texture_load_from_file: failed to load './image.png' (stb_image returned NULL). Existence check:
+  './image.png' -> missing
+  '././image.png' -> missing
+  '.././image.png' -> missing
+  '../.././image.png' -> missing
+  '../../.././image.png' -> missing
+  '../../../.././image.png' -> missing
+  '../../../../.././image.png' -> missing
+  '../../../../../.././image.png' -> missing
+  'image.png' -> missing
+texture_load_from_file: failed to load 'some\path\image.png' (stb_image returned NULL). Existence check:
+  'some\path\image.png' -> missing
+  './some\path\image.png' -> missing
+  '../some\path\image.png' -> missing
+  '../../some\path\image.png' -> missing
+  '../../../some\path\image.png' -> missing
+  '../../../../some\path\image.png' -> missing
+  '../../../../../some\path\image.png' -> missing
+  '../../../../../../some\path\image.png' -> missing
+  'some\path\image.png' -> missing
+texture_load_from_file: failed to load 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' (stb_image returned NULL). Existence check:
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  './bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../../../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  '../../../../../../bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' -> missing
+FAIL: tests/unity/test_persist.c:22: expected 2 but was -1
+RUN: test_env
+PASS: test_env
+RUN: test_input
+PASS: test_input
+RUN: test_input_bindings
+PASS: test_input_bindings
+RUN: test_input_multi
+PASS: test_input_multi
+RUN: test_highscore_name
+PASS: test_highscore_name
+RUN: test_texture_path
+PASS: test_texture_path
+RUN: test_texture_path_extra
+PASS: test_texture_path_extra
+RUN: test_net
+PASS: test_net
+RUN: test_net_integration
+PASS: test_net_integration
+RUN: test_net_overflow
+PASS: test_net_overflow
+RUN: test_net_unpack
+PASS: test_net_unpack
+RUN: test_collision
+PASS: test_collision
+RUN: test_game_multi
+PASS: test_game_multi
+RUN: test_game_oom
+PASS: test_game_oom
+RUN: test_persist

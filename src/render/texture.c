@@ -111,7 +111,6 @@ static bool is_safe_texture_filename(const char* filename) {
         return false;
     return true;
 }
-
 bool texture_load_from_file(Texture3D* tex, const char* filename) {
     if (!tex || !filename)
         return false;

@@ -1,17 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_stb_artifacts.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
-#include <assert.h>
-#include "stb_image.h"
-
-int main(void) {
-    const char* dir = "build/fuzz/artifacts";
-    DIR *d = opendir(dir);
-    if (!d) {
-        printf("test_stb_artifacts: artifacts directory not present, skipping\n");
-        return 0;
-    }
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_stb_artifacts.c\n"); return 77; }
     struct dirent *ent;
     int tested = 0;
     while ((ent = readdir(d)) != NULL) {

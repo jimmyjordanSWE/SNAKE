@@ -1,13 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_persist_truncation.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "persist.h"
-
-int main(void) {
-    const char* fn = "test_trunc.tmp";
-    FILE* f = fopen(fn, "w");
-    if (!f) return -1;
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_persist_truncation.c\n"); return 77; }
 
     /* Create a truncated line that does not end with a newline and exceeds buffer size */
     size_t bufsize = 256; /* matches PERSIST_SCORE_BUFFER */

@@ -132,11 +132,31 @@ GameConfig* game_config_create(void) {
     c->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
     c->key_restart = PERSIST_CONFIG_DEFAULT_KEY_RESTART;
     c->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
-    /* default per-player bindings to match input_init defaults */
-    if (SNAKE_MAX_PLAYERS >= 1) { c->key_up_arr[0] = 'w'; c->key_down_arr[0] = 's'; c->key_left_arr[0] = 'a'; c->key_right_arr[0] = 'd'; }
-    if (SNAKE_MAX_PLAYERS >= 2) { c->key_up_arr[1] = 'i'; c->key_down_arr[1] = 'k'; c->key_left_arr[1] = 'j'; c->key_right_arr[1] = 'l'; }
-    if (SNAKE_MAX_PLAYERS >= 3) { c->key_up_arr[2] = '8'; c->key_down_arr[2] = '5'; c->key_left_arr[2] = '4'; c->key_right_arr[2] = '6'; }
-    if (SNAKE_MAX_PLAYERS >= 4) { c->key_up_arr[3] = 't'; c->key_down_arr[3] = 'g'; c->key_left_arr[3] = 'f'; c->key_right_arr[3] = 'h'; }
+    /* default per-player bindings to match input defaults; use centralized macros */
+    if (SNAKE_MAX_PLAYERS >= 1) {
+        c->key_up_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_UP;
+        c->key_down_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_DOWN;
+        c->key_left_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_LEFT;
+        c->key_right_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT;
+    }
+    if (SNAKE_MAX_PLAYERS >= 2) {
+        c->key_up_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_UP_2;
+        c->key_down_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_2;
+        c->key_left_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_2;
+        c->key_right_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_2;
+    }
+    if (SNAKE_MAX_PLAYERS >= 3) {
+        c->key_up_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_UP_3;
+        c->key_down_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_3;
+        c->key_left_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_3;
+        c->key_right_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_3;
+    }
+    if (SNAKE_MAX_PLAYERS >= 4) {
+        c->key_up_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_UP_4;
+        c->key_down_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_4;
+        c->key_left_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_4;
+        c->key_right_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_4;
+    }
     /* keep single-char fields in sync with player 0 */
     c->key_up = c->key_up_arr[0];
     c->key_down = c->key_down_arr[0];
@@ -339,7 +359,6 @@ void game_config_set_key_right(GameConfig* cfg, char c) {
 char game_config_get_key_right(const GameConfig* cfg) {
     return cfg ? cfg->key_right : '\0';
 }
-
 /* Per-player key API */
 void game_config_set_player_key_up(GameConfig* cfg, int player_idx, char c) {
     if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
@@ -456,7 +475,6 @@ int persist_read_scores(const char* filename, HighScore*** out_scores) {
             }
             continue; /* skip this truncated line */
         }
-
         /* Trim leading/trailing whitespace first */
         char* line = trim_in_place(buffer);
         if (line == NULL)
@@ -464,7 +482,6 @@ int persist_read_scores(const char* filename, HighScore*** out_scores) {
         size_t len = strlen(line);
         if (len == 0)
             continue;
-
         /* Split on first whitespace sequence (allow multiple spaces/tabs) */
         char* p = line;
         while (*p && !isspace((unsigned char)*p))
@@ -477,7 +494,6 @@ int persist_read_scores(const char* filename, HighScore*** out_scores) {
         char name[PERSIST_NAME_MAX];
         memcpy(name, line, name_len);
         name[name_len] = '\0';
-
         /* Skip whitespace to find the score string */
         while (*p && isspace((unsigned char)*p))
             p++;
@@ -486,13 +502,11 @@ int persist_read_scores(const char* filename, HighScore*** out_scores) {
         char* score_str = trim_in_place(p);
         if (score_str == NULL || *score_str == '\0')
             continue;
-
         char* endptr = NULL;
         errno = 0;
         long score_long = strtol(score_str, &endptr, 10);
         if (errno != 0 || endptr == score_str || score_long < 0 || score_long > INT_MAX)
             continue;
-
         arr[count] = highscore_create(name, (int)score_long);
         if (!arr[count])
             break;
@@ -713,7 +727,8 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
             snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
             continue;
         } else if (strncmp(key, "key_up", 6) == 0 || strncmp(key, "key_down", 8) == 0 ||
-                   strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 || strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
+                   strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 ||
+                   strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
             /* support keys like key_left, key_left_2, key_right_3, etc. */
             char c = value[0];
             if (strcmp(key, "key_quit") == 0) {
@@ -1002,7 +1017,7 @@ static bool is_known_config_key(const char* key) {
     if (strcmp(key, "floor_texture") == 0)
         return true;
     /* Accept key_up, key_down, key_left, key_right optionally suffixed with _N (player index 1-based) */
-    const char* key_bases[] = {"key_up","key_down","key_left","key_right"};
+    const char* key_bases[] = {"key_up", "key_down", "key_left", "key_right"};
     for (size_t i = 0; i < sizeof(key_bases) / sizeof(key_bases[0]); ++i) {
         const char* b = key_bases[i];
         size_t bl = strlen(b);

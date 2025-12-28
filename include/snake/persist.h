@@ -41,6 +41,19 @@
 #define PERSIST_CONFIG_DEFAULT_KEY_QUIT 'q'
 #define PERSIST_CONFIG_DEFAULT_KEY_RESTART 'r'
 #define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
+/* Per-player defaults (player index 1-based: _2 is player 2) */
+#define PERSIST_CONFIG_DEFAULT_KEY_UP_2 'i'
+#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_2 'k'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_2 'j'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_2 'l'
+#define PERSIST_CONFIG_DEFAULT_KEY_UP_3 '8'
+#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_3 '5'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_3 '4'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_3 '6'
+#define PERSIST_CONFIG_DEFAULT_KEY_UP_4 't'
+#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_4 'g'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_4 'f'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_4 'h'
 #define PERSIST_PLAYER_NAME_MAX 32
 typedef struct HighScore HighScore;
 // Returns a newly allocated HighScore; caller must call highscore_destroy() to free it.

@@ -14,17 +14,19 @@ static struct termios g_original_termios;
 static int g_stdin_flags = -1;
 static bool g_initialized = false;
 #include "game.h"
-static char s_key_turn_left = 'a';
-static char s_key_turn_right = 'd';
-static char s_key_quit = 'q';
-static char s_key_restart = 'r';
-static char s_key_pause = 'p';
-// Per-player bindings
-static char s_key_up[SNAKE_MAX_PLAYERS];
-static char s_key_down[SNAKE_MAX_PLAYERS];
-static char s_key_left[SNAKE_MAX_PLAYERS];
-static char s_key_right[SNAKE_MAX_PLAYERS];
-
+#include "persist.h"
+/* Do not hard-code defaults here; bindings are applied from GameConfig via input_set_bindings_from_config().
+ * Initialize to 0 so behavior comes strictly from config (or macros used by game_config_create()). */
+static char s_key_turn_left = '\0';
+static char s_key_turn_right = '\0';
+static char s_key_quit = '\0';
+static char s_key_restart = '\0';
+static char s_key_pause = '\0';
+/* Per-player bindings (zero-initialized until set from config) */
+static char s_key_up[SNAKE_MAX_PLAYERS] = {0};
+static char s_key_down[SNAKE_MAX_PLAYERS] = {0};
+static char s_key_left[SNAKE_MAX_PLAYERS] = {0};
+static char s_key_right[SNAKE_MAX_PLAYERS] = {0};
 static void restore_terminal(void) {
     if (g_initialized) {
         if (g_stdin_flags >= 0) {
@@ -63,11 +65,7 @@ bool input_init(void) {
         return false;
     }
     g_initialized = true;
-    // default per-player bindings for up to SNAKE_MAX_PLAYERS
-    if (SNAKE_MAX_PLAYERS >= 1) { s_key_up[0] = 'w'; s_key_down[0] = 's'; s_key_left[0] = 'a'; s_key_right[0] = 'd'; }
-    if (SNAKE_MAX_PLAYERS >= 2) { s_key_up[1] = 'i'; s_key_down[1] = 'k'; s_key_left[1] = 'j'; s_key_right[1] = 'l'; }
-    if (SNAKE_MAX_PLAYERS >= 3) { s_key_up[2] = '8'; s_key_down[2] = '5'; s_key_left[2] = '4'; s_key_right[2] = '6'; }
-    if (SNAKE_MAX_PLAYERS >= 4) { s_key_up[3] = 't'; s_key_down[3] = 'g'; s_key_left[3] = 'f'; s_key_right[3] = 'h'; }
+    /* bindings are set from config or tests; no hard-coded per-player defaults here. */
     return true;
 }
 void input_shutdown(void) {
@@ -161,7 +159,6 @@ void input_set_key_bindings(char up,
     if (pause_toggle)
         s_key_pause = pause_toggle;
 }
-
 void input_set_player_key_bindings(int player_idx,
                                    char up,
                                    char down,
@@ -184,7 +181,21 @@ void input_set_player_key_bindings(int player_idx,
     (void)restart;
     (void)pause_toggle;
 }
-
+void input_set_bindings_from_config(const GameConfig* cfg) {
+    if (!cfg)
+        return;
+    input_set_key_bindings(game_config_get_key_up(cfg), game_config_get_key_down(cfg), game_config_get_key_left(cfg),
+                           game_config_get_key_right(cfg), game_config_get_key_quit(cfg),
+                           game_config_get_key_restart(cfg), game_config_get_key_pause(cfg));
+    int max_players = game_config_get_max_players(cfg);
+    if (max_players > SNAKE_MAX_PLAYERS)
+        max_players = SNAKE_MAX_PLAYERS;
+    for (int p = 0; p < max_players; ++p) {
+        input_set_player_key_bindings(p, game_config_get_player_key_up(cfg, p), game_config_get_player_key_down(cfg, p),
+                                      game_config_get_player_key_left(cfg, p), game_config_get_player_key_right(cfg, p),
+                                      0, 0, 0);
+    }
+}
 static void input_poll_all_from_buf_impl(InputState* outs, int max_players, const unsigned char* buf, size_t n) {
     if (!outs || max_players <= 0 || buf == NULL || n == 0)
         return;
@@ -237,11 +248,9 @@ static void input_poll_all_from_buf_impl(InputState* outs, int max_players, cons
         }
     }
 }
-
 void input_poll_all_from_buf(InputState* outs, int max_players, const unsigned char* buf, size_t n) {
     input_poll_all_from_buf_impl(outs, max_players, buf, n);
 }
-
 void input_poll_all(InputState* outs, int max_players) {
     unsigned char buf[128];
     ssize_t nread = read(STDIN_FILENO, buf, sizeof(buf));

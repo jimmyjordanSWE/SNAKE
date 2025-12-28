@@ -1,15 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_persist_long_lines.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "persist.h"
-
-static int run_case(const char* fn) {
-    HighScore** arr = NULL;
-    int count = persist_read_scores(fn, &arr);
-    if (arr) persist_free_scores(arr, count);
-    return count;
-}
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_persist_long_lines.c\n"); return 77; }
 
 int main(void) {
     const char* fn = "test_long_lines.tmp";

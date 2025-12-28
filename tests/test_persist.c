@@ -1,21 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_persist.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "persist.h"
-
-static int run_case(const char* content, int expect_count) {
-    const char* fn = "test_scores.tmp";
-    FILE* f = fopen(fn, "w");
-    if (!f) return -1;
-    fputs(content, f);
-    fclose(f);
-    HighScore** arr = NULL;
-    int count = persist_read_scores(fn, &arr);
-    remove(fn);
-    if (arr) persist_free_scores(arr, count);
-    return count;
-}
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_persist.c\n"); return 77; }
 
 int main(void) {
     /* well-formed */

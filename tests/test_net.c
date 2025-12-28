@@ -1,18 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_net.c */
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include "net.h"
-#include "game_internal.h"
-#include <arpa/inet.h>
-#include <assert.h>
-#include <string.h>
-
-int main(void) {
-    /* too small buffer */
-    unsigned char buf[10] = {0};
-    struct GameState gs;
-    memset(&gs, 0, sizeof(gs));
-    assert(net_unpack_game_state(buf, sizeof(buf), (GameState*)&gs) == false);
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_net.c\n"); return 77; }
 
     /* header but truncated payload */
     unsigned char buf2[32] = {0};

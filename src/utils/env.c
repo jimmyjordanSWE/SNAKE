@@ -2,7 +2,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
 int env_bool(const char* name, int default_val) {
     if (name == NULL)
         return default_val;

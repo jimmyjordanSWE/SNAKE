@@ -21,7 +21,14 @@ jobs:
           bash scripts/run_static_analysis.sh
       - name: Run unit tests (basic)
         run: |
-          bash scripts/run_unit_tests.sh || true
+          make unit-tests || true
+
+      - name: Upload unit test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-tests-log
+          path: scripts/out/unit-tests.log
 
   sanitizer-smoke:
     runs-on: ubuntu-latest

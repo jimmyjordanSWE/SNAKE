@@ -1,20 +1,20 @@
 # Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
-src/core/game.c: 28m 44f 346c 350m 352f 358m 359m 360m 362f 363f 364f 381f 382f 396f 397f 398f 400f 404f
-src/core/player.c: 14c 23f
-src/net/net.c: 122m 131m 164f 168f 179f 185f 212m 225f 255m 260f 264f
-src/persist/persist.c: 39c 50f 103c 150f 440c 503f 562r 597f 940m 941m 955f 956f
-src/platform/tty.c: 89m 152c 153c 169m 190f 191f 192f 200f 216f 217f 218f 220f 361m 362m 364m 366f 367f 368f 384f 385f 386f
+src/core/game.c: 28m 44f 345c 349m 351f 357m 358m 359m 361f 362f 363f 380f 381f 395f 396f 397f 399f 403f
+src/core/player.c: 12c 22f
+src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 246m 251f 255f
+src/persist/persist.c: 39c 50f 103c 170f 459c 517f 576r 611f 955m 956m 970f 971f
+src/platform/tty.c: 88m 145c 146c 161m 180f 181f 182f 190f 205f 206f 207f 209f 349m 350m 352m 354f 355f 356f 372f 373f 374f
 src/render/camera.c: 49c 56f
 src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
 src/render/render_3d.c: 422c 465r 724f
-src/render/render_3d_sdl.c: 45c 49f 58f 88m 128m 141f 170f
+src/render/render_3d_sdl.c: 45c 49f 58f 85m 121m 132f 160f
 src/render/sprite.c: 21c 294f 302c 312f
-src/render/texture.c: 19c 29f 229f 247m 269f
-src/snakegame.c: 28m 33f 159f 361f
+src/render/texture.c: 19c 29f 228f 246m 268f
+src/snakegame.c: 28m 33f 146f 348f
 tests/test_collision.c: 25c 28c 40f 42f
 tests/test_net_integration.c: 40c 49f
 tests/test_persist_long_lines.c: 21m 32f

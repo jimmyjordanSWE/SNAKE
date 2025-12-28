@@ -85,7 +85,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     tty_context* ctx = NULL;
     int err = 0;
     int have_orig = 0;
-
     ctx = malloc(sizeof *ctx);
     if (!ctx)
         return NULL;
@@ -93,7 +92,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     ctx->tty_fd = -1;
     ctx->min_width = min_width;
     ctx->min_height = min_height;
-
     if (tty_path) {
         /* Reject paths that don't fit our buffer to avoid truncation surprises */
         size_t tp_len = strlen(tty_path);
@@ -111,7 +109,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         err = 2;
         goto out;
     }
-
     int actual_width = 0, actual_height = 0;
     if (!get_terminal_size(ctx->tty_fd, &actual_width, &actual_height)) {
         err = 3;
@@ -120,13 +117,11 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     ctx->width = actual_width;
     ctx->height = actual_height;
     ctx->size_valid = !((min_width > 0 && actual_width < min_width) || (min_height > 0 && actual_height < min_height));
-
     if (tcgetattr(ctx->tty_fd, &ctx->orig_termios) == -1) {
         err = 4;
         goto out;
     }
     have_orig = 1;
-
     struct termios raw = ctx->orig_termios;
     raw.c_iflag &= (tcflag_t)(~(BRKINT | ICRNL | INPCK | ISTRIP | IXON));
     raw.c_oflag &= (tcflag_t)(~(OPOST));
@@ -138,7 +133,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         err = 5;
         goto out;
     }
-
     size_t n_cells = (size_t)actual_width * (size_t)actual_height;
     if (n_cells == 0 || n_cells / (size_t)actual_width != (size_t)actual_height) {
         err = 6;
@@ -148,14 +142,12 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         err = 7;
         goto out;
     }
-
     ctx->front = calloc(n_cells, sizeof(struct ascii_pixel));
     ctx->back = calloc(n_cells, sizeof(struct ascii_pixel));
     if (!ctx->front || !ctx->back) {
         err = 8;
         goto out;
     }
-
     /* Cap write buffer size to protect low-memory environments */
     const size_t WRITE_BUFFER_CAP = (size_t)10 * 1024 * 1024; /* 10 MB */
     size_t proposed_write_buffer_size = n_cells * 32;
@@ -171,7 +163,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         err = 10;
         goto out;
     }
-
     struct ascii_pixel default_pixel = PIXEL_MAKE(' ', COLOR_DEFAULT_FG, COLOR_DEFAULT_BG);
     for (int i = 0; i < actual_width * actual_height; i++) {
         ctx->front[i] = default_pixel;
@@ -184,7 +175,6 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
     }
     ctx->dirty = true;
     return ctx;
-
 out:
     if (ctx) {
         free(ctx->front);
@@ -202,7 +192,6 @@ out:
     (void)err;
     return NULL;
 }
-
 void tty_close(tty_context* ctx) {
     if (!ctx)
         return;
@@ -219,7 +208,6 @@ void tty_close(tty_context* ctx) {
     close(ctx->tty_fd);
     free(ctx);
 }
-
 size_t tty_get_write_buffer_size(tty_context* ctx) {
     if (!ctx)
         return 0;

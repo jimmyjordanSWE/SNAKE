@@ -17,4 +17,4 @@ Data Ownership (struct r/w totals):
 
 Module Data Usage:
   src: ctx:r199w38, game:r185w41, g_render_3d:r157w26, player:r123w21, s:r68w65
-  tests: g:r19w6, gs:r12w7, g.players:r5w8, out2:r4w0, outs:r4w0
+  tests: g:r19w6, gs:r12w7, g.players:r5w8, outs:r10w0, out2:r4w0

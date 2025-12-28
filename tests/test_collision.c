@@ -1,21 +1,6 @@
-#include <assert.h>
+/* Legacy test moved to Unity: tests/unity/test_collision.c */
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "collision.h"
-#include "game_internal.h"
-
-int main(void) {
-    /* collision_is_wall */
-    SnakePoint p1 = { .x = -1, .y = 0 };
-    assert(collision_is_wall(p1, 10, 10));
-    SnakePoint p2 = { .x = 5, .y = 5 };
-    assert(!collision_is_wall(p2, 10, 10));
-
-    /* collision_next_head */
-    SnakePoint cur = { .x = 2, .y = 2 };
-    SnakePoint up = collision_next_head(cur, SNAKE_DIR_UP);
-    assert(up.x == 2 && up.y == 1);
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_collision.c\n"); return 77; }
 
     /* collision_is_self and detect and resolve scenario */
     struct GameState g;

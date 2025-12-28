@@ -1,30 +1,6 @@
+/* Legacy test moved to Unity: tests/unity/test_net_integration.c */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include "net.h"
-#include "game_internal.h"
-#include <unistd.h>
-#include <time.h>
-
-static void* server_thread(void* arg) {
-    int port = *(int*)arg;
-    int l = socket(AF_INET, SOCK_STREAM, 0);
-    assert(l >= 0);
-    struct sockaddr_in addr = {0};
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = htons((uint16_t)port);
-    int opt = 1; setsockopt(l, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    assert(bind(l, (struct sockaddr*)&addr, sizeof(addr)) == 0);
-    assert(listen(l, 1) == 0);
-    int c = accept(l, NULL, NULL);
-    assert(c >= 0);
+int main(void) { fprintf(stderr, "Deprecated: use tests/unity/test_net_integration.c\n"); return 77; }
     /* read length-prefixed input (client sends input) */
     uint32_t nsz = 0;
     ssize_t r = recv(c, &nsz, sizeof(nsz), MSG_WAITALL);

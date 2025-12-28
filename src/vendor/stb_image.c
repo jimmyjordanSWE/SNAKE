@@ -288,7 +288,7 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
             trns_len = len;
         } else if (strcmp(type, "IDAT") == 0) {
             /* Ignore zero-length IDAT chunks to avoid calling realloc(..., 0) which may free the
-               buffer and lead to double-free when we subsequently free `idat`. */
+                                       buffer and lead to double-free when we subsequently free `idat`. */
             if (len > 0) {
                 unsigned char* nbuf = (unsigned char*)realloc(idat, idat_len + len);
                 if (!nbuf) {
@@ -352,7 +352,6 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
         fclose(f);
         return NULL;
     }
-
     /* Sanity-check dimensions to avoid excessive allocations and integer overflow */
     if (width == 0 || height == 0) {
         free(idat);
@@ -363,7 +362,6 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
         fclose(f);
         return NULL;
     }
-
     /* Reject ridiculously large dimensions (protect against fuzzed IHDR with huge values) */
     const unsigned int MAX_DIM = 65536U;
     if (width > MAX_DIM || height > MAX_DIM) {
@@ -375,7 +373,6 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
         fclose(f);
         return NULL;
     }
-
     /* Check for multiplication overflow when computing expected decompressed size */
     size_t channels_s = channels;
     if (channels_s > 0) {
@@ -400,7 +397,6 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
             return NULL;
         }
     }
-
     size_t expected = (size_t)(1 + (size_t)width * channels) * (size_t)height;
     /* Protect against unreasonably large decompressed images from fuzzed IHDR values. */
     const size_t MAX_DECOMPRESSED_BYTES = (size_t)256 * 1024 * 1024; /* 256MB */

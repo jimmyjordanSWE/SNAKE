@@ -88,7 +88,6 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
     out->max_food = 0;
     out->max_players = 0;
     bool ok = false;
-
     const unsigned char* p = buf;
     uint32_t v;
     memcpy(&v, p, 4);
@@ -115,7 +114,6 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
     size_t expected = 24 + (size_t)out->food_count * 8 + (size_t)out->num_players * 8;
     if (buf_size < expected)
         goto out;
-
     if (out->food_count > 0) {
         if ((size_t)out->food_count > SIZE_MAX / sizeof(SnakePoint))
             goto out;
@@ -124,7 +122,6 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
             goto out;
         out->max_food = out->food_count;
     }
-
     if (out->num_players > 0) {
         if ((size_t)out->num_players > SIZE_MAX / sizeof(PlayerState))
             goto out;
@@ -140,7 +137,6 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
             out->players[i].needs_reset = false;
         }
     }
-
     for (int i = 0; i < out->food_count; i++) {
         memcpy(&v, p, 4);
         out->food[i].x = (int)ntohl(v);
@@ -157,7 +153,6 @@ bool net_unpack_game_state(const unsigned char* buf, size_t buf_size, GameState*
         out->players[i].length = (int)ntohl(v);
         p += 4;
     }
-
     ok = true;
 out:
     if (!ok) {
@@ -191,7 +186,6 @@ void net_free_unpacked_game_state(GameState* out) {
 struct NetClient {
     int fd;
 };
-
 NetClient* net_connect(const char* host, int port) {
     if (!host || port <= 0)
         return NULL;
@@ -217,14 +211,12 @@ NetClient* net_connect(const char* host, int port) {
     c->fd = fd;
     return c;
 }
-
 void net_disconnect(NetClient* client) {
     if (!client)
         return;
     close(client->fd);
     free(client);
 }
-
 bool net_send_input(NetClient* client, const InputState* input) {
     if (!client || !input)
         return false;
@@ -241,7 +233,6 @@ bool net_send_input(NetClient* client, const InputState* input) {
         return false;
     return true;
 }
-
 bool net_recv_state(NetClient* client, GameState* out_game) {
     if (!client || !out_game)
         return false;

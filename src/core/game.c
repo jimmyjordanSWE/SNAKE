@@ -119,7 +119,6 @@ int game_get_num_players(const Game* g) {
         return 0;
     return game_state_get_num_players(&g->state);
 }
-
 int game_add_player(Game* g, const PlayerCfg* cfg) {
     if (!g || !cfg)
         return -1;

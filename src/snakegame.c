@@ -47,21 +47,8 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     game_config_get_screen_size(config_in, &sw, &sh);
     game_config_set_screen_size(s->cfg, sw, sh);
     render_set_glyphs((game_config_get_render_glyphs(config_in) == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
-    input_set_key_bindings(game_config_get_key_up(config_in), game_config_get_key_down(config_in),
-                           game_config_get_key_left(config_in), game_config_get_key_right(config_in),
-                           game_config_get_key_quit(config_in), game_config_get_key_restart(config_in),
-                           game_config_get_key_pause(config_in));
-    /* Apply per-player bindings from config (players 1..max_players) */
-    int cfg_maxp = game_config_get_max_players(config_in);
-    if (cfg_maxp > SNAKE_MAX_PLAYERS)
-        cfg_maxp = SNAKE_MAX_PLAYERS;
-    for (int pi = 0; pi < cfg_maxp; ++pi) {
-        char up = game_config_get_player_key_up(config_in, pi);
-        char down = game_config_get_player_key_down(config_in, pi);
-        char left = game_config_get_player_key_left(config_in, pi);
-        char right = game_config_get_player_key_right(config_in, pi);
-        input_set_player_key_bindings(pi, up, down, left, right, game_config_get_key_quit(config_in), game_config_get_key_restart(config_in), game_config_get_key_pause(config_in));
-    }
+    /* Set input bindings from config (global + per-player). */
+    input_set_bindings_from_config(config_in);
     const int board_width = bw;
     const int board_height = bh;
     platform_winch_init();

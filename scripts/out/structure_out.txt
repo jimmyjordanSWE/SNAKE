@@ -87,10 +87,12 @@ include
      all_from_buf(*outs,max_players,*buf,n)
      from_buf(*out,*buf,n)
     set_
+     bindings_from_config(*cfg)
      key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
      player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
     shutdown(_)
    s <anon>{quit,any_key,move_up,turn_left}
+   s GameConfig
    t InputState
   net.h
    f net_
@@ -556,6 +558,7 @@ src
       buf_impl(*outs,max_players,*buf,n)
      from_buf(*out,*buf,n)
     set_
+     bindings_from_config(*cfg)
      key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
      player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
     shutdown(_)
@@ -961,6 +964,8 @@ src
 tests
  test_collision.c
   f main(_)
+ test_default_key_bindings.c
+  f main(_)
  test_env.c
   f main(_)
  test_game_multi.c
@@ -972,6 +977,8 @@ tests
  test_highscore_name.c
   f main(_)
  test_input.c
+  f main(_)
+ test_input_bindings.c
   f main(_)
  test_input_multi.c
   f main(_)

@@ -161,80 +161,14 @@ analyze:
 unit-tests:
 	@mkdir -p scripts/out; \
 	set -e; \
-	echo "Running unit tests under ASAN..."; \
-	# test_persist
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist.c src/persist/persist.c src/utils/validate.c -o test_persist.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist.c src/persist/persist.c src/utils/validate.c -o test_persist.out; \
-	./test_persist.out; \
-	# test_persist_config
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_config.c src/persist/persist.c src/utils/validate.c -o test_persist_config.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_config.c src/persist/persist.c src/utils/validate.c -o test_persist_config.out; \
-	./test_persist_config.out; \
-	# test_persist_long_lines
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_long_lines.c src/persist/persist.c src/utils/validate.c -o test_persist_long_lines.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_long_lines.c src/persist/persist.c src/utils/validate.c -o test_persist_long_lines.out; \
-	./test_persist_long_lines.out; \
-	# test_persist_truncation
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_truncation.c src/persist/persist.c src/utils/validate.c -o test_persist_truncation.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_persist_truncation.c src/persist/persist.c src/utils/validate.c -o test_persist_truncation.out; \
-	./test_persist_truncation.out; \
-	# test_texture_path
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_texture_path.c src/render/texture.c src/vendor/stb_image.c src/utils/validate.c -o test_texture_path.out -lz -lm || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_texture_path.c src/render/texture.c src/vendor/stb_image.c src/utils/validate.c -o test_texture_path.out -lz -lm; \
-	./test_texture_path.out; \
-	# test_stb_chunk_size_limit
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_stb_chunk_size_limit.c src/vendor/stb_image.c -o test_stb_chunk_size_limit.out -lz || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_stb_chunk_size_limit.c src/vendor/stb_image.c -o test_stb_chunk_size_limit.out -lz; \
-	./test_stb_chunk_size_limit.out; \
-	# test_texture_path_extra
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_texture_path_extra.c src/render/texture.c src/vendor/stb_image.c src/utils/validate.c -o test_texture_path_extra.out -lz -lm || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -D_POSIX_C_SOURCE=200809L -Iinclude -Iinclude/snake -Isrc/vendor tests/test_texture_path_extra.c src/render/texture.c src/vendor/stb_image.c src/utils/validate.c -o test_texture_path_extra.out -lz -lm; \
-	./test_texture_path_extra.out; \
-	# test_tty_path
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_path.c src/platform/tty.c -o test_tty_path.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_path.c src/platform/tty.c -o test_tty_path.out; \
-	./test_tty_path.out; \
-	# test_tty_buffer_cap
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_buffer_cap.c src/platform/tty.c -o test_tty_buffer_cap.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_buffer_cap.c src/platform/tty.c -o test_tty_buffer_cap.out; \
-	./test_tty_buffer_cap.out; \
-	# test_env
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_env.c src/utils/env.c -o test_env.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_env.c src/utils/env.c -o test_env.out; \
-	./test_env.out; \
-	# test_highscore_name
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_highscore_name.c src/render/render_input.c -o test_highscore_name.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_highscore_name.c src/render/render_input.c -o test_highscore_name.out; \
-	./test_highscore_name.out; \
-	# test_net
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net.c src/net/net.c -o test_net.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net.c src/net/net.c -o test_net.out; \
-	./test_net.out; \
-	# net integration test (requires -pthread)
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net_integration.c src/net/net.c -o test_net_integration.out -lpthread || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net_integration.c src/net/net.c -o test_net_integration.out -lpthread; \
-	./test_net_integration.out; \
-	# collision tests
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_collision.c src/core/collision.c -o test_collision.out || gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_collision.c src/core/collision.c -o test_collision.out; \
-	./test_collision.out; \
-	# test_game_oom (simulate allocation failures)
-	echo "Building test_game_oom..."; \
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_game_oom.c src/core/game.c src/core/player.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c -o test_game_oom.out || \
-    gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_game_oom.c src/core/game.c src/core/player.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c -o test_game_oom.out; \
-	./test_game_oom.out; \
-	# test_tty_open
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_open.c src/platform/tty.c -o test_tty_open.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_tty_open.c src/platform/tty.c -o test_tty_open.out; \
-	./test_tty_open.out; \
-	# test_net_unpack
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net_unpack.c src/net/net.c -o test_net_unpack.out || \
-    gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_net_unpack.c src/net/net.c -o test_net_unpack.out; \
-	./test_net_unpack.out; \
-	# test_input_multi
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_input_multi.c src/input/input.c -o test_input_multi.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake tests/test_input_multi.c src/input/input.c -o test_input_multi.out; \
-	./test_input_multi.out; \
-	# test_game_multi
-	clang -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_game_multi.c src/core/game.c src/core/player.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c -o test_game_multi.out || \
-	gcc -std=c99 -g -O0 -fsanitize=address,undefined -Iinclude -Iinclude/snake -Isrc/core tests/test_game_multi.c src/core/game.c src/core/player.c src/core/collision.c src/utils/rng.c src/utils/direction.c src/persist/persist.c -o test_game_multi.out; \
-	./test_game_multi.out; \
+	echo "Building unified test runner (ASAN)..."; \
+	# Build a single unified test binary with all Unity tests and required code. Link with third-party libs as needed.
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Isrc/vendor -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl || \
+	($(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Isrc/vendor -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl); \
+	# Run the unified test binary and capture logs
+	./test_all.out 2>&1 | tee scripts/out/unit-tests.log; \
 	echo "unit-tests completed"; \
-	echo "OK"; \
-	exit 0;
+	exit $${PIPESTATUS[0]};
 
 test: unit-tests
 	@echo "All unit tests completed";

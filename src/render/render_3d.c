@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define MINIMAP_TARGET_OCCUPANCY_PERCENT 50
+#define MINIMAP_TARGET_OCCUPANCY_PERCENT 40
 #define MINIMAP_MIN_TARGET_SIZE 160
 #define MINIMAP_MIN_CELL_PIXELS 3
 #define MINIMAP_PADDING 8
@@ -111,7 +111,7 @@ static void render_3d_draw_minimap(Render3DContext* r, float interp_t) {
     int map_px_h = cell_px * map_h;
     int padding = MINIMAP_PADDING;
     int x0 = render_3d_sdl_get_width(r->display) - padding - map_px_w;
-    int y0 = render_3d_sdl_get_height(r->display) - padding - map_px_h;
+    int y0 = padding; /* Top instead of bottom */
     if (x0 < padding)
         x0 = padding;
     if (y0 < padding)
@@ -696,6 +696,51 @@ void render_3d_draw(const GameState* game_state,
     t_after_walls = debug_timing ? render_3d_now() : 0.0;
     if (g_render_3d.sprite_renderer) {
         sprite_clear(g_render_3d.sprite_renderer);
+
+        /* Render shadows first (they'll be sorted by depth like regular sprites) */
+        uint32_t shadow_col = render_3d_sdl_color(0, 0, 0, 80); /* Semi-transparent black */
+
+        /* Food shadows */
+        for (int i = 0; i < game_state->food_count; i++) {
+            sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
+                             (float)game_state->food[i].y + 0.5f, 0.15f, 0.0f, true, -1, 0, shadow_col);
+        }
+
+        /* Player head shadows */
+        for (int p = 0; p < game_state->num_players; p++) {
+            if (p == g_render_3d.config.active_player)
+                continue;
+            const PlayerState* player = &game_state->players[p];
+            if (!player->active || player->length == 0)
+                continue;
+            float head_x =
+                player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
+            float head_y =
+                player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
+            sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 0.6f, 0.0f, true, -1, 0, shadow_col);
+        }
+
+        /* Snake body shadows */
+        for (int p = 0; p < game_state->num_players; p++) {
+            const PlayerState* player = &game_state->players[p];
+            if (!player->active || player->length <= 1)
+                continue;
+            for (int bi = 1; bi < player->length; bi++) {
+                float seg_x = (float)player->body[bi].x + 0.5f;
+                float seg_y = (float)player->body[bi].y + 0.5f;
+                if (player->prev_segment_x && player->prev_segment_y) {
+                    seg_x = player->prev_segment_x[bi] +
+                            (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * frame_interp_t;
+                    seg_y = player->prev_segment_y[bi] +
+                            (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
+                }
+                float tail_h = g_render_3d.config.tail_height_scale;
+                float shadow_h = tail_h * 0.6f; /* Shadows slightly smaller */
+                sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, shadow_h, 0.0f, true, -1, 0, shadow_col);
+            }
+        }
+
+        /* Now render actual sprites on top of shadows */
         for (int i = 0; i < game_state->food_count; i++) {
             uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
             sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,

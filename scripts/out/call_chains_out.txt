@@ -216,16 +216,17 @@ Tree(main):
         sprite_draw
           clamp_u8
           now_ns
+          render_3d_sdl_blend_pixel (see above)
           render_3d_sdl_draw_column
           render_3d_sdl_get_height
           render_3d_sdl_get_width
-          render_3d_sdl_set_pixel
         sprite_get_count
         sprite_project_all
           camera_get_interpolated_angle (see above)
           camera_get_interpolated_position
           now_ns
           projection_get_fov_radians
+          projection_get_screen_height
           projection_get_screen_width
           projection_project_wall
         sprite_sort_by_depth

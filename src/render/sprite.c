@@ -220,7 +220,9 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         WallProjection wp;
         /* Use direct wall projection with perp (already in camera axis) */
         projection_project_wall(sr->proj, perp, &wp);
-        int screen_h = (int)((float)wp.wall_height * s->world_height + 0.5f);
+        /* Use full unclamped wall_height for proper sprite scaling, not the clamped draw coordinates */
+        int full_screen_h = wp.wall_height;
+        int screen_h = (int)((float)full_screen_h * s->world_height + 0.5f);
         if (screen_h <= 0) {
             s->visible = false;
             continue;
@@ -229,15 +231,22 @@ void sprite_project_all(SpriteRenderer3D* sr) {
         if (s->is_rect) {
             screen_w = (int)((float)screen_h * 1.5f + 0.5f);
         }
-        /* compute normalized screen position from right/forward ratio without atan2 */
-        float inv = fast_inv_sqrt(dist2);
-        float nx = (right * inv) / sin_half; /* in [-1,1] roughly */
-        if (nx < -1.0f)
-            nx = -1.0f;
-        if (nx > 1.0f)
-            nx = 1.0f;
-        int center_x = (int)((nx + 1.0f) * 0.5f * (float)projection_get_screen_width(sr->proj) + 0.5f);
-        int top = wp.draw_end - (int)((float)screen_h * (1.0f - s->pivot));
+        /* Use tangent-based projection matching camera ray calculation
+         * Screen position: cameraX = (right/forward) / tan(half_fov)
+         * This maintains constant screen position as you approach objects */
+        float tan_half = tanf(half_fov);
+        float cameraX = (right / forward) / tan_half;
+        /* Clamp to screen bounds */
+        if (cameraX < -1.0f)
+            cameraX = -1.0f;
+        if (cameraX > 1.0f)
+            cameraX = 1.0f;
+        int center_x = (int)((cameraX + 1.0f) * 0.5f * (float)projection_get_screen_width(sr->proj) + 0.5f);
+        /* Calculate vertical position from horizon using unclamped height
+         * Sprite center is at horizon, then offset by pivot */
+        int horizon = projection_get_screen_height(sr->proj) / 2;
+        int sprite_center_y = horizon;
+        int top = sprite_center_y - (int)((float)screen_h * s->pivot);
         s->perp_distance = perp;
         s->screen_x = center_x;
         s->screen_w = screen_w;
@@ -379,7 +388,7 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                 for (int yy = ry0; yy <= ry1; ++yy) {
                     for (int xx = rx0; xx <= rx1; ++xx) {
                         if (s->perp_distance < column_depths[xx]) {
-                            render_3d_sdl_set_pixel(ctx, xx, yy, col);
+                            render_3d_sdl_blend_pixel(ctx, xx, yy, col);
                         }
                     }
                 }
@@ -448,9 +457,9 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                                     uint8_t rb = clamp_u8((float)bb * intensity);
                                     uint32_t shaded_col =
                                         ((uint32_t)a << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
-                                    render_3d_sdl_set_pixel(ctx, xx, yy, shaded_col);
+                                    render_3d_sdl_blend_pixel(ctx, xx, yy, shaded_col);
                                 } else {
-                                    render_3d_sdl_set_pixel(ctx, xx, yy, col);
+                                    render_3d_sdl_blend_pixel(ctx, xx, yy, col);
                                 }
                             }
                         }

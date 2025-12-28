@@ -570,10 +570,6 @@ void render_3d_draw(const GameState* game_state,
     t_before_walls = debug_timing ? render_3d_now() : 0.0;
     if (has_floor_tex) {
         float wall_scale = projection_get_wall_scale(g_render_3d.projector);
-        float half_fov = camera_get_fov_radians(g_render_3d.camera) * 0.5f;
-        float plane_len = tanf(half_fov);
-        float plane_x = -sin_cam * plane_len;
-        float plane_y = cos_cam * plane_len;
         const uint32_t* floor_pix = texture_get_pixels(g_render_3d.floor_texture);
         int floor_w = texture_get_img_w(g_render_3d.floor_texture);
         int floor_h_tex = texture_get_img_h(g_render_3d.floor_texture);
@@ -589,20 +585,24 @@ void render_3d_draw(const GameState* game_state,
             float p = (float)(y - horizon);
             if (p < 1.0f)
                 p = 1.0f;
-            /* Match wall projection: wall_height = screen_h * wall_scale / (distance + 0.5)
-             * Rearranging: distance = (screen_h * wall_scale / wall_height) - 0.5
-             * For floor at horizon+p pixels: wall_height = screen_h / ((distance+0.5) / (screen_h/p))
-             * Therefore: pos_z should account for the +0.5 offset in wall projection */
+            /* Floor calculation: wall_height = screen_h * wall_scale / distance
+             * Therefore: distance = screen_h * wall_scale / wall_height
+             * Camera height is 0.5 world units, so pos_z = 0.5 * screen_h * wall_scale */
             float pos_z = 0.5f * (float)screen_h * wall_scale;
-            float row_distance = pos_z / p - 0.5f;
-
-            float floor_step_x = row_distance * (2.0f * plane_x) / (float)screen_w;
-            float floor_step_y = row_distance * (2.0f * plane_y) / (float)screen_w;
-            float floor_x = interp_cam_x + row_distance * (cos_cam - plane_x);
-            float floor_y = interp_cam_y + row_distance * (sin_cam - plane_y);
+            float row_distance_center = pos_z / p;
 
             uint32_t* row_pix = &pix[y * screen_w];
             for (int x = 0; x < screen_w; x++) {
+                /* Use per-column angle to compute correct floor position */
+                float cos_a = cos_cam * g_render_3d.cos_offsets[x] - sin_cam * g_render_3d.sin_offsets[x];
+                float sin_a = sin_cam * g_render_3d.cos_offsets[x] + cos_cam * g_render_3d.sin_offsets[x];
+                /* Correct for fisheye: actual distance = perpendicular_distance / cos(angle_offset) */
+                float cos_angle_diff = g_render_3d.cos_offsets[x];
+                float actual_distance =
+                    (cos_angle_diff > 0.01f) ? row_distance_center / cos_angle_diff : row_distance_center;
+                float floor_x = interp_cam_x + cos_a * actual_distance;
+                float floor_y = interp_cam_y + sin_a * actual_distance;
+
                 /* If we have a floor texture, sample it even when the computed world
                  * coordinates fall just outside the map bounds. This avoids a 1-pixel
                  * color border at the base of walls caused by strict bounds checking.
@@ -625,8 +625,6 @@ void render_3d_draw(const GameState* game_state,
                 } else {
                     row_pix[x] = floor_color;
                 }
-                floor_x += floor_step_x;
-                floor_y += floor_step_y;
             }
         }
     } else {
@@ -640,29 +638,28 @@ void render_3d_draw(const GameState* game_state,
 
     /* Wall pass (Column-major) */
     for (int x = 0; x < screen_w; x++) {
-        float cos_a = cos_cam * g_render_3d.cos_offsets[x] - sin_cam * g_render_3d.sin_offsets[x];
-        float sin_a = sin_cam * g_render_3d.cos_offsets[x] + cos_cam * g_render_3d.sin_offsets[x];
         float ray_angle = interp_cam_angle + s_angle_offsets[x];
         RayHit hit;
-        float eps_fwd = 0.0002f;
-        float eps_perp = 0.0002f;
-        float origin_x = interp_cam_x + cos_a * eps_fwd - sin_a * eps_perp;
-        float origin_y = interp_cam_y + sin_a * eps_fwd + cos_a * eps_perp;
-        if (raycast_cast_ray(g_render_3d.raycaster, origin_x, origin_y, ray_angle, &hit)) {
+        if (raycast_cast_ray(g_render_3d.raycaster, interp_cam_x, interp_cam_y, ray_angle, &hit)) {
             WallProjection proj;
             projection_project_wall_perp(g_render_3d.projector, hit.distance, ray_angle, interp_cam_angle, &proj);
             float cos_angle_diff = g_render_3d.cos_offsets[x];
             float pd = hit.distance * cos_angle_diff;
-            if (pd <= 0.1f)
-                pd = 0.1f;
+            if (pd <= 0.001f)
+                pd = 0.001f;
             if (g_render_3d.column_depths)
                 g_render_3d.column_depths[x] = pd;
             float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * g_render_3d.config.wall_texture_scale;
-            int wall_h = proj.draw_end - proj.draw_start + 1;
-            if (wall_h <= 0)
-                wall_h = 1;
-            float tex_v_coord = 0.0f;
-            float tex_v_coord_step = (1.0f / (float)wall_h) * g_render_3d.config.wall_texture_scale;
+            /* Use unclamped wall_height for texture mapping, not the clamped screen coordinates.
+             * This prevents texture stretching when walls extend beyond screen bounds. */
+            int full_wall_h = proj.wall_height;
+            if (full_wall_h <= 0)
+                full_wall_h = 1;
+            float tex_v_coord_step = (1.0f / (float)full_wall_h) * g_render_3d.config.wall_texture_scale;
+
+            /* Calculate starting texture coordinate based on how much of the wall is clipped at top */
+            int unclamped_start = horizon - (full_wall_h / 2);
+            float tex_v_start = (float)(proj.draw_start - unclamped_start) * tex_v_coord_step;
 
             const uint32_t* wall_pix = texture_get_pixels(g_render_3d.wall_texture);
             int wall_w = texture_get_img_w(g_render_3d.wall_texture);
@@ -672,7 +669,7 @@ void render_3d_draw(const GameState* game_state,
                 int tx = (int)(tex_coord * (float)wall_w) % wall_w;
                 if (tx < 0)
                     tx += wall_w;
-                float ty_f = 0.0f;
+                float ty_f = tex_v_start * (float)wall_h_tex;
                 float ty_step = tex_v_coord_step * (float)wall_h_tex;
                 for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
                     int ty = (int)ty_f % wall_h_tex;
@@ -683,6 +680,7 @@ void render_3d_draw(const GameState* game_state,
                     ty_f += ty_step;
                 }
             } else {
+                float tex_v_coord = tex_v_start;
                 for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
                     uint32_t col = texture_sample(g_render_3d.wall_texture, tex_coord, tex_v_coord, !fast_wall_tex);
                     if (pix && yy >= 0 && yy < screen_h)

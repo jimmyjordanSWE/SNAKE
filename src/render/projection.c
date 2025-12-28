@@ -30,12 +30,11 @@ void projection_init(Projection3D* proj, int screen_width, int screen_height, fl
 void projection_project_wall(const Projection3D* proj, float distance, WallProjection* result_out) {
     if (!proj || !result_out)
         return;
-    if (distance <= 0.1f)
-        distance = 0.1f;
-    float wall_height = (float)proj->screen_height / (distance + 0.5f);
+    if (distance <= 0.001f)
+        distance = 0.001f;
+    float wall_height = (float)proj->screen_height / distance;
     wall_height *= (proj->wall_scale > 0.0f ? proj->wall_scale : 1.5f);
-    if (wall_height > (float)proj->screen_height)
-        wall_height = (float)proj->screen_height;
+    /* Allow walls to be larger than screen height for proper texture mapping */
     result_out->wall_height = (int)wall_height;
     int center = proj->horizon_y;
     /* Ensure draw_start/draw_end define an inclusive pixel range of length wall_height */

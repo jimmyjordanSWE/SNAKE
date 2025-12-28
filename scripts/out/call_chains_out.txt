@@ -175,7 +175,6 @@ Tree(main):
       platform_sleep_ms
       platform_was_resized
       render_3d_draw
-        camera_get_fov_radians
         camera_get_interpolated_angle (see above)
         camera_get_interpolated_position
         camera_get_interpolation_fraction

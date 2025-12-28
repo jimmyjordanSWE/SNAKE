@@ -10,7 +10,7 @@ src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 468c 518r 519r 788f 792f 796f
+src/render/render_3d.c: 472c 522r 523r 792f 796f 800f
 src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 331m 336f
 src/render/sprite.c: 25c 386f 394c 404f
 src/render/texture.c: 26c 39m 54f 253f 271m 295f

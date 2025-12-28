@@ -4,8 +4,8 @@ SHELL := /bin/bash
 # Quiet, readable output by default.
 MAKEFLAGS += --no-print-directory
 # Use all available CPU cores for parallel builds by default (top-level only).
+NPROC ?= $(shell nproc)
 ifeq ($(MAKELEVEL),0)
-NPROC := $(shell nproc)
 MAKEFLAGS += -j$(NPROC)
 endif
 
@@ -44,7 +44,7 @@ LDFLAGS_BASE ?=
 LDLIBS ?= $(shell pkg-config --libs sdl2) -lm -lz -ldl
 
 DEBUG_FLAGS ?= -O0 -g3
-RELEASE_FLAGS ?= -O3 -DNDEBUG -march=native -flto -fdata-sections -ffunction-sections -fno-plt
+RELEASE_FLAGS ?= -O3 -DNDEBUG -march=native -flto=$(NPROC) -fdata-sections -ffunction-sections -fno-plt
 ASAN_FLAGS ?= -fsanitize=address -fno-omit-frame-pointer
 
 VALGRIND ?= valgrind
@@ -66,7 +66,7 @@ else ifeq ($(CONFIG),release)
 BUILD_DIR := $(BUILD_ROOT)/release
 CPPFLAGS := $(CPPFLAGS_BASE)
 	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(RELEASE_FLAGS)
-LDFLAGS := $(LDFLAGS_BASE) -flto -Wl,--gc-sections
+LDFLAGS := $(LDFLAGS_BASE) -flto=$(NPROC) -Wl,--gc-sections
 else ifeq ($(CONFIG),valgrind)
 BUILD_DIR := $(BUILD_ROOT)/valgrind
 CPPFLAGS := $(CPPFLAGS_BASE)

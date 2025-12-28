@@ -1,7 +1,7 @@
 fuzz/fuzz_persist.c: L18r?(remove)
 fuzz/fuzz_stb_image.c: L27r?(fwrite)
 src/platform/tty.c: L505r?(on_resize_cb) L509r?(on_size_invalid_cb)
-src/render/render_3d.c: L89r?(clock_gettime) L518n?(g_render_3d.cos_offsets) L519n?(g_render_3d.sin_offsets) L680r?(sprite_add_color) L694r?(sprite_add_color) L712r?(sprite_add_color)
+src/render/render_3d.c: L93r?(clock_gettime) L522n?(g_render_3d.cos_offsets) L523n?(g_render_3d.sin_offsets) L684r?(sprite_add_color) L698r?(sprite_add_color) L716r?(sprite_add_color)
 src/render/render_3d_sdl.c: L17r?(fn) L25r?(fn) L78r?(LSAN_DISABLE) L119r?(SDL_GetRendererInfo) L162r?(LSAN_ENABLE) L322r?(SDL_ConvertPixels) L325r?(SDL_UnlockTexture) L333r?(SDL_ConvertPixels)
 src/render/sprite.c: L122r?(clock_gettime)
 src/tools/render_bench.c: L36r?(clock_gettime) L88r?(clock_gettime)

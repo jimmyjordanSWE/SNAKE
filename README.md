@@ -62,7 +62,7 @@ Edit `snake_cfg.txt` to customize:
 | `enable_external_3d_view` | Launch SDL window | true |
 | `wall_texture`, `floor_texture` | Image paths | assets/*.png |
 | `wall_height_scale`, `tail_height_scale` | 3D scaling | 1.5, 0.5 |
-| `key_up/down/left/right/quit/restart/pause` | Key bindings | w,s,a,d,q,r,p |
+| `p{N}_left/p{N}_right/quit/restart/pause` | Key bindings | p1 uses Arrow keys by default; p1_left..p4_right override, ESC, r, p |
 
 ## Controls
 

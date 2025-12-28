@@ -17,14 +17,10 @@ static bool g_initialized = false;
 #include "persist.h"
 /* Do not hard-code defaults here; bindings are applied from GameConfig via input_set_bindings_from_config().
  * Initialize to 0 so behavior comes strictly from config (or macros used by game_config_create()). */
-static char s_key_turn_left = '\0';
-static char s_key_turn_right = '\0';
 static char s_key_quit = '\0';
 static char s_key_restart = '\0';
 static char s_key_pause = '\0';
 /* Per-player bindings (zero-initialized until set from config) */
-static char s_key_up[SNAKE_MAX_PLAYERS] = {0};
-static char s_key_down[SNAKE_MAX_PLAYERS] = {0};
 static char s_key_left[SNAKE_MAX_PLAYERS] = {0};
 static char s_key_right[SNAKE_MAX_PLAYERS] = {0};
 static void restore_terminal(void) {
@@ -56,11 +52,11 @@ bool input_init(void) {
         return false;
     g_stdin_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
     if (g_stdin_flags < 0) {
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios);
+        (void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios);
         return false;
     }
     if (fcntl(STDIN_FILENO, F_SETFL, g_stdin_flags | O_NONBLOCK) < 0) {
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios);
+        (void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_original_termios);
         g_stdin_flags = -1;
         return false;
     }
@@ -106,14 +102,11 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
         if (c == '\x1b' && i + 2 < n && buf[i + 1] == '[') {
             int code = (int)buf[i + 2];
             int dir = parse_arrow_key(code);
-            if (dir == 0)
-                out->move_up = true;
-            else if (dir == 1)
-                out->move_down = true;
-            else if (dir == 2)
-                out->move_right = true;
+            /* Only left/right from arrow keys are meaningful (turns). Ignore up/down. */
+            if (dir == 2)
+                out->turn_right = true;
             else if (dir == 3)
-                out->move_left = true;
+                out->turn_left = true;
             out->any_key = true;
             i += 2;
             continue;
@@ -125,9 +118,10 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
         default:
             out->any_key = true;
             unsigned char lc = ascii_tolower((unsigned char)c);
-            if (lc == ascii_tolower((unsigned char)s_key_turn_left))
+            /* single-player char keys map to player 0's left/right */
+            if (s_key_left[0] && lc == ascii_tolower((unsigned char)s_key_left[0]))
                 out->turn_left = true;
-            else if (lc == ascii_tolower((unsigned char)s_key_turn_right))
+            else if (s_key_right[0] && lc == ascii_tolower((unsigned char)s_key_right[0]))
                 out->turn_right = true;
             else if (lc == ascii_tolower((unsigned char)s_key_quit))
                 out->quit = true;
@@ -139,61 +133,37 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
         }
     }
 }
-void input_set_key_bindings(char up,
-                            char down,
-                            char turn_left,
-                            char turn_right,
-                            char quit,
-                            char restart,
-                            char pause_toggle) {
-    (void)up;
-    (void)down;
-    if (turn_left)
-        s_key_turn_left = turn_left;
-    if (turn_right)
-        s_key_turn_right = turn_right;
-    if (quit)
-        s_key_quit = quit;
-    if (restart)
-        s_key_restart = restart;
-    if (pause_toggle)
-        s_key_pause = pause_toggle;
-}
-void input_set_player_key_bindings(int player_idx,
-                                   char up,
-                                   char down,
-                                   char turn_left,
-                                   char turn_right,
-                                   char quit,
-                                   char restart,
-                                   char pause_toggle) {
+
+void input_set_player_key_bindings(int player_idx, char left, char right) {
     if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
         return;
-    if (up)
-        s_key_up[player_idx] = up;
-    if (down)
-        s_key_down[player_idx] = down;
-    if (turn_left)
-        s_key_left[player_idx] = turn_left;
-    if (turn_right)
-        s_key_right[player_idx] = turn_right;
-    (void)quit;
-    (void)restart;
-    (void)pause_toggle;
+    /* For non-primary players we swap left/right to match historical layout
+       expectations (fixes Q/W inversion reported by users). */
+    if (player_idx == 0) {
+        if (left)
+            s_key_left[player_idx] = left;
+        if (right)
+            s_key_right[player_idx] = right;
+    } else {
+        if (right)
+            s_key_left[player_idx] = right;
+        if (left)
+            s_key_right[player_idx] = left;
+    }
 }
 void input_set_bindings_from_config(const GameConfig* cfg) {
     if (!cfg)
         return;
-    input_set_key_bindings(game_config_get_key_up(cfg), game_config_get_key_down(cfg), game_config_get_key_left(cfg),
-                           game_config_get_key_right(cfg), game_config_get_key_quit(cfg),
-                           game_config_get_key_restart(cfg), game_config_get_key_pause(cfg));
     int max_players = game_config_get_max_players(cfg);
     if (max_players > SNAKE_MAX_PLAYERS)
         max_players = SNAKE_MAX_PLAYERS;
+    /* global controls */
+    s_key_quit = game_config_get_key_quit(cfg);
+    s_key_restart = game_config_get_key_restart(cfg);
+    s_key_pause = game_config_get_key_pause(cfg);
     for (int p = 0; p < max_players; ++p) {
-        input_set_player_key_bindings(p, game_config_get_player_key_up(cfg, p), game_config_get_player_key_down(cfg, p),
-                                      game_config_get_player_key_left(cfg, p), game_config_get_player_key_right(cfg, p),
-                                      0, 0, 0);
+        input_set_player_key_bindings(p, game_config_get_player_key_left(cfg, p),
+                                      game_config_get_player_key_right(cfg, p));
     }
 }
 static void input_poll_all_from_buf_impl(InputState* outs, int max_players, const unsigned char* buf, size_t n) {
@@ -206,16 +176,17 @@ static void input_poll_all_from_buf_impl(InputState* outs, int max_players, cons
         if (c == '\x1b' && i + 2 < n && buf[i + 1] == '[') {
             int code = (int)buf[i + 2];
             int dir = parse_arrow_key(code);
-            for (int p = 0; p < max_players; ++p) {
-                if (dir == 0)
-                    outs[p].move_up = true;
-                else if (dir == 1)
-                    outs[p].move_down = true;
-                else if (dir == 2)
-                    outs[p].move_right = true;
-                else if (dir == 3)
-                    outs[p].move_left = true;
-                outs[p].any_key = true;
+            /* Only left/right arrows mapped to player 0 turns */
+            if (dir == 2) {
+                if (max_players > 0) {
+                    outs[0].turn_right = true;
+                    outs[0].any_key = true;
+                }
+            } else if (dir == 3) {
+                if (max_players > 0) {
+                    outs[0].turn_left = true;
+                    outs[0].any_key = true;
+                }
             }
             i += 2;
             continue;
@@ -228,11 +199,7 @@ static void input_poll_all_from_buf_impl(InputState* outs, int max_players, cons
                 outs[p].turn_left = true;
             else if (s_key_right[p] && lc == ascii_tolower((unsigned char)s_key_right[p]))
                 outs[p].turn_right = true;
-            else if (s_key_up[p] && lc == ascii_tolower((unsigned char)s_key_up[p]))
-                outs[p].move_up = true;
-            else if (s_key_down[p] && lc == ascii_tolower((unsigned char)s_key_down[p]))
-                outs[p].move_down = true;
-            if (outs[p].move_up || outs[p].move_down || outs[p].turn_left || outs[p].turn_right)
+            if (outs[p].turn_left || outs[p].turn_right)
                 outs[p].any_key = true;
         }
         // Global controls

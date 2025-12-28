@@ -512,7 +512,7 @@ void game_tick(GameState* game) {
             if (game->players[i].active)
                 active_count++;
         /* Multiplayer: end when <= 1 active players remain (last man standing).
-           Single-player: end when no active players remain. */
+                   Single-player: end when no active players remain. */
         if (game->num_players > 1) {
             if (active_count <= 1)
                 game->status = GAME_STATUS_GAME_OVER;

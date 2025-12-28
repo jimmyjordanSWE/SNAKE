@@ -566,7 +566,6 @@ void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_
     }
     display_present(g_display);
 }
-
 void render_draw_winner_overlay(const GameState* game, int winner, int score) {
     if (!g_display)
         return;

@@ -97,7 +97,6 @@ void display_force_redraw(DisplayContext* ctx) {
         return;
     tty_force_redraw(ctx->tty);
 }
-
 struct ascii_pixel* display_get_back_buffer(DisplayContext* ctx) {
     if (!ctx || !ctx->tty)
         return NULL;

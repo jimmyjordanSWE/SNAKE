@@ -4,19 +4,19 @@
 void console_info(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    (void)vfprintf(stderr, fmt, ap);
     va_end(ap);
 }
 void console_error(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    (void)vfprintf(stderr, fmt, ap);
     va_end(ap);
 }
 void console_warn(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    (void)vfprintf(stderr, fmt, ap);
     va_end(ap);
 }
 void console_box_too_small_for_game(int term_w, int term_h, int min_w, int min_h) {

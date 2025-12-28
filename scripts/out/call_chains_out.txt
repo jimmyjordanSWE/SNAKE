@@ -1,29 +1,30 @@
 Flow:
- camera->test_game_oom
- collision->test_game_oom
- display_3d->test_game_oom
- display_tty->test_game_oom,tty
+ camera->oom_overrides
+ collision->oom_overrides
+ display_3d->oom_overrides
+ display_tty->oom_overrides,tty
  fuzz_stb_image->net,persist
- game->collision,direction,persist,player,rng,test_game_oom
+ game->collision,direction,oom_overrides,persist,player,rng
  input->persist
- net->test_game_oom
- persist->test_game_oom
- player->test_game_oom
- projection->test_game_oom
- raycast->test_game_oom
+ net->oom_overrides
+ persist->oom_overrides
+ player->oom_overrides
+ projection->oom_overrides
+ raycast->oom_overrides
  render->display_tty,persist,platform,render_3d,render_input
- render_3d->camera,env,projection,raycast,render_3d_sdl,sprite,test_game_oom,texture
- render_3d_sdl->test_game_oom
- snakegame->console,game,input,persist,platform,render,render_3d,test_game_oom,tty
- sprite->camera,projection,render_3d_sdl,test_game_oom
+ render_3d->camera,env,oom_overrides,projection,raycast,render_3d_sdl,sprite,texture
+ render_3d_sdl->oom_overrides
+ snakegame->console,game,input,oom_overrides,persist,platform,render,render_3d,tty
+ sprite->camera,oom_overrides,projection,render_3d_sdl
  test_game_colors->game,persist
  test_game_reset_lives->game,persist
- test_persist_long_lines->persist,test_game_oom
+ test_persist_long_lines->oom_overrides,persist
  test_render_lives_ui->display_tty,game,persist,render
- test_render_minimap->render_3d,render_3d_sdl,test_game_oom
+ test_render_minimap->oom_overrides,render_3d,render_3d_sdl
  test_runner->console,persist,snakegame
- texture->test_game_oom
- tty->test_game_oom
+ test_tty_resize_overflow->tty
+ texture->oom_overrides
+ tty->oom_overrides
 
 Tree(main):
   main

@@ -9,6 +9,8 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+/* Cap write buffer allocations to a reasonable value (10 MiB) */
+#define TTY_WRITE_BUFFER_CAP ((size_t)10 * 1024 * 1024)
 static volatile sig_atomic_t winch_received = 0;
 static void sigwinch_handler(int sig) {
     (void)sig;
@@ -149,14 +151,13 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         goto out;
     }
     /* Cap write buffer size to protect low-memory environments */
-    const size_t WRITE_BUFFER_CAP = (size_t)10 * 1024 * 1024; /* 10 MB */
-    size_t proposed_write_buffer_size = n_cells * 32;
-    if (proposed_write_buffer_size == 0) {
+    if (n_cells > SIZE_MAX / 32) { /* overflow check for write buffer multiplier */
         err = 9;
         goto out;
     }
-    if (proposed_write_buffer_size > WRITE_BUFFER_CAP)
-        proposed_write_buffer_size = WRITE_BUFFER_CAP;
+    size_t proposed_write_buffer_size = n_cells * 32;
+    if (proposed_write_buffer_size > TTY_WRITE_BUFFER_CAP)
+        proposed_write_buffer_size = TTY_WRITE_BUFFER_CAP;
     ctx->write_buffer_size = proposed_write_buffer_size;
     ctx->write_buffer = malloc(ctx->write_buffer_size);
     if (!ctx->write_buffer) {
@@ -168,8 +169,14 @@ tty_context* tty_open(const char* tty_path, int min_width, int min_height) {
         ctx->front[i] = default_pixel;
         ctx->back[i] = default_pixel;
     }
-    (void)write(ctx->tty_fd, "\x1b[2J", sizeof("\x1b[2J") - 1);
-    (void)write(ctx->tty_fd, "\x1b[?25l", sizeof("\x1b[?25l") - 1);
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[2J", sizeof("\x1b[2J") - 1);
+        (void)r;
+    }
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[?25l", sizeof("\x1b[?25l") - 1);
+        (void)r;
+    }
     if (signal(SIGWINCH, sigwinch_handler) == SIG_ERR) {
         perror("signal(SIGWINCH) in tty");
     }
@@ -195,10 +202,22 @@ out:
 void tty_close(tty_context* ctx) {
     if (!ctx)
         return;
-    (void)write(ctx->tty_fd, "\x1b[0m", sizeof("\x1b[0m") - 1);
-    (void)write(ctx->tty_fd, "\x1b[?25h", sizeof("\x1b[?25h") - 1);
-    (void)write(ctx->tty_fd, "\x1b[2J", sizeof("\x1b[2J") - 1);
-    (void)write(ctx->tty_fd, "\x1b[H", sizeof("\x1b[H") - 1);
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[0m", sizeof("\x1b[0m") - 1);
+        (void)r;
+    }
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[?25h", sizeof("\x1b[?25h") - 1);
+        (void)r;
+    }
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[2J", sizeof("\x1b[2J") - 1);
+        (void)r;
+    }
+    {
+        ssize_t r = write(ctx->tty_fd, "\x1b[H", sizeof("\x1b[H") - 1);
+        (void)r;
+    }
     if (tcsetattr(ctx->tty_fd, TCSADRAIN, &ctx->orig_termios) == -1) {
         perror("tty_close: tcsetattr");
     }
@@ -334,6 +353,38 @@ void tty_get_size(const tty_context* ctx, int* width, int* height) {
     if (height)
         *height = ctx->height;
 }
+bool tty_calc_resize_requirements(long new_width,
+                                  long new_height,
+                                  size_t* out_cells,
+                                  size_t* out_pixel_bytes,
+                                  size_t* out_write_buffer_size) {
+    if (new_width <= 0 || new_height <= 0)
+        return false;
+    size_t w = (size_t)new_width;
+    size_t h = (size_t)new_height;
+    /* check overflow for w * h */
+    if (h > SIZE_MAX / w)
+        return false;
+    size_t cells = w * h;
+    if (cells == 0)
+        return false;
+    if (cells > SIZE_MAX / sizeof(struct ascii_pixel))
+        return false;
+    size_t pixel_bytes = cells * sizeof(struct ascii_pixel);
+    /* check write buffer size overflow and cap */
+    if (cells > SIZE_MAX / 32)
+        return false;
+    size_t write_sz = cells * 32;
+    if (write_sz > TTY_WRITE_BUFFER_CAP)
+        write_sz = TTY_WRITE_BUFFER_CAP;
+    if (out_cells)
+        *out_cells = cells;
+    if (out_pixel_bytes)
+        *out_pixel_bytes = pixel_bytes;
+    if (out_write_buffer_size)
+        *out_write_buffer_size = write_sz;
+    return true;
+}
 bool tty_check_resize(tty_context* ctx) {
     if (!ctx || !winch_received)
         return false;
@@ -345,10 +396,12 @@ bool tty_check_resize(tty_context* ctx) {
         return false;
     int old_width = ctx->width;
     int old_height = ctx->height;
-    size_t new_size = (size_t)new_width * (size_t)new_height * sizeof(struct ascii_pixel);
-    struct ascii_pixel* new_front = malloc(new_size);
-    struct ascii_pixel* new_back = malloc(new_size);
-    size_t new_write_buffer_size = (size_t)new_width * (size_t)new_height * 32;
+    size_t new_cells = 0, new_pixel_bytes = 0, new_write_buffer_size = 0;
+    if (!tty_calc_resize_requirements((long)new_width, (long)new_height, &new_cells, &new_pixel_bytes,
+                                      &new_write_buffer_size))
+        return false;
+    struct ascii_pixel* new_front = calloc(new_cells, sizeof(struct ascii_pixel));
+    struct ascii_pixel* new_back = calloc(new_cells, sizeof(struct ascii_pixel));
     char* new_write_buffer = malloc(new_write_buffer_size);
     if (!new_front || !new_back || !new_write_buffer) {
         free(new_front);
@@ -357,7 +410,7 @@ bool tty_check_resize(tty_context* ctx) {
         return false;
     }
     struct ascii_pixel default_pixel = PIXEL_MAKE(' ', COLOR_DEFAULT_FG, COLOR_DEFAULT_BG);
-    for (int i = 0; i < new_width * new_height; i++) {
+    for (size_t i = 0; i < new_cells; i++) {
         new_front[i] = default_pixel;
         new_back[i] = default_pixel;
     }
@@ -383,10 +436,15 @@ bool tty_check_resize(tty_context* ctx) {
         ctx->size_valid = false;
     else
         ctx->size_valid = true;
-    if (ctx->on_resize)
-        ctx->on_resize(ctx, old_width, old_height, new_width, new_height, ctx->callback_userdata);
-    if (!ctx->size_valid && old_size_valid && ctx->on_size_invalid)
-        ctx->on_size_invalid(ctx, new_width, new_height, ctx->min_width, ctx->min_height, ctx->callback_userdata);
+    /* Callbacks: copy to local to avoid race between check and call */
+    void (*on_resize_cb)(tty_context*, int, int, int, int, void*) = ctx->on_resize;
+    if (on_resize_cb)
+        on_resize_cb(ctx, old_width, old_height, new_width, new_height, ctx->callback_userdata);
+    if (!ctx->size_valid && old_size_valid) {
+        void (*on_size_invalid_cb)(tty_context*, int, int, int, int, void*) = ctx->on_size_invalid;
+        if (on_size_invalid_cb)
+            on_size_invalid_cb(ctx, new_width, new_height, ctx->min_width, ctx->min_height, ctx->callback_userdata);
+    }
     ctx->dirty = true;
     return true;
 }

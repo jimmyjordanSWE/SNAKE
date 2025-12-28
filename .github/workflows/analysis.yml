@@ -1,0 +1,24 @@
+name: Static analysis & tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libsdl2-dev pkg-config python3-venv
+      - name: Create Python venv and install analysis deps
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install tree-sitter tree-sitter-c
+      - name: Build (ASAN)
+        run: make
+      - name: Run static analysis
+        run: make analyze
+      - name: Run unit tests (ASAN)
+        run: make unit-tests

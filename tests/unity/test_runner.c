@@ -52,6 +52,11 @@ void test_stb_leak_plte(void);
 void test_tty_buffer_cap(void);
 void test_tty_open(void);
 void test_tty_path(void);
+void test_tty_calc_resize_small(void);
+void test_tty_calc_resize_invalid_sizes(void);
+void test_tty_calc_resize_pixel_overflow(void);
+void test_tty_calc_resize_writebuf_overflow(void);
+void test_tty_oom(void);
 
 typedef struct test_entry {
     const char* name;
@@ -95,6 +100,11 @@ static test_entry tests[] = {
     {"test_tty_buffer_cap", test_tty_buffer_cap, 0},
     {"test_tty_open", test_tty_open, 0},
     {"test_tty_path", test_tty_path, 0},
+    {"test_tty_calc_resize_small", test_tty_calc_resize_small, 0},
+    {"test_tty_calc_resize_invalid_sizes", test_tty_calc_resize_invalid_sizes, 0},
+    {"test_tty_calc_resize_pixel_overflow", test_tty_calc_resize_pixel_overflow, 0},
+    {"test_tty_calc_resize_writebuf_overflow", test_tty_calc_resize_writebuf_overflow, 0},
+    {"test_tty_oom", test_tty_oom, 0},
 };
 
 static size_t tests_count(void) {

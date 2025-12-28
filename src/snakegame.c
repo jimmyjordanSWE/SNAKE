@@ -247,7 +247,7 @@ int snake_game_run(SnakeGame* s) {
             }
         }
         /* Multiplayer mode: end when <= 1 active players remain (last man standing).
-           Handle end-of-match overlays and highscore saving to a multiplayer list. */
+                   Handle end-of-match overlays and highscore saving to a multiplayer list. */
         if (game_get_num_players(game) > 1) {
             const GameState* gs = game_get_state(game);
             int active_count = 0;
@@ -352,11 +352,26 @@ int snake_game_run(SnakeGame* s) {
             uint64_t now = platform_now_ms();
             float delta_s = (float)(now - prev_frame) / 1000.0f;
             prev_frame = now;
-            InputState in = {0};
-            input_poll(&in);
-            if (in.quit)
-                goto clean_done;
-            (void)game_enqueue_input(game, 0, &in);
+            /* Poll inputs for all players frequently so rapid taps for non-player-1 are captured.
+               Previously we only polled single-player in this inner loop which ignored quick
+               non-player-1 inputs that occurred after the initial per-tick sample. */
+            if (num_players <= 1) {
+                InputState in = {0};
+                input_poll(&in);
+                if (in.quit)
+                    goto clean_done;
+                (void)game_enqueue_input(game, 0, &in);
+            } else {
+                InputState ins[SNAKE_MAX_PLAYERS];
+                for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i)
+                    ins[i] = (InputState){0};
+                input_poll_all(ins, num_players);
+                for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i) {
+                    if (ins[i].quit)
+                        goto clean_done;
+                    (void)game_enqueue_input(game, i, &ins[i]);
+                }
+            }
             render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
             if (has_3d)
                 render_3d_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count,

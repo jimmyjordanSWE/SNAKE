@@ -89,8 +89,7 @@ include
      from_buf(*out,*buf,n)
     set_
      bindings_from_config(*cfg)
-     key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
-     player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
+     player_key_bindings(player_idx,left,right)
     shutdown(_)
    s <anon>{quit,any_key,move_up,turn_left}
    s GameConfig
@@ -119,23 +118,19 @@ include
      floor_texture_scale(*cfg)
      fov_degrees(*cfg)
      key_
-      down(*cfg)
-      left(*cfg)
       pause(*cfg)
       quit(*cfg)
       restart(*cfg)
-      right(*cfg)
-      up(*cfg)
      max_
       food(*cfg)
       length(*cfg)
       players(*cfg)
      num_players(*cfg)
-     player_key_
-      down(*cfg,player_idx)
-      left(*cfg,player_idx)
-      right(*cfg,player_idx)
-      up(*cfg,player_idx)
+     player_
+      color(*cfg,player_idx)
+      key_
+       left(*cfg,player_idx)
+       right(*cfg,player_idx)
      render_glyphs(*cfg)
      screen_size(*cfg,*w_out,*h_out)
      seed(*cfg)
@@ -154,25 +149,21 @@ include
       texture_scale(*cfg,v)
      fov_degrees(*cfg,fov)
      key_
-      down(*cfg,c)
-      left(*cfg,c)
       pause(*cfg,c)
       quit(*cfg,c)
       restart(*cfg,c)
-      right(*cfg,c)
-      up(*cfg,c)
      max_
       food(*cfg,v)
       length(*cfg,v)
       players(*cfg,n)
      num_players(*cfg,n)
      player_
+      color(*cfg,player_idx,color)
       key_
-       down(*cfg,player_idx,c)
        left(*cfg,player_idx,c)
        right(*cfg,player_idx,c)
-       up(*cfg,player_idx,c)
       name(*cfg,*name)
+      name_for(*cfg,player_idx,*name)
      render_glyphs(*cfg,v)
      screen_size(*cfg,w,h)
      seed(*cfg,seed)
@@ -419,6 +410,7 @@ include
    t SnakeGame
   tty.h
    f tty_
+    calc_resize_requirements(new_width,new_height,*out_cells,*out_pixel_bytes,*out_write_buffer_size)
     check_resize(*ctx)
     clear_
      back(*ctx)
@@ -562,8 +554,7 @@ src
      from_buf(*out,*buf,n)
     set_
      bindings_from_config(*cfg)
-     key_bindings(up,down,turn_left,turn_right,quit,restart,pause_toggle)
-     player_key_bindings(player_idx,up,down,turn_left,turn_right,quit,restart,pause_toggle)
+     player_key_bindings(player_idx,left,right)
     shutdown(_)
    f parse_arrow_key(code)
    f restore_terminal(_)
@@ -595,23 +586,19 @@ src
      floor_texture_scale(*cfg)
      fov_degrees(*cfg)
      key_
-      down(*cfg)
-      left(*cfg)
       pause(*cfg)
       quit(*cfg)
       restart(*cfg)
-      right(*cfg)
-      up(*cfg)
      max_
       food(*cfg)
       length(*cfg)
       players(*cfg)
      num_players(*cfg)
-     player_key_
-      down(*cfg,player_idx)
-      left(*cfg,player_idx)
-      right(*cfg,player_idx)
-      up(*cfg,player_idx)
+     player_
+      color(*cfg,player_idx)
+      key_
+       left(*cfg,player_idx)
+       right(*cfg,player_idx)
      render_glyphs(*cfg)
      screen_size(*cfg,*w_out,*h_out)
      seed(*cfg)
@@ -630,25 +617,21 @@ src
       texture_scale(*cfg,v)
      fov_degrees(*cfg,fov)
      key_
-      down(*cfg,c)
-      left(*cfg,c)
       pause(*cfg,c)
       quit(*cfg,c)
       restart(*cfg,c)
-      right(*cfg,c)
-      up(*cfg,c)
      max_
       food(*cfg,v)
       length(*cfg,v)
       players(*cfg,n)
      num_players(*cfg,n)
      player_
+      color(*cfg,player_idx,color)
       key_
-       down(*cfg,player_idx,c)
        left(*cfg,player_idx,c)
        right(*cfg,player_idx,c)
-       up(*cfg,player_idx,c)
       name(*cfg,*name)
+      name_for(*cfg,player_idx,*name)
      render_glyphs(*cfg,v)
      screen_size(*cfg,w,h)
      seed(*cfg,seed)
@@ -675,7 +658,7 @@ src
     write_
      config(*filename,*config)
      scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_up,key_down,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS}
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS}
    s HighScore{PERSIST_NAME_MAX,score}
  platform
   platform.c
@@ -691,6 +674,7 @@ src
    f get_terminal_size(fd,*width,*height)
    f sigwinch_handler(sig)
    f tty_
+    calc_resize_requirements(new_width,new_height,*out_cells,*out_pixel_bytes,*out_write_buffer_size)
     check_resize(*ctx)
     clear_
      back(*ctx)
@@ -970,6 +954,16 @@ src
     snprintf(*buf,buf_size,*fmt)
 tests
  unity
+  oom_overrides.c
+   f ensure_real_fns(_)
+   f free(*p)
+   f oom_
+    reset(_)
+    set_fail_after(f)
+  oom_overrides.h
+   f oom_
+    reset(_)
+    set_fail_after(f)
   test_collision.c
   test_default_key_bindings.c
   test_env.c
@@ -977,14 +971,14 @@ tests
    f test_default_player_colors_differ(_)
   test_game_multi.c
   test_game_oom.c
-   f ensure_real_fns(_)
-   f free(*p)
   test_game_reset_lives.c
    f test_game_reset_restores_lives_and_clears_elimination(_)
   test_highscore_name.c
   test_input.c
   test_input_bindings.c
+  test_input_bindings_flipped.c
   test_input_multi.c
+  test_input_multi_fast.c
   test_net.c
   test_net_integration.c
   test_net_overflow.c
@@ -995,6 +989,8 @@ tests
    f run_case(*content,expect_ok)
   test_persist_long_lines.c
    f run_case(*fn)
+  test_persist_player_keys.c
+  test_persist_player_meta.c
   test_persist_truncation.c
   test_render_lives_ui.c
    f test_render_draw_shows_hearts_for_multiplayer(_)
@@ -1034,6 +1030,12 @@ tests
      path_extra(_)
     tty_
      buffer_cap(_)
+     calc_resize_
+      invalid_sizes(_)
+      pixel_overflow(_)
+      small(_)
+      writebuf_overflow(_)
+     oom(_)
      open(_)
      path(_)
    f tests_count(_)
@@ -1046,5 +1048,12 @@ tests
   test_texture_path.c
   test_texture_path_extra.c
   test_tty_buffer_cap.c
+  test_tty_oom.c
   test_tty_open.c
   test_tty_path.c
+  test_tty_resize_overflow.c
+   f test_tty_calc_resize_
+    invalid_sizes(_)
+    pixel_overflow(_)
+    small(_)
+    writebuf_overflow(_)

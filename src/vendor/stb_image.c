@@ -288,7 +288,7 @@ static unsigned char* load_png(const char* filename, int* x, int* y, int* channe
             trns_len = len;
         } else if (strcmp(type, "IDAT") == 0) {
             /* Ignore zero-length IDAT chunks to avoid calling realloc(..., 0) which may free the
-                                       buffer and lead to double-free when we subsequently free `idat`. */
+                                                   buffer and lead to double-free when we subsequently free `idat`. */
             if (len > 0) {
                 unsigned char* nbuf = (unsigned char*)realloc(idat, idat_len + len);
                 if (!nbuf) {

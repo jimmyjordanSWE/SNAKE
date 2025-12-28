@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #define CONFIG_FILENAME "snake_cfg.txt"
-
 int main(void) {
     GameConfig* config = NULL;
     bool loaded = persist_load_config(CONFIG_FILENAME, &config);

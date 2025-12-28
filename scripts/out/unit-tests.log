@@ -104,4 +104,14 @@ RUN: test_tty_open
 PASS: test_tty_open
 RUN: test_tty_path
 PASS: test_tty_path
-ALL TESTS PASSED (24)
+RUN: test_tty_calc_resize_small
+PASS: test_tty_calc_resize_small
+RUN: test_tty_calc_resize_invalid_sizes
+PASS: test_tty_calc_resize_invalid_sizes
+RUN: test_tty_calc_resize_pixel_overflow
+PASS: test_tty_calc_resize_pixel_overflow
+RUN: test_tty_calc_resize_writebuf_overflow
+PASS: test_tty_calc_resize_writebuf_overflow
+RUN: test_tty_oom
+PASS: test_tty_oom
+ALL TESTS PASSED (29)

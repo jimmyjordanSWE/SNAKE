@@ -34,26 +34,19 @@
 #define PERSIST_TEXTURE_PATH_MAX 128
 #define PERSIST_CONFIG_DEFAULT_WALL_TEXTURE "assets/wall.png"
 #define PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE "assets/floor.png"
-#define PERSIST_CONFIG_DEFAULT_KEY_UP 'w'
-#define PERSIST_CONFIG_DEFAULT_KEY_DOWN 's'
-#define PERSIST_CONFIG_DEFAULT_KEY_LEFT 'a'
-#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT 'd'
-#define PERSIST_CONFIG_DEFAULT_KEY_QUIT 'q'
+/* Player 1 defaults to arrow keys (no single-char left/right). */
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT '\0'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT '\0'
+#define PERSIST_CONFIG_DEFAULT_KEY_QUIT '\x1b'
 #define PERSIST_CONFIG_DEFAULT_KEY_RESTART 'r'
 #define PERSIST_CONFIG_DEFAULT_KEY_PAUSE 'p'
-/* Per-player defaults (player index 1-based: _2 is player 2) */
-#define PERSIST_CONFIG_DEFAULT_KEY_UP_2 'i'
-#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_2 'k'
-#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_2 'j'
-#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_2 'l'
-#define PERSIST_CONFIG_DEFAULT_KEY_UP_3 '8'
-#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_3 '5'
-#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_3 '4'
-#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_3 '6'
-#define PERSIST_CONFIG_DEFAULT_KEY_UP_4 't'
-#define PERSIST_CONFIG_DEFAULT_KEY_DOWN_4 'g'
-#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_4 'f'
-#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_4 'h'
+/* Per-player defaults (player index 1-based: p2 is player 2). */
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_2 'w'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_2 'q'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_3 't'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_3 'y'
+#define PERSIST_CONFIG_DEFAULT_KEY_LEFT_4 'o'
+#define PERSIST_CONFIG_DEFAULT_KEY_RIGHT_4 'p'
 #define PERSIST_PLAYER_NAME_MAX 32
 typedef struct HighScore HighScore;
 // Returns a newly allocated HighScore; caller must call highscore_destroy() to free it.
@@ -109,14 +102,6 @@ void game_config_set_wall_texture_scale(GameConfig* cfg, float v);
 float game_config_get_wall_texture_scale(const GameConfig* cfg);
 void game_config_set_floor_texture_scale(GameConfig* cfg, float v);
 float game_config_get_floor_texture_scale(const GameConfig* cfg);
-void game_config_set_key_up(GameConfig* cfg, char c);
-char game_config_get_key_up(const GameConfig* cfg);
-void game_config_set_key_down(GameConfig* cfg, char c);
-char game_config_get_key_down(const GameConfig* cfg);
-void game_config_set_key_left(GameConfig* cfg, char c);
-char game_config_get_key_left(const GameConfig* cfg);
-void game_config_set_key_right(GameConfig* cfg, char c);
-char game_config_get_key_right(const GameConfig* cfg);
 void game_config_set_key_quit(GameConfig* cfg, char c);
 char game_config_get_key_quit(const GameConfig* cfg);
 void game_config_set_key_restart(GameConfig* cfg, char c);
@@ -124,11 +109,13 @@ char game_config_get_key_restart(const GameConfig* cfg);
 void game_config_set_key_pause(GameConfig* cfg, char c);
 char game_config_get_key_pause(const GameConfig* cfg);
 
+/* Per-player name & color */
+void game_config_set_player_name_for(GameConfig* cfg, int player_idx, const char* name);
+const char* game_config_get_player_name_for(const GameConfig* cfg, int player_idx);
+void game_config_set_player_color(GameConfig* cfg, int player_idx, uint32_t color);
+uint32_t game_config_get_player_color(const GameConfig* cfg, int player_idx);
+
 /* Per-player key bindings (player index 0..SNAKE_MAX_PLAYERS-1) */
-void game_config_set_player_key_up(GameConfig* cfg, int player_idx, char c);
-char game_config_get_player_key_up(const GameConfig* cfg, int player_idx);
-void game_config_set_player_key_down(GameConfig* cfg, int player_idx, char c);
-char game_config_get_player_key_down(const GameConfig* cfg, int player_idx);
 void game_config_set_player_key_left(GameConfig* cfg, int player_idx, char c);
 char game_config_get_player_key_left(const GameConfig* cfg, int player_idx);
 void game_config_set_player_key_right(GameConfig* cfg, int player_idx, char c);

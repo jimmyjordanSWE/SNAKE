@@ -80,28 +80,32 @@ void player_cfg_set_default_bindings_for_index(PlayerCfg* cfg, int idx) {
     // Common ergonomic defaults per index
     switch (idx) {
     case 0:
-        cfg->key_up = 'w';
-        cfg->key_down = 's';
-        cfg->key_left = 'a';
-        cfg->key_right = 'd';
+        /* Player 1: arrow keys act as left/right; no single-char defaults */
+        cfg->key_up = '\0';
+        cfg->key_down = '\0';
+        cfg->key_left = '\0';
+        cfg->key_right = '\0';
         break;
     case 1:
-        cfg->key_up = 'i';
-        cfg->key_down = 'k';
-        cfg->key_left = 'j';
-        cfg->key_right = 'l';
+        /* Player 2: left='w', right='q' */
+        cfg->key_up = '\0';
+        cfg->key_down = '\0';
+        cfg->key_left = 'w';
+        cfg->key_right = 'q';
         break;
     case 2:
-        cfg->key_up = '8';
-        cfg->key_down = '5';
-        cfg->key_left = '4';
-        cfg->key_right = '6'; // numpad-like
+        /* Player 3: left='t', right='y' */
+        cfg->key_up = '\0';
+        cfg->key_down = '\0';
+        cfg->key_left = 't';
+        cfg->key_right = 'y';
         break;
     case 3:
-        cfg->key_up = 't';
-        cfg->key_down = 'g';
-        cfg->key_left = 'f';
-        cfg->key_right = 'h';
+        /* Player 4: left='o', right='p' */
+        cfg->key_up = '\0';
+        cfg->key_down = '\0';
+        cfg->key_left = 'o';
+        cfg->key_right = 'p';
         break;
     default:
         cfg->key_up = 'w';

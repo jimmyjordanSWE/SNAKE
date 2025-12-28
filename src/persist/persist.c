@@ -86,18 +86,17 @@ struct GameConfig {
     float floor_texture_scale;
     char wall_texture[PERSIST_TEXTURE_PATH_MAX];
     char floor_texture[PERSIST_TEXTURE_PATH_MAX];
-    char key_up;
-    char key_down;
     char key_left;
     char key_right;
     char key_quit;
     char key_restart;
     char key_pause;
     /* Per-player bindings */
-    char key_up_arr[SNAKE_MAX_PLAYERS];
-    char key_down_arr[SNAKE_MAX_PLAYERS];
     char key_left_arr[SNAKE_MAX_PLAYERS];
     char key_right_arr[SNAKE_MAX_PLAYERS];
+    /* Per-player metadata */
+    char player_name_arr[SNAKE_MAX_PLAYERS][PERSIST_PLAYER_NAME_MAX];
+    uint32_t player_color_arr[SNAKE_MAX_PLAYERS];
 };
 GameConfig* game_config_create(void) {
     GameConfig* c = calloc(1, sizeof *c);
@@ -116,6 +115,12 @@ GameConfig* game_config_create(void) {
     c->active_player = PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER;
     c->num_players = PERSIST_CONFIG_DEFAULT_NUM_PLAYERS;
     snprintf(c->player_name, PERSIST_PLAYER_NAME_MAX, "You");
+    /* default per-player names/colors */
+    for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i) {
+        snprintf(c->player_name_arr[i], PERSIST_PLAYER_NAME_MAX, "Player%d", i + 1);
+        c->player_color_arr[i] = 0xFF000000 | (0x00330000 * (unsigned int)i) | (0x00003300 * (unsigned int)i) |
+                                 (0x00000033 * (unsigned int)i);
+    }
     c->max_players = PERSIST_CONFIG_DEFAULT_MAX_PLAYERS;
     c->max_length = PERSIST_CONFIG_DEFAULT_MAX_LENGTH;
     c->max_food = PERSIST_CONFIG_DEFAULT_MAX_FOOD;
@@ -125,8 +130,6 @@ GameConfig* game_config_create(void) {
     c->floor_texture_scale = (float)PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE_SCALE;
     snprintf(c->wall_texture, PERSIST_TEXTURE_PATH_MAX, PERSIST_CONFIG_DEFAULT_WALL_TEXTURE);
     snprintf(c->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", PERSIST_CONFIG_DEFAULT_FLOOR_TEXTURE);
-    c->key_up = PERSIST_CONFIG_DEFAULT_KEY_UP;
-    c->key_down = PERSIST_CONFIG_DEFAULT_KEY_DOWN;
     c->key_left = PERSIST_CONFIG_DEFAULT_KEY_LEFT;
     c->key_right = PERSIST_CONFIG_DEFAULT_KEY_RIGHT;
     c->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
@@ -134,34 +137,29 @@ GameConfig* game_config_create(void) {
     c->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
     /* default per-player bindings to match input defaults; use centralized macros */
     if (SNAKE_MAX_PLAYERS >= 1) {
-        c->key_up_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_UP;
-        c->key_down_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_DOWN;
         c->key_left_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_LEFT;
         c->key_right_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT;
     }
     if (SNAKE_MAX_PLAYERS >= 2) {
-        c->key_up_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_UP_2;
-        c->key_down_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_2;
         c->key_left_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_2;
         c->key_right_arr[1] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_2;
     }
     if (SNAKE_MAX_PLAYERS >= 3) {
-        c->key_up_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_UP_3;
-        c->key_down_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_3;
         c->key_left_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_3;
         c->key_right_arr[2] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_3;
     }
     if (SNAKE_MAX_PLAYERS >= 4) {
-        c->key_up_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_UP_4;
-        c->key_down_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_DOWN_4;
         c->key_left_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_LEFT_4;
         c->key_right_arr[3] = PERSIST_CONFIG_DEFAULT_KEY_RIGHT_4;
     }
     /* keep single-char fields in sync with player 0 */
-    c->key_up = c->key_up_arr[0];
-    c->key_down = c->key_down_arr[0];
     c->key_left = c->key_left_arr[0];
     c->key_right = c->key_right_arr[0];
+    /* keep player name and color defaults synchronized */
+    for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i) {
+        /* already initialized above */
+    }
+
     return c;
 }
 void game_config_destroy(GameConfig* cfg) {
@@ -323,67 +321,7 @@ void game_config_set_floor_texture(GameConfig* cfg, const char* path) {
 const char* game_config_get_floor_texture(const GameConfig* cfg) {
     return cfg ? cfg->floor_texture : NULL;
 }
-void game_config_set_key_up(GameConfig* cfg, char c) {
-    if (!cfg)
-        return;
-    cfg->key_up = c;
-    cfg->key_up_arr[0] = c;
-}
-char game_config_get_key_up(const GameConfig* cfg) {
-    return cfg ? cfg->key_up : '\0';
-}
-void game_config_set_key_down(GameConfig* cfg, char c) {
-    if (!cfg)
-        return;
-    cfg->key_down = c;
-    cfg->key_down_arr[0] = c;
-}
-char game_config_get_key_down(const GameConfig* cfg) {
-    return cfg ? cfg->key_down : '\0';
-}
-void game_config_set_key_left(GameConfig* cfg, char c) {
-    if (!cfg)
-        return;
-    cfg->key_left = c;
-    cfg->key_left_arr[0] = c;
-}
-char game_config_get_key_left(const GameConfig* cfg) {
-    return cfg ? cfg->key_left : '\0';
-}
-void game_config_set_key_right(GameConfig* cfg, char c) {
-    if (!cfg)
-        return;
-    cfg->key_right = c;
-    cfg->key_right_arr[0] = c;
-}
-char game_config_get_key_right(const GameConfig* cfg) {
-    return cfg ? cfg->key_right : '\0';
-}
 /* Per-player key API */
-void game_config_set_player_key_up(GameConfig* cfg, int player_idx, char c) {
-    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-        return;
-    cfg->key_up_arr[player_idx] = c;
-    if (player_idx == 0)
-        cfg->key_up = c;
-}
-char game_config_get_player_key_up(const GameConfig* cfg, int player_idx) {
-    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-        return '\0';
-    return cfg->key_up_arr[player_idx];
-}
-void game_config_set_player_key_down(GameConfig* cfg, int player_idx, char c) {
-    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-        return;
-    cfg->key_down_arr[player_idx] = c;
-    if (player_idx == 0)
-        cfg->key_down = c;
-}
-char game_config_get_player_key_down(const GameConfig* cfg, int player_idx) {
-    if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-        return '\0';
-    return cfg->key_down_arr[player_idx];
-}
 void game_config_set_player_key_left(GameConfig* cfg, int player_idx, char c) {
     if (!cfg || player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
         return;
@@ -432,6 +370,30 @@ void game_config_set_key_pause(GameConfig* cfg, char c) {
 char game_config_get_key_pause(const GameConfig* cfg) {
     return cfg ? cfg->key_pause : '\0';
 }
+
+void game_config_set_player_name_for(GameConfig* cfg, int player_idx, const char* name) {
+    if (!cfg || !name || player_idx < 0 || player_idx >= cfg->max_players)
+        return;
+    snprintf(cfg->player_name_arr[player_idx], PERSIST_PLAYER_NAME_MAX, "%s", name);
+    if (player_idx == 0)
+        snprintf(cfg->player_name, PERSIST_PLAYER_NAME_MAX, "%s", cfg->player_name_arr[0]);
+}
+const char* game_config_get_player_name_for(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= cfg->max_players)
+        return "";
+    return cfg->player_name_arr[player_idx];
+}
+void game_config_set_player_color(GameConfig* cfg, int player_idx, uint32_t color) {
+    if (!cfg || player_idx < 0 || player_idx >= cfg->max_players)
+        return;
+    cfg->player_color_arr[player_idx] = color;
+}
+uint32_t game_config_get_player_color(const GameConfig* cfg, int player_idx) {
+    if (!cfg || player_idx < 0 || player_idx >= cfg->max_players)
+        return 0u;
+    return cfg->player_color_arr[player_idx];
+}
+
 void game_config_set_enable_external_3d_view(GameConfig* cfg, int v) {
     if (!cfg)
         return;
@@ -726,13 +688,38 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
         } else if (strcmp(key, "floor_texture") == 0) {
             snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
             continue;
-        } else if (strncmp(key, "key_up", 6) == 0 || strncmp(key, "key_down", 8) == 0 ||
-                   strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 ||
+        } else if (strncmp(key, "p", 1) == 0 && isdigit((unsigned char)key[1])) {
+            /* support keys like p1_left, p2_right for player indexes 1-based */
+            char c = value[0];
+            char* endptr2 = NULL;
+            long v = strtol(key + 1, &endptr2, 10);
+            if (endptr2 == key + 1 || *endptr2 != '_')
+                continue;
+            int player_idx = (int)(v - 1);
+            if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
+                continue;
+            const char* suffix = endptr2 + 1;
+            if (strcmp(suffix, "left") == 0)
+                config->key_left_arr[player_idx] = c;
+            else if (strcmp(suffix, "right") == 0)
+                config->key_right_arr[player_idx] = c;
+            if (player_idx == 0) {
+                config->key_left = config->key_left_arr[0];
+                config->key_right = config->key_right_arr[0];
+            }
+            continue;
+        } else if (strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 ||
                    strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
-            /* support keys like key_left, key_left_2, key_right_3, etc. */
+            /* support legacy keys like key_left, key_left_2, key_right_3, etc. (left/right only) */
             char c = value[0];
             if (strcmp(key, "key_quit") == 0) {
-                config->key_quit = c;
+                /* Accept special token ESC (case-insensitive) to represent the escape byte */
+                if ((value[0] == 'E' || value[0] == 'e') && (value[1] == 'S' || value[1] == 's') &&
+                    (value[2] == 'C' || value[2] == 'c') && value[3] == '\0') {
+                    config->key_quit = '\x1b';
+                } else {
+                    config->key_quit = c;
+                }
             } else if (strcmp(key, "key_restart") == 0) {
                 config->key_restart = c;
             } else if (strcmp(key, "key_pause") == 0) {
@@ -762,24 +749,26 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
                 }
                 if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
                     continue;
-                if (strcmp(base, "key_up") == 0)
-                    config->key_up_arr[player_idx] = c;
-                else if (strcmp(base, "key_down") == 0)
-                    config->key_down_arr[player_idx] = c;
-                else if (strcmp(base, "key_left") == 0)
+                if (strcmp(base, "key_left") == 0)
                     config->key_left_arr[player_idx] = c;
                 else if (strcmp(base, "key_right") == 0)
                     config->key_right_arr[player_idx] = c;
+                else if (strcmp(base, "name") == 0) {
+                    snprintf(config->player_name_arr[player_idx], PERSIST_PLAYER_NAME_MAX, "%s", value);
+                } else if (strcmp(base, "color") == 0) {
+                    /* accept hex like 0xRRGGBB[A] or decimal */
+                    char* endptr2 = NULL;
+                    uint32_t v = (uint32_t)strtoul(value, &endptr2, 0);
+                    config->player_color_arr[player_idx] = v;
+                }
                 if (player_idx == 0) {
-                    /* keep single-char legacy fields in sync */
-                    if (strcmp(base, "key_up") == 0)
-                        config->key_up = config->key_up_arr[0];
-                    else if (strcmp(base, "key_down") == 0)
-                        config->key_down = config->key_down_arr[0];
-                    else if (strcmp(base, "key_left") == 0)
+                    /* keep single-char fields in sync */
+                    if (strcmp(base, "key_left") == 0)
                         config->key_left = config->key_left_arr[0];
                     else if (strcmp(base, "key_right") == 0)
                         config->key_right = config->key_right_arr[0];
+                    else if (strcmp(base, "name") == 0)
+                        snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", config->player_name_arr[0]);
                 }
             }
             continue;
@@ -907,27 +896,29 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
         goto write_fail;
     if (fprintf(fp, "floor_texture=%s\n", config->floor_texture) < 0)
         goto write_fail;
-    if (fprintf(fp, "key_up=%c\n", config->key_up) < 0)
-        goto write_fail;
-    if (fprintf(fp, "key_down=%c\n", config->key_down) < 0)
-        goto write_fail;
     if (fprintf(fp, "key_left=%c\n", config->key_left) < 0)
         goto write_fail;
     if (fprintf(fp, "key_right=%c\n", config->key_right) < 0)
         goto write_fail;
-    /* write per-player bindings for players 2..max_players */
+    /* write per-player bindings for players 2..max_players using p{N}_left/right */
     for (int p = 1; p < config->max_players; ++p) {
-        if (fprintf(fp, "key_up_%d=%c\n", p + 1, config->key_up_arr[p]) < 0)
+        if (fprintf(fp, "p%d_left=%c\n", p + 1, config->key_left_arr[p]) < 0)
             goto write_fail;
-        if (fprintf(fp, "key_down_%d=%c\n", p + 1, config->key_down_arr[p]) < 0)
+        if (fprintf(fp, "p%d_right=%c\n", p + 1, config->key_right_arr[p]) < 0)
+            goto write_fail; /* per-player name and color */
+        if (fprintf(fp, "p%d_name=%s\n", p + 1, config->player_name_arr[p]) < 0)
             goto write_fail;
-        if (fprintf(fp, "key_left_%d=%c\n", p + 1, config->key_left_arr[p]) < 0)
-            goto write_fail;
-        if (fprintf(fp, "key_right_%d=%c\n", p + 1, config->key_right_arr[p]) < 0)
+        if (fprintf(fp, "p%d_color=0x%08x\n", p + 1, (unsigned int)config->player_color_arr[p]) < 0)
             goto write_fail;
     }
-    if (fprintf(fp, "key_quit=%c\n", config->key_quit) < 0)
-        goto write_fail;
+    /* write key_quit; if it's ESC, write the literal token "ESC" for readability */
+    if (config->key_quit == '\x1b') {
+        if (fprintf(fp, "key_quit=ESC\n") < 0)
+            goto write_fail;
+    } else {
+        if (fprintf(fp, "key_quit=%c\n", config->key_quit) < 0)
+            goto write_fail;
+    }
     if (fprintf(fp, "key_restart=%c\n", config->key_restart) < 0)
         goto write_fail;
     if (fprintf(fp, "key_pause=%c\n", config->key_pause) < 0)
@@ -1016,8 +1007,8 @@ static bool is_known_config_key(const char* key) {
         return true;
     if (strcmp(key, "floor_texture") == 0)
         return true;
-    /* Accept key_up, key_down, key_left, key_right optionally suffixed with _N (player index 1-based) */
-    const char* key_bases[] = {"key_up", "key_down", "key_left", "key_right"};
+    /* Accept legacy key_left, key_right optionally suffixed with _N (player index 1-based) */
+    const char* key_bases[] = {"key_left", "key_right"};
     for (size_t i = 0; i < sizeof(key_bases) / sizeof(key_bases[0]); ++i) {
         const char* b = key_bases[i];
         size_t bl = strlen(b);
@@ -1028,6 +1019,18 @@ static bool is_known_config_key(const char* key) {
             errno = 0;
             long v = strtol(key + bl + 1, &endptr, 10);
             if (errno == 0 && endptr != key + bl + 1 && *endptr == '\0' && v >= 1 && v <= SNAKE_MAX_PLAYERS)
+                return true;
+        }
+    }
+    /* Accept new p{N}_left, p{N}_right, p{N}_name, p{N}_color like p1_left */
+    if (key[0] == 'p' && isdigit((unsigned char)key[1])) {
+        char* endptr = NULL;
+        long v = strtol(key + 1, &endptr, 10);
+        if (endptr != key + 1 && *endptr == '_') {
+            const char* suffix = endptr + 1;
+            if ((strcmp(suffix, "left") == 0 || strcmp(suffix, "right") == 0 || strcmp(suffix, "name") == 0 ||
+                 strcmp(suffix, "color") == 0) &&
+                v >= 1 && v <= SNAKE_MAX_PLAYERS)
                 return true;
         }
     }

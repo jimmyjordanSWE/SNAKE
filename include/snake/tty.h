@@ -30,6 +30,17 @@ bool tty_size_sufficient_for_board(int term_width, int term_height, int board_wi
 /* Expose write buffer size for testing and heuristics */
 size_t tty_get_write_buffer_size(tty_context* ctx);
 
+/*
+ * Calculate allocations required for a proposed terminal size.
+ * Returns true if sizes are representable and safe, false on invalid/overflow.
+ * Primarily provided to make resize overflow checks testable.
+ */
+bool tty_calc_resize_requirements(long new_width,
+                                   long new_height,
+                                   size_t* out_cells,
+                                   size_t* out_pixel_bytes,
+                                   size_t* out_write_buffer_size);
+
 #define COLOR_MAKE(fg, bg) ((uint16_t)(((bg) << 4) | (fg)))
 #define COLOR_FG(c) ((uint8_t)((c) & 0x0F))
 #define COLOR_BG(c) ((uint8_t)(((c) >> 4) & 0x0F))

@@ -42,7 +42,6 @@ typedef struct {
     float current_fps;
 } Render3DContext;
 static Render3DContext g_render_3d = {0};
-
 /* Return a darker version of `col` by `pct` percent (pct in 0..100). */
 static uint32_t render_3d_shade_color(uint32_t col, int pct) {
     uint8_t a = (uint8_t)(col >> 24);
@@ -54,7 +53,6 @@ static uint32_t render_3d_shade_color(uint32_t col, int pct) {
     b = (uint8_t)((b * pct) / 100);
     return render_3d_sdl_color(r, g, b, a);
 }
-
 static void render_3d_draw_char(SDL3DContext* disp, int x, int y, char c, uint32_t col, int scale);
 static void render_3d_log(const char* fmt, ...) {
     char buf[512];
@@ -672,40 +670,44 @@ void render_3d_draw(const GameState* game_state,
             }
         }
     }
-    sprite_clear(g_render_3d.sprite_renderer);
-    for (int i = 0; i < game_state->food_count; i++) {
-        uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
-        sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
-                         (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col);
-    }
-    for (int p = 0; p < game_state->num_players; p++) {
-        if (p == g_render_3d.config.active_player)
-            continue;
-        const PlayerState* player = &game_state->players[p];
-        if (!player->active || player->length == 0)
-            continue;
-        float head_x = player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
-        float head_y = player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
-        uint32_t pcol = player->color ? player->color : render_3d_sdl_color(0, 128, 0, 255);
-        sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
-    }
-    for (int p = 0; p < game_state->num_players; p++) {
-        const PlayerState* player = &game_state->players[p];
-        if (!player->active || player->length <= 1)
-            continue;
-        uint32_t body_col =
-            player->color ? render_3d_shade_color(player->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
-        for (int bi = 1; bi < player->length; bi++) {
-            float seg_x = (float)player->body[bi].x + 0.5f;
-            float seg_y = (float)player->body[bi].y + 0.5f;
-            if (player->prev_segment_x && player->prev_segment_y) {
-                seg_x = player->prev_segment_x[bi] +
-                        (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * frame_interp_t;
-                seg_y = player->prev_segment_y[bi] +
-                        (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
+    if (g_render_3d.sprite_renderer) {
+        sprite_clear(g_render_3d.sprite_renderer);
+        for (int i = 0; i < game_state->food_count; i++) {
+            uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
+            sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
+                             (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col);
+        }
+        for (int p = 0; p < game_state->num_players; p++) {
+            if (p == g_render_3d.config.active_player)
+                continue;
+            const PlayerState* player = &game_state->players[p];
+            if (!player->active || player->length == 0)
+                continue;
+            float head_x =
+                player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
+            float head_y =
+                player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
+            uint32_t pcol = player->color ? player->color : render_3d_sdl_color(0, 128, 0, 255);
+            sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
+        }
+        for (int p = 0; p < game_state->num_players; p++) {
+            const PlayerState* player = &game_state->players[p];
+            if (!player->active || player->length <= 1)
+                continue;
+            uint32_t body_col =
+                player->color ? render_3d_shade_color(player->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
+            for (int bi = 1; bi < player->length; bi++) {
+                float seg_x = (float)player->body[bi].x + 0.5f;
+                float seg_y = (float)player->body[bi].y + 0.5f;
+                if (player->prev_segment_x && player->prev_segment_y) {
+                    seg_x = player->prev_segment_x[bi] +
+                            (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * frame_interp_t;
+                    seg_y = player->prev_segment_y[bi] +
+                            (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
+                }
+                float tail_h = g_render_3d.config.tail_height_scale;
+                sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, body_col);
             }
-            float tail_h = g_render_3d.config.tail_height_scale;
-            sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, body_col);
         }
     }
     {

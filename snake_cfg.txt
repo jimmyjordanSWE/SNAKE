@@ -3,31 +3,27 @@ board_width=18
 board_height=18
 tick_rate_ms=250
 render_glyphs=utf8
-screen_width=1200
-screen_height=800
+screen_width=1920
+screen_height=1080
 enable_external_3d_view=true
-seed=42
+seed=12345
 fov_degrees=80.00
 active_player=0
 num_players=2
 player_name=Player
 max_length=64
 max_food=20
+# Player 1 key bindings (defaults) - omitted to use arrow keys by default
+# p1_left and p1_right may be set to override arrow keys
 # Player 2 key bindings (defaults)
-key_up_2=i
-key_down_2=k
-key_left_2=j
-key_right_2=l
+p2_left=q
+p2_right=w
 # Player 3 key bindings (defaults)
-key_up_3=8
-key_down_3=5
-key_left_3=4
-key_right_3=6
+p3_left=t
+p3_right=y
 # Player 4 key bindings (defaults)
-key_up_4=t
-key_down_4=g
-key_left_4=f
-key_right_4=h
+p4_left=i
+p4_right=o
 
 wall_height_scale=1.50
 tail_height_scale=0.50
@@ -35,10 +31,13 @@ wall_texture_scale=1.0
 floor_texture_scale=1.5
 wall_texture=assets/wall.png
 floor_texture=assets/floor.png
-key_up=w
-key_down=s
-key_left=a
-key_right=d
-key_quit=q
+# Note: p1 defaults to arrow keys; p1_left/p1_right can override
+p2_left=w
+p2_right=q
+p3_left=t
+p3_right=y
+p4_left=o
+p4_right=p
+key_quit=ESC
 key_restart=r
 key_pause=p

@@ -18,7 +18,7 @@ bool input_init(void);
 void input_shutdown(void);
 void input_poll(InputState* out);
 void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n);
-void input_set_key_bindings(char up, char down, char turn_left, char turn_right, char quit, char restart, char pause_toggle);
-void input_set_player_key_bindings(int player_idx, char up, char down, char turn_left, char turn_right, char quit, char restart, char pause_toggle);
+/* Set per-player left/right bindings only */
+void input_set_player_key_bindings(int player_idx, char left, char right);
 void input_poll_all(InputState* outs, int max_players);
 void input_poll_all_from_buf(InputState* outs, int max_players, const unsigned char* buf, size_t n);

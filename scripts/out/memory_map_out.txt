@@ -10,7 +10,7 @@ src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 475c 525r 526r 855f 859f 863f
+src/render/render_3d.c: 475c 525r 526r 593c 599c 644f 762f 764f 939f 943f 947f
 src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 333m 338f
 src/render/sprite.c: 35c 497f 505c 515f
 src/render/texture.c: 26c 41m 59f 258f 276m 300f
@@ -27,4 +27,4 @@ tests/unity/test_render_minimap.c: 16c 21c 48f 49f
 tests/unity/test_texture_path.c: 14m 20f
 tests/unity/test_texture_path_extra.c: 21m 27f
 tests/unity/test_tty_path.c: 8m 14f
-# Mem: 59a, 85f (28 files)
+# Mem: 61a, 88f (28 files)

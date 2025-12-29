@@ -567,6 +567,18 @@ void render_3d_draw(const GameState* game_state,
     float sin_cam = sinf(interp_cam_angle);
 
     /* Floor and Ceiling pass (Row-major) */
+    /* Predeclare decal structures so we can free after the floor pass */
+    typedef struct {
+        float x, y, radius, factor;
+    } Decal;
+    Decal* decals = NULL;
+    int decal_count = 0;
+    typedef struct {
+        short count;
+        short ids[16];
+    } TileBucket;
+    TileBucket* buckets = NULL;
+
     t_before_walls = debug_timing ? render_3d_now() : 0.0;
     if (has_floor_tex) {
         float wall_scale = projection_get_wall_scale(g_render_3d.projector);
@@ -574,6 +586,65 @@ void render_3d_draw(const GameState* game_state,
         int floor_w = texture_get_img_w(g_render_3d.floor_texture);
         int floor_h_tex = texture_get_img_h(g_render_3d.floor_texture);
         float floor_tex_scale = g_render_3d.config.floor_texture_scale;
+
+        /* Build simple tile-based buckets of decals (food + snake segments) to
+         * avoid checking every decal for every floor pixel. Buckets store a few
+         * decal indices per map cell. */
+        buckets = calloc((size_t)map_w * (size_t)map_h, sizeof(*buckets));
+        /* Build decals array */
+        int max_decals = game_state->food_count;
+        for (int pi = 0; pi < game_state->num_players; pi++)
+            max_decals += game_state->players[pi].length;
+        if (buckets) {
+            decals = calloc((size_t)max_decals, sizeof(Decal));
+            if (decals) {
+                for (int i = 0; i < game_state->food_count; i++) {
+                    decals[decal_count].x = (float)game_state->food[i].x + 0.5f;
+                    decals[decal_count].y = (float)game_state->food[i].y + 0.5f;
+                    decals[decal_count].radius = 0.15f;
+                    decals[decal_count].factor = 0.4f;
+                    decal_count++;
+                }
+                for (int pi = 0; pi < game_state->num_players; pi++) {
+                    const PlayerState* player = &game_state->players[pi];
+                    if (!player->active)
+                        continue;
+                    for (int bi = 0; bi < player->length; bi++) {
+                        decals[decal_count].x = (float)player->body[bi].x + 0.5f;
+                        decals[decal_count].y = (float)player->body[bi].y + 0.5f;
+                        decals[decal_count].radius = (bi == 0) ? 0.25f : 0.2f;
+                        decals[decal_count].factor = 0.4f;
+                        decal_count++;
+                    }
+                }
+                /* Insert decals into buckets */
+                for (int di = 0; di < decal_count; di++) {
+                    int min_tx = (int)floorf(decals[di].x - decals[di].radius);
+                    int max_tx = (int)floorf(decals[di].x + decals[di].radius);
+                    int min_ty = (int)floorf(decals[di].y - decals[di].radius);
+                    int max_ty = (int)floorf(decals[di].y + decals[di].radius);
+                    if (min_tx < 0)
+                        min_tx = 0;
+                    if (min_ty < 0)
+                        min_ty = 0;
+                    if (max_tx >= map_w)
+                        max_tx = map_w - 1;
+                    if (max_ty >= map_h)
+                        max_ty = map_h - 1;
+                    for (int ty = min_ty; ty <= max_ty; ty++) {
+                        for (int tx = min_tx; tx <= max_tx; tx++) {
+                            TileBucket* b = &buckets[ty * map_w + tx];
+                            if (b->count < (int)(sizeof(b->ids) / sizeof(b->ids[0]))) {
+                                b->ids[b->count++] = (short)di;
+                            }
+                        }
+                    }
+                }
+            } else {
+                free(buckets);
+                buckets = NULL;
+            }
+        }
 
         for (int y = 0; y < screen_h; y++) {
             if (y < horizon) {
@@ -603,6 +674,43 @@ void render_3d_draw(const GameState* game_state,
                 float floor_x = interp_cam_x + cos_a * actual_distance;
                 float floor_y = interp_cam_y + sin_a * actual_distance;
 
+                /* Check for cached decals in the tile containing the floor sample */
+                uint32_t base_col;
+                bool in_shadow = false;
+                float shadow_factor = 1.0f;
+                if (buckets) {
+                    int tx = (int)floorf(floor_x);
+                    int ty = (int)floorf(floor_y);
+                    if (tx >= 0 && tx < map_w && ty >= 0 && ty < map_h) {
+                        TileBucket* b = &buckets[ty * map_w + tx];
+                        for (int bi = 0; bi < b->count; bi++) {
+                            int di = b->ids[bi];
+                            float dx = floor_x - decals[di].x;
+                            float dy = floor_y - decals[di].y;
+                            float dist_sq = dx * dx + dy * dy;
+                            float r = decals[di].radius;
+                            if (dist_sq < r * r) {
+                                in_shadow = true;
+                                shadow_factor = decals[di].factor;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    /* Fallback: brute-force check (rare if allocation failed) */
+                    for (int di = 0; di < decal_count; di++) {
+                        float dx = floor_x - decals[di].x;
+                        float dy = floor_y - decals[di].y;
+                        float dist_sq = dx * dx + dy * dy;
+                        float r = decals[di].radius;
+                        if (dist_sq < r * r) {
+                            in_shadow = true;
+                            shadow_factor = decals[di].factor;
+                            break;
+                        }
+                    }
+                }
+
                 /* If we have a floor texture, sample it even when the computed world
                  * coordinates fall just outside the map bounds. This avoids a 1-pixel
                  * color border at the base of walls caused by strict bounds checking.
@@ -615,15 +723,28 @@ void render_3d_draw(const GameState* game_state,
                             tx += floor_w;
                         if (ty < 0)
                             ty += floor_h_tex;
-                        row_pix[x] = floor_pix[ty * floor_w + tx];
+                        base_col = floor_pix[ty * floor_w + tx];
                     } else {
-                        row_pix[x] = texture_sample(g_render_3d.floor_texture, floor_x * floor_tex_scale,
-                                                    floor_y * floor_tex_scale, !fast_floor_tex);
+                        base_col = texture_sample(g_render_3d.floor_texture, floor_x * floor_tex_scale,
+                                                  floor_y * floor_tex_scale, !fast_floor_tex);
                     }
                 } else if (floor_x >= 0 && floor_x < (float)map_w && floor_y >= 0 && floor_y < (float)map_h) {
-                    row_pix[x] = floor_color;
+                    base_col = floor_color;
                 } else {
-                    row_pix[x] = floor_color;
+                    base_col = floor_color;
+                }
+
+                /* Apply shadow darkening */
+                if (in_shadow) {
+                    uint8_t r = (uint8_t)((base_col >> 16) & 0xFF);
+                    uint8_t g = (uint8_t)((base_col >> 8) & 0xFF);
+                    uint8_t b = (uint8_t)(base_col & 0xFF);
+                    r = (uint8_t)((float)r * shadow_factor);
+                    g = (uint8_t)((float)g * shadow_factor);
+                    b = (uint8_t)((float)b * shadow_factor);
+                    row_pix[x] = (0xFFu << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
+                } else {
+                    row_pix[x] = base_col;
                 }
             }
         }
@@ -635,6 +756,12 @@ void render_3d_draw(const GameState* game_state,
                 row_pix[x] = col;
         }
     }
+
+    /* Free decal structures */
+    if (decals)
+        free(decals);
+    if (buckets)
+        free(buckets);
 
     /* Wall pass (Column-major) */
     for (int x = 0; x < screen_w; x++) {
@@ -697,54 +824,11 @@ void render_3d_draw(const GameState* game_state,
     if (g_render_3d.sprite_renderer) {
         sprite_clear(g_render_3d.sprite_renderer);
 
-        /* Render shadows first (they'll be sorted by depth like regular sprites) */
-        uint32_t shadow_col = render_3d_sdl_color(0, 0, 0, 80); /* Semi-transparent black */
-
-        /* Food shadows */
-        for (int i = 0; i < game_state->food_count; i++) {
-            sprite_add_color(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
-                             (float)game_state->food[i].y + 0.5f, 0.15f, 0.0f, true, -1, 0, shadow_col);
-        }
-
-        /* Player head shadows */
-        for (int p = 0; p < game_state->num_players; p++) {
-            if (p == g_render_3d.config.active_player)
-                continue;
-            const PlayerState* player = &game_state->players[p];
-            if (!player->active || player->length == 0)
-                continue;
-            float head_x =
-                player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
-            float head_y =
-                player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
-            sprite_add_color(g_render_3d.sprite_renderer, head_x, head_y, 0.6f, 0.0f, true, -1, 0, shadow_col);
-        }
-
-        /* Snake body shadows */
-        for (int p = 0; p < game_state->num_players; p++) {
-            const PlayerState* player = &game_state->players[p];
-            if (!player->active || player->length <= 1)
-                continue;
-            for (int bi = 1; bi < player->length; bi++) {
-                float seg_x = (float)player->body[bi].x + 0.5f;
-                float seg_y = (float)player->body[bi].y + 0.5f;
-                if (player->prev_segment_x && player->prev_segment_y) {
-                    seg_x = player->prev_segment_x[bi] +
-                            (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * frame_interp_t;
-                    seg_y = player->prev_segment_y[bi] +
-                            (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
-                }
-                float tail_h = g_render_3d.config.tail_height_scale;
-                float shadow_h = tail_h * 0.6f; /* Shadows slightly smaller */
-                sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, shadow_h, 0.0f, true, -1, 0, shadow_col);
-            }
-        }
-
-        /* Now render actual sprites on top of shadows */
+        /* Render sprites (shadows are now floor decals) */
         for (int i = 0; i < game_state->food_count; i++) {
             uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
             sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
-                                    (float)game_state->food[i].y + 0.5f, 0.25f, 0.0f, true, -1, 0, apple_col);
+                                    (float)game_state->food[i].y + 0.5f, 0.25f, -0.5f, true, -1, 0, apple_col);
         }
         for (int p = 0; p < game_state->num_players; p++) {
             if (p == g_render_3d.config.active_player)

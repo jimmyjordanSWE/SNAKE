@@ -1,8 +1,8 @@
 Data Ownership (struct r/w totals):
   game: r(216) w(48)
   ctx: r(219) w(39)
-  g_render_3d: r(178) w(32)
-  player: r(158) w(30)
+  g_render_3d: r(173) w(32)
+  player: r(137) w(30)
   s: r(71) w(68)
   cfg: r(54) w(52)
   gs: r(78) w(17)
@@ -16,5 +16,5 @@ Data Ownership (struct r/w totals):
   c: r(15) w(27)
 
 Module Data Usage:
-  src: game:r216w48, ctx:r219w39, g_render_3d:r178w32, player:r158w30, s:r69w68
+  src: game:r216w48, ctx:r219w39, g_render_3d:r173w32, player:r137w30, s:r69w68
   tests: gs:r57w17, g:r19w6, outs:r16w0, g.players:r5w8, gs.players:r3w9

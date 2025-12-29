@@ -181,6 +181,7 @@ Tree(main):
         camera_prepare_angle_offsets
         camera_update_interpolation
         env_bool
+        free (see above)
         projection_get_wall_scale
         projection_project_wall_perp (see above)
         raycast_cast_ray

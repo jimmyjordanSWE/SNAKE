@@ -25,6 +25,8 @@
 typedef enum { RENDER_MODE_2D= 0, RENDER_MODE_3D, RENDER_MODE_COUNT } RenderMode;
 typedef struct {
 float x, y, radius, factor;
+float radius_sq;
+int factor_256;
 } Decal;
 typedef struct {
 short count;
@@ -417,7 +419,7 @@ g_render_3d.config.tail_height_scale= (float)PERSIST_CONFIG_DEFAULT_TAIL_SCALE;
 g_render_3d.config.wall_texture_path[0]= '\0';
 g_render_3d.config.floor_texture_path[0]= '\0';
 }
-g_render_3d.display= render_3d_sdl_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height);
+g_render_3d.display= render_3d_sdl_create(g_render_3d.config.screen_width, g_render_3d.config.screen_height, g_render_3d.config.vsync);
 if(!g_render_3d.display) return false;
 g_render_3d.camera= camera_create(g_render_3d.config.fov_degrees, g_render_3d.config.screen_width, 0.5f);
 if(!g_render_3d.camera) return false;
@@ -504,6 +506,8 @@ decals[decal_count].x= (float)gs->food[i].x + 0.5f;
 decals[decal_count].y= (float)gs->food[i].y + 0.5f;
 decals[decal_count].radius= 0.15f;
 decals[decal_count].factor= 0.4f;
+decals[decal_count].radius_sq= 0.0225f;
+decals[decal_count].factor_256= 102;
 decal_count++;
 }
 for(int pi= 0; pi < gs->num_players; pi++) {
@@ -512,8 +516,11 @@ if(!player->active) continue;
 for(int bi= 0; bi < player->length; bi++) {
 decals[decal_count].x= (float)player->body[bi].x + 0.5f;
 decals[decal_count].y= (float)player->body[bi].y + 0.5f;
-decals[decal_count].radius= (bi == 0) ? 0.25f : 0.2f;
+float r_val= (bi == 0) ? 0.25f : 0.2f;
+decals[decal_count].radius= r_val;
 decals[decal_count].factor= 0.4f;
+decals[decal_count].radius_sq= r_val * r_val;
+decals[decal_count].factor_256= 102;
 decal_count++;
 }
 }
@@ -584,7 +591,7 @@ float floor_y= wy_left;
 for(int x= 0; x < screen_w; x++) {
 uint32_t base_col;
 bool in_shadow= false;
-float shadow_factor= 1.0f;
+uint32_t shadow_factor_256= 256;
 if(buckets) {
 int tx= (int)floorf(floor_x), ty= (int)floorf(floor_y);
 if(tx >= 0 && tx < map_w && ty >= 0 && ty < map_h) {
@@ -592,9 +599,9 @@ TileBucket* b= &buckets[ty * map_w + tx];
 for(int bi= 0; bi < b->count; bi++) {
 int di= b->ids[bi];
 float dx_shadow= floor_x - decals[di].x, dy_shadow= floor_y - decals[di].y;
-if(dx_shadow * dx_shadow + dy_shadow * dy_shadow < decals[di].radius * decals[di].radius) {
+if(dx_shadow * dx_shadow + dy_shadow * dy_shadow < decals[di].radius_sq) {
 in_shadow= true;
-shadow_factor= decals[di].factor;
+shadow_factor_256= (uint32_t)decals[di].factor_256;
 break;
 }
 }
@@ -614,10 +621,13 @@ base_col= texture_sample(r->floor_texture, floor_x * floor_tex_scale, floor_y * 
 base_col= floor_color;
 }
 if(in_shadow) {
-uint8_t r_s= (uint8_t)((float)((base_col >> 16) & 0xFF) * shadow_factor);
-uint8_t g_s= (uint8_t)((float)((base_col >> 8) & 0xFF) * shadow_factor);
-uint8_t b_s= (uint8_t)((float)(base_col & 0xFF) * shadow_factor);
-row_pix[x]= (0xFFu << 24) | ((uint32_t)r_s << 16) | ((uint32_t)g_s << 8) | (uint32_t)b_s;
+uint32_t red= (base_col >> 16) & 0xFF;
+uint32_t green= (base_col >> 8) & 0xFF;
+uint32_t blue= base_col & 0xFF;
+red= (red * shadow_factor_256) >> 8;
+green= (green * shadow_factor_256) >> 8;
+blue= (blue * shadow_factor_256) >> 8;
+row_pix[x]= (0xFFu << 24) | (red << 16) | (green << 8) | blue;
 } else {
 row_pix[x]= base_col;
 }

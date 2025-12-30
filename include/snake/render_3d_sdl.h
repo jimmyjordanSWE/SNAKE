@@ -3,12 +3,12 @@
 #include <stdint.h>
 typedef struct SDL3DContext SDL3DContext;
 // Returns a newly allocated SDL3DContext; caller must call render_3d_sdl_destroy()
-SDL3DContext* render_3d_sdl_create(int width, int height);
+SDL3DContext* render_3d_sdl_create(int width, int height, int vsync);
 void render_3d_sdl_destroy(SDL3DContext* ctx);
 int render_3d_sdl_get_width(const SDL3DContext* ctx);
 int render_3d_sdl_get_height(const SDL3DContext* ctx);
 uint32_t* render_3d_sdl_get_pixels(SDL3DContext* ctx);
-bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out);
+bool render_3d_sdl_init(int width, int height, int vsync, SDL3DContext* ctx_out);
 void render_3d_sdl_shutdown(SDL3DContext* ctx);
 void render_3d_sdl_draw_column(SDL3DContext* ctx, int x, int y_start, int y_end, uint32_t col);
 void render_3d_sdl_clear(SDL3DContext* ctx, uint32_t col);

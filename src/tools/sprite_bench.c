@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     const int frames = 200;
     const int width = 320;
     const int height = 200;
-    SDL3DContext* ctx = render_3d_sdl_create(width, height);
+    SDL3DContext* ctx = render_3d_sdl_create(width, height, 0);
     if (!ctx) {
         fprintf(stderr, "failed to create ctx\n");
         return 1;

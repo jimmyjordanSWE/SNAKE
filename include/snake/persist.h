@@ -23,6 +23,7 @@
 #define PERSIST_CONFIG_MIN_SCREEN_HEIGHT 10
 #define PERSIST_CONFIG_MAX_SCREEN_HEIGHT 2160
 #define PERSIST_CONFIG_DEFAULT_FOV_DEGREES 90.0f
+#define PERSIST_CONFIG_DEFAULT_VSYNC 1
 #define PERSIST_CONFIG_DEFAULT_SHOW_SPRITE_DEBUG 0
 #define PERSIST_CONFIG_DEFAULT_ACTIVE_PLAYER 0
 #define PERSIST_CONFIG_DEFAULT_NUM_PLAYERS 2
@@ -80,6 +81,8 @@ void game_config_set_player_name(GameConfig* cfg, const char* name);
 const char* game_config_get_player_name(const GameConfig* cfg);
 void game_config_set_render_glyphs(GameConfig* cfg, int v);
 int game_config_get_render_glyphs(const GameConfig* cfg);
+void game_config_set_vsync(GameConfig* cfg, int v);
+int game_config_get_vsync(const GameConfig* cfg);
 void game_config_set_show_sprite_debug(GameConfig* cfg, int v);
 int game_config_get_show_sprite_debug(const GameConfig* cfg);
 void game_config_set_num_players(GameConfig* cfg, int n);

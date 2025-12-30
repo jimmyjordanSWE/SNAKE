@@ -4,17 +4,18 @@
 #include <stdbool.h>
 struct SDL3DContext;
 typedef struct {
-int active_player;
-float fov_degrees;
-bool show_sprite_debug;
-int screen_width;
-int screen_height;
-float wall_height_scale;
-float tail_height_scale;
-float wall_texture_scale;
-float floor_texture_scale;
-char wall_texture_path[PERSIST_TEXTURE_PATH_MAX];
-char floor_texture_path[PERSIST_TEXTURE_PATH_MAX];
+    int active_player;
+    float fov_degrees;
+    int vsync;
+    bool show_sprite_debug;
+    int screen_width;
+    int screen_height;
+    float wall_height_scale;
+    float tail_height_scale;
+    float wall_texture_scale;
+    float floor_texture_scale;
+    char wall_texture_path[PERSIST_TEXTURE_PATH_MAX];
+    char floor_texture_path[PERSIST_TEXTURE_PATH_MAX];
 } Render3DConfig;
 bool render_3d_init(const GameState* game_state, const Render3DConfig* config);
 void render_3d_draw(const GameState* game_state, const char* player_name, const void* scores, int score_count, float delta_seconds);

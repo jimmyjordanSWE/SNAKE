@@ -60,6 +60,7 @@ int screen_width, screen_height;
 int enable_external_3d_view;
 uint32_t seed;
 float fov_degrees;
+int vsync;
 int show_sprite_debug;
 int active_player;
 int num_players;
@@ -214,6 +215,14 @@ if(!cfg) return;
 cfg->render_glyphs= (v != 0) ? 1 : 0;
 }
 int game_config_get_render_glyphs(const GameConfig* cfg) { return cfg ? cfg->render_glyphs : 0; }
+void game_config_set_vsync(GameConfig* cfg, int v) {
+if(!cfg) return;
+cfg->vsync= v;
+}
+int game_config_get_vsync(const GameConfig* cfg) {
+if(!cfg) return 1;
+return cfg->vsync;
+}
 void game_config_set_show_sprite_debug(GameConfig* cfg, int v) {
 if(!cfg) return;
 cfg->show_sprite_debug= v;

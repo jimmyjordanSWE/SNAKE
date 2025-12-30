@@ -37,10 +37,10 @@ SDL_Texture* texture;
 Uint32 texture_format;
 bool initialized;
 };
-SDL3DContext* render_3d_sdl_create(int width, int height) {
+SDL3DContext* render_3d_sdl_create(int width, int height, int vsync) {
 SDL3DContext* ctx= calloc(1, sizeof *ctx);
 if(!ctx) return NULL;
-if(!render_3d_sdl_init(width, height, ctx)) {
+if(!render_3d_sdl_init(width, height, vsync, ctx)) {
 free(ctx);
 return NULL;
 }
@@ -54,7 +54,7 @@ free(ctx);
 int render_3d_sdl_get_width(const SDL3DContext* ctx) { return ctx ? ctx->width : 0; }
 int render_3d_sdl_get_height(const SDL3DContext* ctx) { return ctx ? ctx->height : 0; }
 uint32_t* render_3d_sdl_get_pixels(SDL3DContext* ctx) { return ctx ? ctx->pixels : NULL; }
-bool render_3d_sdl_init(int width, int height, SDL3DContext* ctx_out) {
+bool render_3d_sdl_init(int width, int height, int vsync, SDL3DContext* ctx_out) {
 if(!ctx_out || width <= 0 || height <= 0) return false;
 if(ctx_out->initialized) return true;
 if(width > (int)(SIZE_MAX / ((size_t)height * sizeof(uint32_t)))) return false;

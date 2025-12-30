@@ -21,7 +21,7 @@ VENV_PYTHON ?= .venv/bin/python3
 # Use explicit toggles to avoid collisions and keep builds fast.
 PREBUILD :=
 
-CPPFLAGS_BASE ?= -Iinclude/snake -Isrc/core -Isrc/render -Isrc/render/internal -Isrc/vendor -D_POSIX_C_SOURCE=200809L $(shell pkg-config --cflags sdl2)
+CPPFLAGS_BASE ?= -Iinclude/snake -Isrc/core -Isrc/render -Isrc/render/internal -Ivendor/stb -D_POSIX_C_SOURCE=200809L $(shell pkg-config --cflags sdl2)
 CFLAGS_BASE ?= -std=c99
 
 # Keep code quality high from the start.
@@ -78,11 +78,11 @@ endif
 
 OBJ_DIR := $(BUILD_DIR)/obj
 BIN := snakegame.out
-LOG_DIR := $(BUILD_ROOT)/logs
+LOG_DIR := logs
 
 # Source file scanning
 SRC_FILES := $(shell find src -type f -name "*.c" ! -path "src/tools/*")
-SRC := $(SRC_FILES) main.c
+SRC := $(SRC_FILES) main.c vendor/stb/stb_image.c
 OBJ := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 
@@ -156,6 +156,8 @@ analyze:
 	if [ ! -f "$$VENV_PYTHON" ]; then echo "Error: Virtual environment not found at $$VENV_PYTHON"; exit 1; fi; \
 	mkdir -p "$$OUT_DIR"; \
 	echo "Refreshing LLM Context (Static Analysis)..."; \
+	echo "- optimizing code for LLM tokens (format-llm)..."; \
+	$(MAKE) format-llm; \
 	echo "- refreshing structure context..."; \
 	"$$VENV_PYTHON" "$$SCRIPTS_DIR/structure.py" > "$$OUT_DIR/structure_out.txt"; \
 	for script in "memory_map.py" "call_chains.py" "errors.py" "data_flow.py" "hotspots.py" "invariants.py" "long_functions.py" "token_count.py"; do \
@@ -164,15 +166,15 @@ analyze:
 	echo -e "\nLLM Context Updated. Results in $$OUT_DIR/";
 
 unit-tests:
-	@mkdir -p scripts/out; \
+	@mkdir -p $(LOG_DIR); \
 	set -e; \
 	echo "Building unified test runner (ASAN)..."; \
-	# Build a single unified test binary with all Unity tests and required code. Link with third-party libs as needed.
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Isrc/vendor -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl || \
-	($(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Isrc/vendor -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl); \
+	# Build a single unified test binary with all Unity tests and required code. Link with third-party libs as needed. \
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Ivendor/stb -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl || \
+	($(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Isrc -Ivendor/stb -Ivendor/unity tests/unity/*.c vendor/unity/unity.c $(filter-out main.c,$(SRC)) -o test_all.out $(LDLIBS) -lpthread -lz -lm -ldl); \
 	# Run the unified test binary and capture logs
-	./test_all.out 2>&1 | tee scripts/out/unit-tests.log; \
-	echo "unit-tests completed"; \
+	./test_all.out 2>&1 | tee $(LOG_DIR)/unit-tests.log; \
+	echo "unit-tests completed: $(LOG_DIR)/unit-tests.log"; \
 	exit $${PIPESTATUS[0]};
 
 test: unit-tests
@@ -185,30 +187,33 @@ bench-tty:
 	@echo "built build/tty_bench.out"
 
 bench:
-	@mkdir -p build/logs
-	@script -q -c "env SDL_VIDEODRIVER=dummy build/tty_bench.out" build/logs/perf_tty_bench_latest.txt || true
-	@echo "bench completed: build/logs/perf_tty_bench_latest.txt";
+	@mkdir -p $(LOG_DIR)/bench
+	@script -q -c "env SDL_VIDEODRIVER=dummy build/tty_bench.out" $(LOG_DIR)/bench/perf_tty_bench_latest.txt || true
+	@echo "bench completed: $(LOG_DIR)/bench/perf_tty_bench_latest.txt";
 
 bench-render:
 	@mkdir -p build
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Isrc/vendor -D_POSIX_C_SOURCE=200809L src/render/raycast.c src/render/projection.c src/render/texture.c src/render/camera.c src/tools/render_bench.c src/vendor/stb_image.c -o build/render_bench.out $(LDLIBS) || true
-	@script -q -c "build/render_bench.out" build/logs/perf_render_bench_latest.txt || true
-	@echo "bench-render completed: build/logs/perf_render_bench_latest.txt";
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Ivendor/stb -D_POSIX_C_SOURCE=200809L src/render/raycast.c src/render/projection.c src/render/texture.c src/render/camera.c src/tools/render_bench.c vendor/stb/stb_image.c -o build/render_bench.out $(LDLIBS) || true
+	@mkdir -p $(LOG_DIR)/bench
+	@script -q -c "build/render_bench.out" $(LOG_DIR)/bench/perf_render_bench_latest.txt || true
+	@echo "bench-render completed: $(LOG_DIR)/bench/perf_render_bench_latest.txt";
 bench-texture:
 	@mkdir -p build
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -D_POSIX_C_SOURCE=200809L src/render/texture.c src/tools/texture_bench.c src/vendor/stb_image.c -o build/texture_bench.out $(LDLIBS) || true
-	@script -q -c "build/texture_bench.out" build/logs/perf_texture_bench_latest.txt || true
-	@echo "bench-texture completed: build/logs/perf_texture_bench_latest.txt";
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -D_POSIX_C_SOURCE=200809L src/render/texture.c src/tools/texture_bench.c vendor/stb/stb_image.c -o build/texture_bench.out $(LDLIBS) || true
+	@mkdir -p $(LOG_DIR)/bench
+	@script -q -c "build/texture_bench.out" $(LOG_DIR)/bench/perf_texture_bench_latest.txt || true
+	@echo "bench-texture completed: $(LOG_DIR)/bench/perf_texture_bench_latest.txt";
 
 bench-sprite:
 	@mkdir -p build
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Isrc/vendor -D_POSIX_C_SOURCE=200809L src/render/sprite.c src/render/render_3d_sdl.c src/render/camera.c src/render/projection.c src/tools/sprite_bench.c -o build/sprite_bench.out $(LDLIBS) || true
-	@script -q -c "env SNAKE_SPRITE_PROFILE=1 build/sprite_bench.out" build/logs/perf_sprite_bench_latest.txt || true
-	@echo "bench-sprite completed: build/logs/perf_sprite_bench_latest.txt";
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -Iinclude/snake -Isrc -Ivendor/stb -D_POSIX_C_SOURCE=200809L src/render/sprite.c src/render/render_3d_sdl.c src/render/camera.c src/render/projection.c src/tools/sprite_bench.c -o build/sprite_bench.out $(LDLIBS) || true
+	@mkdir -p $(LOG_DIR)/bench
+	@script -q -c "env SNAKE_SPRITE_PROFILE=1 build/sprite_bench.out" $(LOG_DIR)/bench/perf_sprite_bench_latest.txt || true
+	@echo "bench-sprite completed: $(LOG_DIR)/bench/perf_sprite_bench_latest.txt";
 context: llvm-context
 
 llvm-context:
-	@./scripts/analyze_all.sh
+	@$(MAKE) analyze
 	@./.venv/bin/python3 ./scripts/structure.py > PROJECT_CONTEXT.txt
 	@echo "Context updated."
 
@@ -222,6 +227,6 @@ mpapi-start:
 -include $(DEP)
 
 clean:
-	@rm -rf $(BUILD_ROOT) $(BIN)
+	@rm -rf $(BUILD_ROOT) $(BIN) logs
 	@rm -f test_*
 	@echo "CLEAN OK"

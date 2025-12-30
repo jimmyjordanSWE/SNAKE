@@ -57,19 +57,22 @@ def main():
     
     all_transitions = {}
     
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
-        for file in sorted(files):
-            if file.endswith('.c'):
-                file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, project_root)
-                with open(file_path, 'rb') as f:
-                    source_code = f.read()
-                tree = parser.parse(source_code)
-                results = []
-                find_transitions(tree.root_node, source_code, rel_path, results)
-                if results:
-                    all_transitions[rel_path] = results
+    included_dirs = {'src', 'include'}
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path): continue
+        for root, _, files in os.walk(dir_path):
+            for file in sorted(files):
+                if file.endswith('.c'):
+                    file_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(file_path, project_root)
+                    with open(file_path, 'rb') as f:
+                        source_code = f.read()
+                    tree = parser.parse(source_code)
+                    results = []
+                    find_transitions(tree.root_node, source_code, rel_path, results)
+                    if results:
+                        all_transitions[rel_path] = results
 
     print("# State Transitions (state/status/mode/active/valid/etc)")
     total = 0

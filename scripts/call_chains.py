@@ -50,32 +50,35 @@ def main():
     func_to_module = {}
     ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
-        for file in sorted(files):
-            if file.endswith('.c'):
-                file_path = os.path.join(root, file)
-                module = os.path.splitext(file)[0]
-                with open(file_path, 'rb') as f:
-                    source_code = f.read()
-                tree = parser.parse(source_code)
-                
-                # First pass: find all function definitions in this file
-                def find_defs(node):
-                    if node.type == 'function_definition':
-                        decl = node.child_by_field_name('declarator')
-                        while decl and decl.type in ('pointer_declarator', 'parenthesized_declarator'):
-                             if decl.child_count > 0: decl = decl.children[0]
-                        if decl and decl.type == 'function_declarator':
-                             fname_node = decl.child_by_field_name('declarator')
-                             if fname_node:
-                                 func_name = source_code[fname_node.start_byte:fname_node.end_byte].decode('utf-8')
-                                 func_to_module[func_name] = module
-                    for child in node.children: find_defs(child)
-                find_defs(tree.root_node)
-                
-                # Second pass: analyze calls
-                analyze_function(tree.root_node, source_code, None, call_graph)
+    included_dirs = {'src', 'include'}
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path): continue
+        for root, _, files in os.walk(dir_path):
+            for file in sorted(files):
+                if file.endswith('.c'):
+                    file_path = os.path.join(root, file)
+                    module = os.path.splitext(file)[0]
+                    with open(file_path, 'rb') as f:
+                        source_code = f.read()
+                    tree = parser.parse(source_code)
+                    
+                    # First pass: find all function definitions in this file
+                    def find_defs(node):
+                        if node.type == 'function_definition':
+                            decl = node.child_by_field_name('declarator')
+                            while decl and decl.type in ('pointer_declarator', 'parenthesized_declarator'):
+                                 if decl.child_count > 0: decl = decl.children[0]
+                            if decl and decl.type == 'function_declarator':
+                                 fname_node = decl.child_by_field_name('declarator')
+                                 if fname_node:
+                                     func_name = source_code[fname_node.start_byte:fname_node.end_byte].decode('utf-8')
+                                     func_to_module[func_name] = module
+                        for child in node.children: find_defs(child)
+                    find_defs(tree.root_node)
+                    
+                    # Second pass: analyze calls
+                    analyze_function(tree.root_node, source_code, None, call_graph)
 
     def get_module(fn):
         return func_to_module.get(fn, 'stdlib')

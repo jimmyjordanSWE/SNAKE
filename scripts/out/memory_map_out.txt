@@ -1,31 +1,21 @@
 # Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]
-src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
-src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 405f 406f 407f 409f 413f
-src/core/player.c: 12c 22f
-src/net/mpapi_client.c: 78f 99f 143m 166m 184f 191f 198f 204f 247c 396f 397f
-src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 253m 258f 264f
-src/persist/persist.c: 40c 51f 113c 187f 495c 553f 612r 647f 970m 971m 985f 986f
-src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 459c 460c 461m 463f 464f 465f 481f 482f 483f
-src/render/camera.c: 54c 63f 65f 228r
-src/render/display_3d.c: 11c 21f 50c 102f
-src/render/display_tty.c: 12m 17f 22f 32f
-src/render/projection.c: 12c 19f
-src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 491c 537r 547r 770r 771r 867f 871f 875f 881f 886f
-src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 338m 343f
-src/render/sprite.c: 33c 477f 485c 495f
-src/render/texture.c: 26c 41m 59f 258f 276m 300f
-src/snakegame.c: 123m 159m 166f 184f 186f 192r 194f 202f 209f 215r 217f 225f 230r 260m 265f 408f 464f 718f 757f
+src/core/collision.c: 40m 41m 42m 44f 45f 46f 122f 123f 124f
+src/core/game.c: 27m 39f 293c 296m 298f 304m 305m 306m 308f 309f 310f 330f 331f 343f 344f 345f 347f 351f
+src/core/player.c: 12c 20f
+src/net/mpapi_client.c: 72f 92f 131m 153m 169f 176f 183f 189f 229c 355f 356f
+src/net/net.c: 112m 118m 148f 152f 162f 168f 192m 203f 231m 235f 241f
+src/persist/persist.c: 35c 43f 99c 170f 375c 422f 474r 507f 772m 773m 787f 788f
+src/platform/tty.c: 112m 168c 169c 182m 205f 206f 207f 212f 236f 237f 238f 240f 382c 383c 384m 386f 387f 388f 404f 405f 406f
+src/render/camera.c: 50c 57f 59f 182r
+src/render/display_3d.c: 11c 19f 41c 78f
+src/render/display_tty.c: 10m 14f 19f 27f
+src/render/projection.c: 12c 17f
+src/render/raycast.c: 12c 19f
+src/render/render_3d.c: 452c 486r 494r 680r 681r 755f 759f 763f 769f 774f
+src/render/render_3d_sdl.c: 41c 44f 52f 70m 111m 122f 148f 288m 292f
+src/render/sprite.c: 30c 377f 385c 393f
+src/render/texture.c: 26c 38m 53f 210f 228m 251f
+src/snakegame.c: 108m 142m 147f 161f 163f 169r 171f 179f 186f 192r 194f 202f 207r 234m 238f 363f 414f 640f 672f
 src/tools/render_bench.c: 36m 37m 38m 99f 100f 101f
 src/tools/sprite_bench.c: 45c 61f
-tests/unity/test_collision.c: 21c 24c 34f 35f
-tests/unity/test_net_integration.c: 36c 44f
-tests/unity/test_persist.c: 74f
-tests/unity/test_persist_config.c: 65f
-tests/unity/test_persist_long_lines.c: 20m 27f
-tests/unity/test_persist_truncation.c: 13m 18f
-tests/unity/test_render_minimap.c: 16c 21c 48f 49f
-tests/unity/test_texture_path.c: 14m 20f
-tests/unity/test_texture_path_extra.c: 21m 27f
-tests/unity/test_tty_path.c: 8m 14f
-# Mem: 71a, 107f (29 files)
+# Mem: 61a, 95f (19 files)

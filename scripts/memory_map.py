@@ -31,18 +31,21 @@ def main():
     ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj'}
     
     seen_files = {} # path -> [allocs]
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
-        for file in sorted(files):
-            if file.endswith(('.c', '.h')):
-                file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, project_root)
-                with open(file_path, 'rb') as f:
-                    source_code = f.read()
-                tree = parser.parse(source_code)
-                allocs = find_allocations(tree.root_node, source_code, rel_path)
-                if allocs:
-                    seen_files[rel_path] = allocs
+    included_dirs = {'src', 'include'}
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path): continue
+        for root, _, files in os.walk(dir_path):
+            for file in sorted(files):
+                if file.endswith(('.c', '.h')):
+                    file_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(file_path, project_root)
+                    with open(file_path, 'rb') as f:
+                        source_code = f.read()
+                    tree = parser.parse(source_code)
+                    allocs = find_allocations(tree.root_node, source_code, rel_path)
+                    if allocs:
+                        seen_files[rel_path] = allocs
 
     # Token-minimized output with legend
     print("# Legend: [m]alloc [c]alloc [r]ealloc [f]ree  Format: line[op]")

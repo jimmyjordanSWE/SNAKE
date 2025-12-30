@@ -1,40 +1,18 @@
 Flow:
- camera->oom_overrides
- collision->oom_overrides
- display_3d->oom_overrides
- display_tty->oom_overrides,tty
- fuzz_stb_image->net,persist
- game->collision,direction,oom_overrides,persist,player,rng
+ display_tty->tty
+ game->collision,direction,persist,player,rng
  input->persist
- mpapi_client->console,net_log,oom_overrides,platform
- net->net_log,oom_overrides
- persist->oom_overrides
- player->oom_overrides
- projection->oom_overrides
- raycast->oom_overrides
+ mpapi_client->console,net_log,platform
+ net->net_log
  render->display_tty,persist,platform,render_3d,render_input
- render_3d->camera,env,oom_overrides,projection,raycast,render_3d_sdl,sprite,texture
- render_3d_sdl->oom_overrides
- snakegame->console,game,input,mpapi_client,oom_overrides,persist,platform,render,render_3d,tty
- sprite->camera,oom_overrides,projection,render_3d_sdl
- test_camera_angles->camera
- test_game_colors->game,persist
- test_game_reset_lives->game,persist
- test_persist_long_lines->oom_overrides,persist
- test_projection->projection
- test_render_lives_ui->display_tty,game,persist,render
- test_render_minimap->oom_overrides,render_3d,render_3d_sdl
- test_runner->camera,console,net_log,oom_overrides,persist,projection,raycast,render_3d_sdl,snakegame,sprite,texture,tty,tty_bench
- test_texture_sample->texture
- test_tty_resize_overflow->tty
- texture->oom_overrides
- tty->oom_overrides
+ render_3d->camera,env,projection,raycast,render_3d_sdl,sprite,texture
+ snakegame->console,game,input,mpapi_client,persist,platform,render,render_3d,tty
+ sprite->camera,projection,render_3d_sdl
+ tty_bench->camera,projection,raycast,render_3d_sdl,sprite,texture,tty
 
 Tree(main):
   main
     camera_destroy
-      free
-        ensure_real_fns
     camera_fill_ray_angle_offsets
     camera_get_fov_radians
     camera_get_interpolated_angle
@@ -45,396 +23,57 @@ Tree(main):
       normalize_angle
       update_vectors
     camera_set_position
-    console_info
-    free (see above)
-    game_config_destroy
-      free (see above)
-    net_log_init
-      open_log_if_needed
-        timestr
-    persist_load_config
-      clamp_int
-      parse_graphics_config
-        clamp_int
-      parse_legacy_keys
-      parse_multiplayer_config
-      parse_player_config
     projection_destroy
-      free (see above)
     projection_project_wall_perp
       projection_project_wall
     raycast_cast_ray_fast
     raycast_get_texture_coord
     raycaster_destroy
-      free (see above)
     render_3d_sdl_destroy
-      free (see above)
       render_3d_sdl_shutdown
-        free (see above)
-    run_single_by_name
-      tests_count
-    snake_game_free
-      free (see above)
-      game_config_destroy (see above)
-      game_destroy
-        free (see above)
-        game_free
-          free (see above)
-      input_shutdown
-        restore_terminal
-      render_3d_shutdown
-        camera_destroy (see above)
-        free (see above)
-        projection_destroy (see above)
-        raycaster_destroy (see above)
-        render_3d_sdl_destroy (see above)
-        sprite_destroy
-          free (see above)
-          sprite_shutdown
-            free (see above)
-        texture_destroy
-          free (see above)
-          texture_free_image
-            free (see above)
-      render_shutdown
-        display_shutdown
-          free (see above)
-          tty_close
-            free (see above)
-    snake_game_run
-      console_game_ran
-        console_info
-      free (see above)
-      game_config_get_board_size
-      game_config_get_tick_rate_ms
-      game_destroy (see above)
-      game_get_num_players
-        game_state_get_num_players
-      game_get_status
-      game_player_current_score
-        game_state_player_current_score
-      game_player_is_active
-        game_state_player_is_active
-      game_reset
-        game_state_reset
-          food_respawn
-            point_in_any_snake
-              point_in_player
-            point_is_food
-            random_point
-              snake_rng_range
-                snake_rng_next_u32
-            snake_rng_range (see above)
-          spawn_player
-            collision_is_wall
-            collision_next_head
-            opposite_dir
-            point_in_player
-            snake_rng_range (see above)
-      game_step
-        game_state_get_num_players
-        game_tick
-          collision_detect_and_resolve
-            collision_is_self
-            collision_is_snake
-            collision_is_wall
-            collision_next_head
-            free (see above)
-          collision_next_head
-          food_respawn (see above)
-          opposite_dir
-          player_move
-          spawn_player (see above)
-      input_poll
-        input_poll_from_buf
-          ascii_tolower
-          parse_arrow_key
-      input_shutdown (see above)
-      mpclient_destroy
-        free (see above)
-        mpclient_stop
-      mpclient_get_session
-      mpclient_has_session
-      mpclient_poll_message
-        free (see above)
-      mpclient_send_game
-        send_command
-          net_log_info
-            open_log_if_needed (see above)
-            timestr
-          net_log_send
-            log_io
-              hex_dump_to_file
-              open_log_if_needed (see above)
-              timestr
-          send_all
-            net_log_send (see above)
-      mpclient_stop
-      parse_remote_game_state
-        parse_json_int
-        parse_json_str
-      persist_free_scores
-        free (see above)
-        highscore_destroy
-          free (see above)
-      persist_read_scores
-        free (see above)
-      platform_now_ms
-      platform_sleep_ms
-      platform_was_resized
-      render_3d_draw
-        camera_get_interpolated_angle (see above)
-        camera_get_interpolated_position
-        camera_get_interpolation_fraction
-        camera_prepare_angle_offsets
-        camera_update_interpolation
-        env_bool
-        render_3d_draw_debug_overlays
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-          texture_sample
-            sample_bilinear
-              sample_bilinear_fast
-              sample_bilinear_slow_normalized
-              uv_in_unit_range
-            sample_nearest
-              sample_nearest_norm
-              uv_in_unit_range
-        render_3d_draw_floor_ceiling_pass
-          projection_get_wall_scale
-          texture_get_img_h
-          texture_get_img_w
-          texture_sample (see above)
-        render_3d_draw_fps_counter
-          render_3d_draw_char
-            render_3d_sdl_get_height
-            render_3d_sdl_get_width
-        render_3d_draw_minimap
-          env_bool
-          render_3d_compute_minimap_cell_px
-          render_3d_log
-          render_3d_sdl_draw_filled_circle
-            render_3d_sdl_blend_pixel
-              blend_px
-          render_3d_sdl_draw_filled_rect
-            render_3d_sdl_blend_pixel (see above)
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-          render_3d_shade_color
-        render_3d_draw_walls_pass
-          projection_project_wall_perp (see above)
-          raycast_cast_ray_fast
-          raycast_get_texture_coord
-          texture_get_img_h
-          texture_get_img_w
-          texture_sample (see above)
-        render_3d_log
-        render_3d_now
-        render_3d_sdl_get_height
-        render_3d_sdl_get_width
-        render_3d_sdl_present
-          free (see above)
-        render_3d_setup_floor_decals
-        render_3d_shade_color
-        render_3d_update_fps
-        sprite_add_color
-        sprite_add_color_shaded
-          sprite_add_color
-        sprite_clear
-        sprite_draw
-          clamp_u8
-          now_ns
-          render_3d_sdl_blend_pixel (see above)
-          render_3d_sdl_draw_column
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-        sprite_project_all
-          camera_get_interpolated_angle (see above)
-          camera_get_interpolated_position
-          now_ns
-          projection_get_fov_radians
-          projection_get_screen_height
-          projection_get_screen_width
-          projection_project_wall
-        sprite_sort_by_depth
-          now_ns
-          sprite_insertion_sort
-            sprite_cmp_direct
-      render_3d_draw_death_overlay
-        render_3d_draw_text_centered
-          render_3d_draw_char (see above)
-          render_3d_sdl_get_width
-        render_3d_sdl_draw_filled_rect (see above)
-        render_3d_sdl_get_height
-        render_3d_sdl_get_width
-        render_3d_sdl_present (see above)
-      render_3d_on_tick
-        camera_set_from_player
-          normalize_angle
-          update_vectors
-      render_3d_shutdown (see above)
-      render_draw
-        display_clear
-          tty_clear_back
-          tty_get_size
-          tty_put_pixel
-        display_get_size
-          tty_get_size
-        display_present
-          tty_flip
-            ascii_pixel_equal
-            buf_append_uint
-            buf_safe_append_char
-            utf16_surrogate_pair_to_utf8
-            utf16_to_utf8
-        display_put_char
-          map_color
-          tty_put_pixel
-        draw_box
-          display_get_size (see above)
-          display_put_char (see above)
-        draw_string
-          display_put_string
-            display_put_char (see above)
-            tty_get_size
-        draw_top_bar
-          display_get_size (see above)
-          display_put_hline
-            display_put_char (see above)
-            tty_get_size
-          draw_centered_string
-            display_get_size (see above)
-            draw_string (see above)
-        fill_background
-          display_get_size (see above)
-          display_put_char (see above)
-        glyph_for_segment
-          glyph_for_segment_ascii
-            links_to_neighbor
-          glyph_for_segment_utf8
-            links_to_neighbor
-        gradient_color_for_rank
-        highscore_get_score
-        invalidate_front_buffer
-          display_force_redraw
-            tty_force_redraw
-              tty_flip (see above)
-        is_session_score_from_display
-      render_draw_death_overlay
-        display_get_size (see above)
-        display_present (see above)
-        draw_box (see above)
-        draw_string (see above)
-        fill_rect
-          display_get_size (see above)
-          display_put_char (see above)
-      render_draw_remote_players
-        display_get_size (see above)
-        display_present (see above)
-        display_put_char (see above)
-        draw_string (see above)
-      render_push_mp_message
-        invalidate_front_buffer (see above)
-      render_set_session_id
-        invalidate_front_buffer (see above)
-      render_shutdown (see above)
-      snake_game_append_score_if_qualifies
-        console_warn
-        highscore_get_score
-        persist_append_score
-          highscore_get_score
-          highscore_set_name
-          highscore_set_score
-          persist_free_scores (see above)
-          persist_read_scores (see above)
-          persist_write_scores
-            highscore_get_score
-        persist_free_scores (see above)
-        persist_read_scores (see above)
-        render_note_session_score
-      snake_game_handle_multiplayer_end
-        console_warn
-        game_reset (see above)
-        input_poll (see above)
-        persist_append_score (see above)
-        platform_sleep_ms
-        render_3d_draw_death_overlay (see above)
-        render_3d_draw_winner_overlay
-          render_3d_draw_text_centered (see above)
-          render_3d_sdl_draw_filled_rect (see above)
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-          render_3d_sdl_present (see above)
-        render_draw (see above)
-        render_draw_death_overlay (see above)
-        render_draw_winner_overlay
-          display_get_size (see above)
-          display_present (see above)
-          draw_box (see above)
-          draw_centered_string (see above)
-          fill_rect (see above)
-        render_prompt_for_highscore_name
-          display_clear (see above)
-          display_get_size (see above)
-          display_present (see above)
-          display_put_char (see above)
-          draw_centered_string (see above)
-          draw_string (see above)
-          platform_sleep_ms
-          render_3d_draw_congrats_overlay
-            render_3d_draw_text_centered (see above)
-            render_3d_sdl_draw_filled_rect (see above)
-            render_3d_sdl_get_height
-            render_3d_sdl_get_width
-            render_3d_sdl_present (see above)
-          render_sanitize_player_name
-      snake_game_handle_resize
-        console_box_paused_terminal_small
-          console_info
-        console_terminal_resized
-          console_info
-        input_poll (see above)
-        platform_get_terminal_size
-        platform_sleep_ms
-        render_draw (see above)
-        tty_size_sufficient_for_board
-      snake_game_process_inputs
-        game_enqueue_input
-          game_state_reset (see above)
-          snake_dir_turn_left
-          snake_dir_turn_right
-        game_get_num_players (see above)
-        input_poll_all
-          input_poll_all_from_buf_impl
-            ascii_tolower
-            parse_arrow_key
-      snake_game_run_headless
-        free (see above)
-        game_config_get_tick_rate_ms
-        game_enqueue_input (see above)
-        game_get_num_players (see above)
-        game_get_status
-        game_reset (see above)
-        game_step (see above)
-        headless_print_state
-        mpclient_has_session
-        mpclient_poll_message (see above)
-        mpclient_send_game (see above)
-        parse_remote_game_state (see above)
-        platform_sleep_ms
     sprite_add_color
-    sprite_destroy (see above)
-    sprite_draw (see above)
-    sprite_project_all (see above)
-    sprite_sort_by_depth (see above)
-    tests_count
-    texture_destroy (see above)
+    sprite_destroy
+      sprite_shutdown
+    sprite_draw
+      clamp_u8
+      now_ns
+      render_3d_sdl_blend_pixel
+        blend_px
+      render_3d_sdl_draw_column
+      render_3d_sdl_get_height
+      render_3d_sdl_get_width
+    sprite_project_all
+      camera_get_interpolated_angle (see above)
+      camera_get_interpolated_position
+      now_ns
+      projection_get_fov_radians
+      projection_get_screen_height
+      projection_get_screen_width
+      projection_project_wall
+    sprite_sort_by_depth
+      now_ns
+      sprite_insertion_sort
+        sprite_cmp_direct
+    texture_destroy
+      texture_free_image
     texture_get_texel
-      texture_sample (see above)
+      texture_sample
+        sample_bilinear
+          sample_bilinear_fast
+          sample_bilinear_slow_normalized
+          uv_in_unit_range
+        sample_nearest
+          sample_nearest_norm
+          uv_in_unit_range
       texture_shade_from_distance
     texture_has_image
     texture_sample (see above)
     timespec_diff_ms
-    tty_close (see above)
-    tty_flip (see above)
+    tty_close
+    tty_flip
+      ascii_pixel_equal
+      buf_append_uint
+      buf_safe_append_char
+      utf16_surrogate_pair_to_utf8
+      utf16_to_utf8
     tty_put_pixel

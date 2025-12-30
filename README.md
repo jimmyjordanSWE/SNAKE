@@ -84,7 +84,7 @@ SNAKE_NET_LOG=/tmp/snake_net.log ./snakegame
 
 ## Configuration
 
-Edit `snake_cfg.txt` to customize:
+Edit `snake.cfg` to customize:
 
 Multiplayer (mpapi):
 - `mp_enabled` = true|false
@@ -155,7 +155,7 @@ To start the vendored server:
 make mpapi-start
 ```
 
-Edit `snake_cfg.txt` to customize:
+Edit `snake.cfg` to customize:
 
 | Setting | Description | Default |
 |---------|-------------|---------|

@@ -39,27 +39,30 @@ def main():
     global_types = defaultdict(lambda: {'r': 0, 'w': 0})
     module_types = defaultdict(lambda: defaultdict(lambda: {'r': 0, 'w': 0}))
     
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
-        for file in sorted(files):
-            if file.endswith('.c'):
-                file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, project_root)
-                parts = rel_path.split(os.sep)
-                module = parts[0] if len(parts) > 1 else 'root'
+    included_dirs = {'src', 'include'}
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path): continue
+        for root, _, files in os.walk(dir_path):
+            for file in sorted(files):
+                if file.endswith('.c'):
+                    file_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(file_path, project_root)
+                    parts = rel_path.split(os.sep)
+                    module = parts[0] if len(parts) > 1 else 'root'
                 
-                with open(file_path, 'rb') as f:
-                    source_code = f.read()
-                tree = parser.parse(source_code)
-                
-                file_types = defaultdict(lambda: {'r': 0, 'w': 0})
-                find_struct_access(tree.root_node, source_code, file_types)
-                
-                for t, counts in file_types.items():
-                    global_types[t]['r'] += counts['r']
-                    global_types[t]['w'] += counts['w']
-                    module_types[module][t]['r'] += counts['r']
-                    module_types[module][t]['w'] += counts['w']
+                    with open(file_path, 'rb') as f:
+                        source_code = f.read()
+                    tree = parser.parse(source_code)
+                    
+                    file_types = defaultdict(lambda: {'r': 0, 'w': 0})
+                    find_struct_access(tree.root_node, source_code, file_types)
+                    
+                    for t, counts in file_types.items():
+                        global_types[t]['r'] += counts['r']
+                        global_types[t]['w'] += counts['w']
+                        module_types[module][t]['r'] += counts['r']
+                        module_types[module][t]['w'] += counts['w']
     
     print("Data Ownership (struct r/w totals):")
     sorted_types = sorted(global_types.items(), key=lambda x: x[1]['r']+x[1]['w'], reverse=True)

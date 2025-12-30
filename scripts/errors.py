@@ -149,11 +149,15 @@ def main():
     stats = {'calls_checked': 0, 'allocs_checked': 0, 'files': 0}
     
     file_list = []
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs]
-        for file in sorted(files):
-            if file.endswith('.c'):
-                file_list.append(os.path.join(root, file))
+    file_list = []
+    included_dirs = {'src', 'include'}
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path): continue
+        for root, _, files in os.walk(dir_path):
+            for file in sorted(files):
+                if file.endswith('.c'):
+                    file_list.append(os.path.join(root, file))
 
     # Pass 1: Discover internal void functions
     for file_path in file_list:

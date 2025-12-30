@@ -1,98 +1,93 @@
 import os
 import sys
+import re
+import tiktoken
+from collections import defaultdict
 
-# Optional dependencies
-try:
-    import tiktoken
-except ImportError:
-    tiktoken = None
-
-try:
-    import anthropic
-except ImportError:
-    anthropic = None
-
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
-def count_openai_tokens(text):
-    if not tiktoken:
-        return None
+def count_tokens(text, encoding_name):
     try:
-        enc = tiktoken.get_encoding("o200k_base")
+        enc = tiktoken.get_encoding(encoding_name)
     except Exception:
         enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(text))
 
-def count_anthropic_tokens(text):
-    # Anthropic's library usually needs a client for count_tokens which might hit API.
-    # As a fallback, use 1.1x OpenAI count or char-based heuristic for code.
-    # Recently, anthropic doesn't provide a trivial offline tokenizer without the Rust core.
-    if not anthropic:
-        return None
-    # Heuristic for Claude 3: close to OpenAI but slightly different.
-    # Lacking a trivial offline method, we'll use a conservative estimate based on character count.
-    # tokens ~= chars / 3.5 for code
-    return int(len(text) / 3.5)
-
-def count_google_tokens(text):
-    if not genai:
-        return None
-    # Gemini tokenization is also usually server-side in the library.
-    # Heuristic for Gemini: tokens ~= chars / 4
-    return int(len(text) / 4.0)
+def get_sloc(content):
+    # Remove multi-line comments: /* ... */
+    # This regex is non-greedy and handles multi-line blocks
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+    
+    # Remove single-line comments: // ...
+    content = re.sub(r'//.*', '', content)
+    
+    # Count non-empty, non-whitespace lines
+    sloc = 0
+    for line in content.splitlines():
+        if line.strip():
+            sloc += 1
+    return sloc
 
 def main():
     project_root = os.getcwd()
-    ignored_dirs = {'.venv', 'build', '.git', 'vendor', 'node_modules', 'bin', 'obj', 'scripts'}
+    # Inclusion-based approach: only these top-level directories will be scanned
+    included_dirs = {'src', 'include'}
     
     total_chars = 0
+    total_lines = 0
     file_contents = []
     
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in ignored_dirs and d != 'vendor']
-        # Do not include src/vendor
-        if 'src/vendor' in root:
+    # Store stats per included directory
+    dir_stats = defaultdict(lambda: {"files": 0, "lines": 0})
+    
+    for d in sorted(included_dirs):
+        dir_path = os.path.join(project_root, d)
+        if not os.path.exists(dir_path):
             continue
             
-        for file in files:
-            if file.endswith(('.c', '.h')):
-                file_path = os.path.join(root, file)
-                try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                        total_chars += len(content)
-                        file_contents.append(content)
-                except Exception:
-                    pass
+        for root, _, files in os.walk(dir_path):
+            for file in files:
+                if file.endswith(('.c', '.h')):
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            
+                            # Calculate SLOC (excluding comments and empty lines)
+                            lines = get_sloc(content)
+                            
+                            total_chars += len(content)
+                            total_lines += lines
+                            dir_stats[d]["files"] += 1
+                            dir_stats[d]["lines"] += lines
+                            file_contents.append(content)
+                    except Exception:
+                        pass
+
+    if not file_contents:
+        print("TOKEN ANALYSIS (INCLUSION: src, include)")
+        print("No files found in included directories.")
+        return
 
     full_text = "\n".join(file_contents)
     
-    oa_tokens = count_openai_tokens(full_text)
-    ant_tokens = count_anthropic_tokens(full_text)
-    goog_tokens = count_google_tokens(full_text)
+    gpt_gemini_tokens = count_tokens(full_text, "o200k_base")
+    claude_tokens = count_tokens(full_text, "cl100k_base")
     
-    print("TOKEN ANALYSIS (EXCLUDING VENDOR)")
+    print("TOKEN ANALYSIS (INCLUSION: src, include)")
     print(f"Total Files Analyzed: {len(file_contents)}")
+    print(f"Total lines of code (after make format-llm): {total_lines}")
     print(f"Total Characters:     {total_chars}")
     print("-" * 30)
     
-    if oa_tokens is not None:
-        print(f"GPT 5.2:                 {oa_tokens} tokens")
-    else:
-        print("GPT 5.2:                 N/A (tiktoken missing)")
-        
-    if ant_tokens is not None:
-        print(f"Claude Opus 4.5:        {ant_tokens} tokens (est.)")
-    else:
-        print("Claude Opus 4.5:        N/A (anthropic missing)")
-        
-    if goog_tokens is not None:
-        print(f"Gemini 3 Pro:            {goog_tokens} tokens (est.)")
-    else:
-        print("Gemini 3 Pro:            N/A (google-generativeai missing)")
+    # Accurate tokenization using tiktoken encodings
+    print(f"GPT 5.2:                 {gpt_gemini_tokens} tokens")
+    print(f"Claude Opus 4.5:        {claude_tokens} tokens (est.)")
+    print(f"Gemini 3 Pro:            {gpt_gemini_tokens} tokens (est.)")
+    print("-" * 30)
+    print("BREAKDOWN BY DIRECTORY (SLOC):")
+    for d in sorted(included_dirs):
+        stats = dir_stats[d]
+        if stats["files"] > 0:
+            print(f"  {d:15}: {stats['lines']:5} lines ({stats['files']:3} files)")
 
 if __name__ == "__main__":
     main()

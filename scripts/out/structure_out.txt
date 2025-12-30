@@ -1,11 +1,4 @@
 STRUCTURE
-fuzz
- fuzz_net.c
-  f LLVMFuzzerTestOneInput(*data,size)
- fuzz_persist.c
-  f LLVMFuzzerTestOneInput(*data,size)
- fuzz_stb_image.c
-  f LLVMFuzzerTestOneInput(*data,size)
 include
  snake
   collision.h
@@ -499,8 +492,6 @@ include
    f safe_
     copy_and_null(*dst,dst_size,*src,len)
     snprintf(*buf,buf_size,*fmt)
-main.c
- f main(argc,*argv)
 src
  console
   console.c
@@ -1109,116 +1100,3 @@ src
    f safe_
     copy_and_null(*dst,dst_size,*src,len)
     snprintf(*buf,buf_size,*fmt)
-tests
- unity
-  oom_overrides.c
-   f ensure_real_fns(_)
-   f free(*p)
-   f oom_
-    reset(_)
-    set_fail_after(f)
-  oom_overrides.h
-   f oom_
-    reset(_)
-    set_fail_after(f)
-  test_camera_angles.c
-   f angle_diff(a,b)
-   f test_camera_cached_offsets_match_direct_per_column(_)
-  test_collision.c
-  test_default_key_bindings.c
-  test_env.c
-  test_game_colors.c
-   f test_default_player_colors_differ(_)
-  test_game_multi.c
-  test_game_oom.c
-  test_game_reset_lives.c
-   f test_game_reset_restores_lives_and_clears_elimination(_)
-  test_highscore_name.c
-  test_input.c
-  test_input_bindings.c
-  test_input_bindings_flipped.c
-  test_input_multi.c
-  test_input_multi_fast.c
-  test_net.c
-  test_net_integration.c
-  test_net_overflow.c
-  test_net_unpack.c
-  test_persist.c
-   f run_case(*content,expect_count)
-  test_persist_config.c
-   f run_case(*content,expect_ok)
-  test_persist_long_lines.c
-   f run_case(*fn)
-  test_persist_player_keys.c
-  test_persist_player_meta.c
-  test_persist_truncation.c
-  test_projection.c
-   f test_projection_wall_pixel_count_consistent(_)
-  test_render_lives_ui.c
-   f test_render_draw_shows_hearts_for_multiplayer(_)
-  test_render_minimap.c
-   f test_render_minimap_uses_player_color(_)
-  test_runner.c
-   f main(argc,*argv)
-   f run_single_by_name(*name)
-   f test_
-    collision(_)
-    env(_)
-    game_
-     multi(_)
-     oom(_)
-    highscore_name(_)
-    input(_)
-    input_
-     bindings(_)
-     multi(_)
-    net(_)
-    net_
-     integration(_)
-     overflow(_)
-     unpack(_)
-    persist(_)
-    persist_
-     config(_)
-     long_lines(_)
-     truncation(_)
-    stb_
-     artifacts(_)
-     chunk_size_limit(_)
-     image_fuzz(_)
-     leak_plte(_)
-    texture_
-     path(_)
-     path_extra(_)
-    tty_
-     buffer_cap(_)
-     calc_resize_
-      invalid_sizes(_)
-      pixel_overflow(_)
-      small(_)
-      writebuf_overflow(_)
-     oom(_)
-     open(_)
-     path(_)
-   f tests_count(_)
-   s test_entry{*name,func,isolated}
-   t test_entry
-  test_stb_artifacts.c
-  test_stb_chunk_size_limit.c
-  test_stb_image_fuzz.c
-  test_stb_leak_plte.c
-  test_texture_path.c
-  test_texture_path_extra.c
-  test_texture_sample.c
-   f reference_bilinear(*tex,u,v)
-   f test_texture_bilinear_fast_matches_reference_for_inrange(_)
-  test_tty_buffer_cap.c
-  test_tty_oom.c
-  test_tty_open.c
-  test_tty_path.c
-  test_tty_resize_overflow.c
-   f test_tty_calc_resize_
-    invalid_sizes(_)
-    pixel_overflow(_)
-    small(_)
-    writebuf_overflow(_)

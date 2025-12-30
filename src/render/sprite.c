@@ -20,6 +20,7 @@ int max_sprites;
 int count;
 const Camera3D* camera;
 const Projection3D* proj;
+bool overlap_dirty;
 };
 #include "math_fast.h"
 #include <math.h>
@@ -33,16 +34,19 @@ sr->max_sprites= 0;
 sr->count= 0;
 sr->camera= camera;
 sr->proj= proj;
+sr->overlap_dirty= true;
 return;
 }
 sr->max_sprites= max_sprites;
 sr->count= 0;
 sr->camera= camera;
 sr->proj= proj;
+sr->overlap_dirty= true;
 }
 void sprite_clear(SpriteRenderer3D* sr) {
 if(!sr) return;
 sr->count= 0;
+sr->overlap_dirty= true;
 }
 bool sprite_add(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame) {
 if(!sr || sr->count >= sr->max_sprites) return false;
@@ -58,6 +62,7 @@ s->color= render_3d_sdl_color(0, 128, 0, 255);
 s->perp_distance= 0.0f;
 s->screen_x= s->screen_w= s->screen_h= s->screen_y_top= 0;
 s->visible= false;
+sr->overlap_dirty= true;
 return true;
 }
 bool sprite_add_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color) {
@@ -75,6 +80,7 @@ s->perp_distance= 0.0f;
 s->screen_x= s->screen_w= s->screen_h= s->screen_y_top= 0;
 s->visible= false;
 s->is_rect= false;
+sr->overlap_dirty= true;
 return true;
 }
 bool sprite_add_rect_color(SpriteRenderer3D* sr, float world_x, float world_y, float world_height, float pivot, bool face_camera, int texture_id, int frame, uint32_t color) {
@@ -92,6 +98,7 @@ s->perp_distance= 0.0f;
 s->screen_x= s->screen_w= s->screen_h= s->screen_y_top= 0;
 s->visible= false;
 s->is_rect= true;
+sr->overlap_dirty= true;
 return true;
 }
 /* Shaded sprite helpers: reuse add_* then mark shaded */
@@ -116,6 +123,40 @@ static inline uint64_t now_ns(void) {
 struct timespec t;
 clock_gettime(CLOCK_MONOTONIC, &t);
 return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
+}
+/* Pre-computed lighting table for shaded spheres (32x32) */
+#define LIGHT_TABLE_SIZE 32
+static float lighting_table[LIGHT_TABLE_SIZE][LIGHT_TABLE_SIZE];
+static bool lighting_table_initialized= false;
+static void init_lighting_table(void) {
+if(lighting_table_initialized) return;
+const float lnx= -0.40825f, lny= -0.40825f, lnz= 0.81650f;
+const float hnx= -0.26726f, hny= -0.26726f, hnz= 0.92582f;
+const float ambient= 0.25f;
+const float spec_strength= 0.5f;
+for(int yi= 0; yi < LIGHT_TABLE_SIZE; yi++) {
+for(int xi= 0; xi < LIGHT_TABLE_SIZE; xi++) {
+/* Map indices to -1..1 range */
+float nx= ((float)xi / (float)(LIGHT_TABLE_SIZE - 1)) * 2.0f - 1.0f;
+float ny= ((float)yi / (float)(LIGHT_TABLE_SIZE - 1)) * 2.0f - 1.0f;
+float n2= nx * nx + ny * ny;
+if(n2 > 1.0f) {
+lighting_table[yi][xi]= 0.0f; /* Outside sphere */
+continue;
+}
+float nz= (1.0f - n2) * fast_inv_sqrt(1.0f - n2);
+float diffuse= nx * lnx + ny * lny + nz * lnz;
+if(diffuse < 0.0f) diffuse= 0.0f;
+float spec= nx * hnx + ny * hny + nz * hnz;
+if(spec < 0.0f) spec= 0.0f;
+float sp2= spec * spec, sp4= sp2 * sp2, sp8= sp4 * sp4;
+spec= sp8 * sp8 * sp8 * spec_strength;
+float intensity= ambient + (1.0f - ambient) * diffuse + spec;
+if(intensity > 1.0f) intensity= 1.0f;
+lighting_table[yi][xi]= intensity;
+}
+}
+lighting_table_initialized= true;
 }
 /* Accumulators (nanoseconds) */
 static uint64_t sprite_time_project_ns= 0;
@@ -192,6 +233,8 @@ s->screen_y_top= top;
 s->visible= true;
 }
 if(do_profile) sprite_time_project_ns+= now_ns() - start;
+/* Only run expensive overlap check when sprites have changed */
+if(sr->overlap_dirty) {
 for(int i= 0; i < sr->count; ++i) {
 Sprite3D* a= &sr->sprites[i];
 if(a->texture_id == -1) continue;
@@ -204,6 +247,8 @@ a->perp_distance-= 1e-3f;
 break;
 }
 }
+}
+sr->overlap_dirty= false;
 }
 }
 #define SPRITE_SORT_INSERTION_THRESHOLD 32
@@ -273,6 +318,15 @@ if(y0 < 0) y0= 0;
 if(y1 >= scr_h) y1= scr_h - 1;
 uint32_t col= s->color ? s->color : render_3d_sdl_color(0, 128, 0, 255);
 if(s->texture_id == -1) {
+/* Check if sprite is fully occluded before rendering */
+bool any_visible= false;
+for(int xx= x1; xx <= x2; ++xx) {
+if(s->perp_distance < column_depths[xx]) {
+any_visible= true;
+break;
+}
+}
+if(!any_visible) continue; /* Skip fully occluded sprite */
 int center_x= s->screen_x;
 int center_y= s->screen_y_top + s->screen_h / 2;
 int radius= s->screen_w / 2;
@@ -312,30 +366,19 @@ if(dx > radius || dx < -radius) continue;
 if(dx * dx + dy2 <= r2) {
 if(s->perp_distance < column_depths[xx]) {
 if(s->shaded) {
-/* Faux sphere lighting with fast approximations */
+/* Use pre-computed lighting table */
+if(!lighting_table_initialized) init_lighting_table();
 float nx= (float)dx / (float)radius;
 float ny= (float)dy / (float)radius;
-float n2= nx * nx + ny * ny;
-if(n2 > 1.0f) continue;
-/* Use fast_inv_sqrt: nz = sqrt(1-n2) = 1/rsqrt(1-n2) */
-float nz= (1.0f - n2) * fast_inv_sqrt(1.0f - n2);
-/* Pre-computed lighting constants (light normalized) */
-static const float lnx= -0.40825f, lny= -0.40825f, lnz= 0.81650f;
-static const float hnx= -0.26726f, hny= -0.26726f, hnz= 0.92582f;
-float diffuse= nx * lnx + ny * lny + nz * lnz;
-if(diffuse < 0.0f) diffuse= 0.0f;
-const float ambient= 0.25f;
-const float spec_strength= 0.5f;
-/* Half-vector H pre-normalized; spec = (N·H)^24 */
-float spec= nx * hnx + ny * hny + nz * hnz;
-if(spec < 0.0f) spec= 0.0f;
-/* Fast pow approximation: x^24 = (x^4)^6 = ((x^2)^2)^6 */
-float sp2= spec * spec;
-float sp4= sp2 * sp2;
-float sp8= sp4 * sp4;
-spec= sp8 * sp8 * sp8 * spec_strength;
-float intensity= ambient + (1.0f - ambient) * diffuse + spec;
-if(intensity > 1.0f) intensity= 1.0f;
+/* Map to table indices [0, LIGHT_TABLE_SIZE-1] */
+int xi= (int)((nx + 1.0f) * 0.5f * (float)(LIGHT_TABLE_SIZE - 1) + 0.5f);
+int yi= (int)((ny + 1.0f) * 0.5f * (float)(LIGHT_TABLE_SIZE - 1) + 0.5f);
+if(xi < 0) xi= 0;
+if(xi >= LIGHT_TABLE_SIZE) xi= LIGHT_TABLE_SIZE - 1;
+if(yi < 0) yi= 0;
+if(yi >= LIGHT_TABLE_SIZE) yi= LIGHT_TABLE_SIZE - 1;
+float intensity= lighting_table[yi][xi];
+if(intensity <= 0.0f) continue; /* Outside sphere in table */
 uint8_t a= (uint8_t)((col >> 24) & 0xFFu);
 uint8_t br= (uint8_t)((col >> 16) & 0xFFu);
 uint8_t bg= (uint8_t)((col >> 8) & 0xFFu);

@@ -559,13 +559,29 @@ if(p < 1.0f) p= 1.0f;
 float pos_z= 0.5f * (float)screen_h * wall_scale;
 float row_distance_center= pos_z / p;
 uint32_t* row_pix= &pix[y * screen_w];
+/* DDA approach: compute world-space endpoints of this scanline */
+/* Leftmost ray (x=0) */
+float cos_a_left= cos_cam * r->cos_offsets[0] - sin_cam * r->sin_offsets[0];
+float sin_a_left= sin_cam * r->cos_offsets[0] + cos_cam * r->sin_offsets[0];
+float cos_angle_diff_left= r->cos_offsets[0];
+float perp_left= (cos_angle_diff_left > 0.01f) ? row_distance_center / cos_angle_diff_left : row_distance_center;
+/* Rightmost ray (x=screen_w-1) */
+int last_x= screen_w - 1;
+float cos_a_right= cos_cam * r->cos_offsets[last_x] - sin_cam * r->sin_offsets[last_x];
+float sin_a_right= sin_cam * r->cos_offsets[last_x] + cos_cam * r->sin_offsets[last_x];
+float cos_angle_diff_right= r->cos_offsets[last_x];
+float perp_right= (cos_angle_diff_right > 0.01f) ? row_distance_center / cos_angle_diff_right : row_distance_center;
+/* World-space endpoints */
+float wx_left= interp_cam_x + cos_a_left * perp_left;
+float wy_left= interp_cam_y + sin_a_left * perp_left;
+float wx_right= interp_cam_x + cos_a_right * perp_right;
+float wy_right= interp_cam_y + sin_a_right * perp_right;
+/* Incremental step across scanline */
+float dx= (wx_right - wx_left) / (float)last_x;
+float dy= (wy_right - wy_left) / (float)last_x;
+float floor_x= wx_left;
+float floor_y= wy_left;
 for(int x= 0; x < screen_w; x++) {
-float cos_a= cos_cam * r->cos_offsets[x] - sin_cam * r->sin_offsets[x];
-float sin_a= sin_cam * r->cos_offsets[x] + cos_cam * r->sin_offsets[x];
-float cos_angle_diff= r->cos_offsets[x];
-float actual_distance= (cos_angle_diff > 0.01f) ? row_distance_center / cos_angle_diff : row_distance_center;
-float floor_x= interp_cam_x + cos_a * actual_distance;
-float floor_y= interp_cam_y + sin_a * actual_distance;
 uint32_t base_col;
 bool in_shadow= false;
 float shadow_factor= 1.0f;
@@ -575,8 +591,8 @@ if(tx >= 0 && tx < map_w && ty >= 0 && ty < map_h) {
 TileBucket* b= &buckets[ty * map_w + tx];
 for(int bi= 0; bi < b->count; bi++) {
 int di= b->ids[bi];
-float dx= floor_x - decals[di].x, dy= floor_y - decals[di].y;
-if(dx * dx + dy * dy < decals[di].radius * decals[di].radius) {
+float dx_shadow= floor_x - decals[di].x, dy_shadow= floor_y - decals[di].y;
+if(dx_shadow * dx_shadow + dy_shadow * dy_shadow < decals[di].radius * decals[di].radius) {
 in_shadow= true;
 shadow_factor= decals[di].factor;
 break;
@@ -605,6 +621,9 @@ row_pix[x]= (0xFFu << 24) | ((uint32_t)r_s << 16) | ((uint32_t)g_s << 8) | (uint
 } else {
 row_pix[x]= base_col;
 }
+/* Increment floor position for next column */
+floor_x+= dx;
+floor_y+= dy;
 }
 }
 }
@@ -634,12 +653,16 @@ float tex_v_start= (float)(proj.draw_start - unclamped_start) * tex_v_coord_step
 if(wall_pix && fast_wall_tex) {
 int tx= (int)(tex_coord * (float)wall_w) % wall_w;
 if(tx < 0) tx+= wall_w;
-float ty_f= tex_v_start * (float)wall_h_tex, ty_step= tex_v_coord_step * (float)wall_h_tex;
+/* Q16 fixed-point for vertical coordinate (16 fractional bits) */
+const int FRAC_BITS= 16;
+const int FRAC_ONE= 1 << FRAC_BITS;
+int ty_fixed= (int)(tex_v_start * (float)wall_h_tex * (float)FRAC_ONE + 0.5f);
+int ty_step_fixed= (int)(tex_v_coord_step * (float)wall_h_tex * (float)FRAC_ONE + 0.5f);
 for(int yy= proj.draw_start; yy <= proj.draw_end; yy++) {
-int ty= (int)ty_f % wall_h_tex;
+int ty= (ty_fixed >> FRAC_BITS) % wall_h_tex;
 if(ty < 0) ty+= wall_h_tex;
 if(pix && yy >= 0 && yy < screen_h) pix[yy * screen_w + x]= wall_pix[ty * wall_w + tx];
-ty_f+= ty_step;
+ty_fixed+= ty_step_fixed;
 }
 } else {
 float tex_v_c= tex_v_start;

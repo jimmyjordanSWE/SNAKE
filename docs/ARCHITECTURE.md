@@ -1,7 +1,4 @@
 # Architecture
-
-Technical deep-dive for developers working on the SNAKE codebase.
-
 ## Module Overview
 
 ```
@@ -13,7 +10,9 @@ src/
 ├── platform/       Time, sleep, terminal size, signals
 ├── net/            State serialization (networking stub)
 ├── console/        Logging utilities
-└── utils/          RNG, bounds, direction helpers
+├── utils/          RNG, bounds, direction helpers
+├── fuzz/           LibFuzzer harnesses
+└── tools/          Benchmarking and performance utilities
 ```
 
 ## Design Patterns
@@ -105,6 +104,8 @@ make analyze  # Manual refresh (preferred)
 | `hotspots.py` | `hotspots_out.txt` | Loop nesting depths |
 | `errors.py` | `errors_out.txt` | Allocation ownership patterns |
 | `invariants.py` | `invariants_out.txt` | State variable usage |
+| `long_functions.py` | `long_functions_out.txt` | Functions exceeding line thresholds |
+| `token_count.py` | `token_count_out.txt` | Token usage analysis by module |
 
 ## How LLMs Use This
 

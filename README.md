@@ -1,21 +1,31 @@
 # SNAKE 🐍
 
-A C99 snake game implementation featuring dual rendering modes: pseudo-3D SDL2 graphics and terminal-based ASCII output.
+A C99 snake game implementation featuring dual rendering modes: pseudo-3D raycasting via SDL2 and a terminal-based ASCII interface.
 
 ## Features
 
-- **Pseudo-3D Raycasting Engine** — Wolfenstein-style first-person view via SDL2
-- **Terminal Mode** — Classic snake with Unicode/ASCII glyphs
-- **Configurable** — Board size, tick rate, FOV, textures, keybindings
-- **Multiplayer Ready** — Supports multiple players on same board
-- **High Score Persistence** — Saves scores to `.snake_scores`
+- **Pseudo-3D Raycasting Engine** — Wolfenstein-style first-person view using SDL2.
+- **Terminal Mode** — Classic snake gameplay with Unicode/ASCII glyphs.
+- **Highly Configurable** — Customize board size, tick rate, FOV, textures, and keybindings via `snake.cfg`.
+- **Multiplayer Ready** — Supports multiple players on the same board (local or networked).
+- **High Score Persistence** — Automatically saves scores to `.snake_scores`.
 
 ## Architecture
 
-The codebase follows modular design principles and includes:
-- **Opaque Pointers**: Encapsulation of internal state.
+The codebase adheres to strict C99 systems engineering standards:
+- **Opaque Pointers**: Strict encapsulation of internal state.
 - **Error-Out Pattern**: Centralized resource management and cleanup.
-- **Context Generation**: Scripts that produce structural metadata in `scripts/out/` to assist in project navigation.
+- **Context Generation**: Automated scripts in `scripts/out/` produce structural metadata to assist development.
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| A / D | Turn Left / Right (Relative, for 3D view) |
+| Arrows | Cardinal Directions (Up, Down, Left, Right, for top-down) |
+| P | Pause/Resume |
+| R | Restart Session |
+| Q | Quit to Terminal |
 
 ## Prerequisites
 
@@ -47,7 +57,8 @@ make valgrind
 ```
 
 ## Headless Mode
-Run the game without graphics for automated testing or CI pipelines. Game state is printed to stdout each tick.
+
+Run the game without graphics for automated testing or CI pipelines. Game state is serialized to stdout each tick.
 
 ```bash
 # Create a headless config
@@ -55,93 +66,77 @@ echo "headless = true" > headless.cfg
 ./snakegame.out headless.cfg
 ```
 
-**Autoplay**: In headless mode, snakes automatically turn right every 3rd tick (going in circles) to avoid wall collisions. This is enabled by default for headless mode but can be disabled:
+**Autoplay**: In headless mode, snakes automatically turn right every 3rd tick (circular motion) to prevent immediate wall collisions. This is enabled by default in headless mode but can be explicitly toggled:
 
 ```bash
-# Headless with autoplay disabled (snakes will crash into walls)
+# Headless with autoplay disabled (snakes will crash)
 echo -e "headless = true\nautoplay = false" > headless_noauto.cfg
 ./snakegame.out headless_noauto.cfg
 
-# Normal mode with autoplay enabled (for visual testing)
+# Normal mode with autoplay enabled (for visual debugging)
 echo "autoplay = true" > autoplay.cfg
 ./snakegame.out autoplay.cfg
 ```
 
-## Network logging
+## Network Logging
 
-Enable capture of all network send/recv bytes in a log file. By default the log is written to `./net_io.log` in the current working directory. Set `SNAKE_NET_LOG` to change the path. Payloads are hex-dumped (up to 256 bytes) and truncated if larger.
-
-Examples:
+Capture all network send/recv traffic in a log file. By default, logs are written to `logs/net_io.log`. Set `SNAKE_NET_LOG` to override the path. Payloads are hex-dumped (up to 256 bytes) and truncated if larger.
 
 ```bash
-# write to ./net_io.log (default)
-./snakegame
+# Write to logs/net_io.log (default)
+./snakegame.out
 
-# write to a custom path
-SNAKE_NET_LOG=/tmp/snake_net.log ./snakegame
+# Write to a custom path
+SNAKE_NET_LOG=/tmp/snake_net.log ./snakegame.out
 ```
 
 
 ## Configuration
 
-Edit `snake.cfg` to customize:
-
-Multiplayer (mpapi):
-- `mp_enabled` = true|false
-- `mp_server_host` = host (default mpapi.se)
-- `mp_server_port` = tcp port (default 9001)
-- `mp_identifier` = application identifier (must match server identifier)
-- `mp_session` = optional session code to force-join (e.g. ABC123). Leave empty to auto-host/join.
+Edit `snake.cfg` to customize the game.
 
 ## Local Multiplayer Testing (N Players)
 
-Test multiplayer with multiple clients on localhost using the mpapi server.
+Test multiplayer with multiple clients on localhost using the included `mpapi` compatibility server.
 
-### Step 1: Start the Server
+### 1. Start the Server
 
 ```bash
-# Start the mpapi server (requires Node.js)
+# Requires Node.js
 make mpapi-start
 # Wait for: "mpapi TCP server listening on port: 9001"
 ```
 
-### Step 2: Start the Host (Player 1)
+### 2. Start the Host (Player 1)
 
 Create `mp_host.cfg`:
-```
+```ini
 mp_enabled = 1
 mp_server_host = 127.0.0.1
 mp_server_port = 9001
-mp_identifier = 67bdb04f-6e7c-4d76-81a3-191f7d78dd45
 player_name = Player1
 ```
 
 Run: `./snakegame.out mp_host.cfg`
 
-**Note the Session ID** displayed at the bottom of the screen (e.g., `ABC123`).
+**Note the Session ID** (e.g., `ABC123`) displayed at the bottom depending on the view.
 
-### Step 3: Start Additional Players
+### 3. Start Client(s)
 
-Create `mp_join.cfg` (edit `mp_session` to match the Session ID from Step 2):
-```
+Create `mp_join.cfg` (replace `mp_session` with the ID from the host):
+```ini
 mp_enabled = 1
 mp_server_host = 127.0.0.1
 mp_server_port = 9001
-mp_identifier = 67bdb04f-6e7c-4d76-81a3-191f7d78dd45
 mp_session = ABC123
 player_name = Player2
 ```
 
-Run in separate terminals: `./snakegame.out mp_join.cfg`
+Run: `./snakegame.out mp_join.cfg`
 
-Repeat for additional players (Player3, Player4, etc.).
+Remote players appear as distinctively colored circles in the 3D view and glyphs in the terminal view.
 
-### What You'll See
 
-- Each client displays the Session ID at the bottom
-- Remote players appear as **magenta/cyan circles** on your board
-- Remote player names shown in side panel with `[MP]` prefix
-- Game states are exchanged in real-time
 
 ### Server Options
 
@@ -155,34 +150,6 @@ To start the vendored server:
 make mpapi-start
 ```
 
-Edit `snake.cfg` to customize:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `board_width`, `board_height` | Play area size | 18x18 |
-| `tick_rate_ms` | Game speed (lower = faster) | 250 |
-| `num_players` | Number of snakes | 2 |
-| `max_length` | Maximum snake length | 64 |
-| `max_food` | Food items on board | 20 |
-| `fov_degrees` | 3D field of view | 80 |
-| `screen_width`, `screen_height` | 3D window size | 1200x800 |
-| `enable_external_3d_view` | Launch SDL window | true |
-| `wall_texture`, `floor_texture` | Image paths | assets/*.png |
-| `wall_height_scale`, `tail_height_scale` | 3D scaling | 1.5, 0.5 |
-| `p{N}_left/p{N}_right/quit/restart/pause` | Key bindings | p1 uses Arrow keys by default; p1_left..p4_right override, ESC, r, p |
-| `headless` | Run without graphics (print state to stdout) | false |
-| `autoplay` | Snake turns right every 3rd tick (testing). ON by default in headless, OFF in normal mode | auto |
-
-## Controls
-
-| Key | Action |
-|-----|--------|
-| A / D | Turn Left / Right (Relative, for 3D view) |
-| Arrows | Cardinal Directions (Up, Down, Left, Right, for top-down) |
-| P | Pause/Resume |
-| R | Restart Session |
-| Q | Quit to Terminal |
-
 ## Development & Testing
 
 ```bash
@@ -192,16 +159,15 @@ make format
 # Format code (LLM token-optimized)
 make format-llm
 
-# Run static analysis (generates token-minimized outputs in scripts/out/)
+# Run static analysis (generates context in scripts/out/)
 make analyze
 
-# Run unit tests (AddressSanitizer enabled)
+# Run unit tests (with ASAN)
 make unit-tests
-# or
-make test
 ```
 
-Notes:
-- Unit tests include an OOM harness (`tests/test_game_oom.c`) that simulates allocation failures (using `dlsym(RTLD_NEXT, ...)`) and runs under ASAN to validate cleanup/error paths.
+### Notes
+- **OOM Harness**: `tests/test_game_oom.c` simulates memory allocation failures (using `dlsym(RTLD_NEXT)`) to validate error handling paths.
+- **Static Analysis**: The project uses a suite of Python scripts (`scripts/`) to generate high-level architectural context for LLM-assisted development.
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical details and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical design details and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

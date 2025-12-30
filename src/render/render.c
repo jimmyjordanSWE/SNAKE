@@ -24,11 +24,9 @@ static DisplayScore last_scores[PERSIST_MAX_SCORES];
 #define SESSION_MAX_SCORES 32
 static DisplayScore g_session_scores[SESSION_MAX_SCORES];
 static int g_session_score_count = 0;
-
 /* Multiplayer HUD messages */
 static char g_mp_messages[SESSION_MAX_SCORES][81];
 static int g_mp_msg_count = 0;
-
 /* Current session id to display in HUD */
 static char g_session_id[16] = {0};
 void render_set_glyphs(RenderGlyphs glyphs) {
@@ -402,13 +400,11 @@ void render_draw(const GameState* game, const char* player_name, HighScore** sco
     }
     if (display_height > field_y + field_height + 1)
         draw_string(1, field_y + field_height + 1, "Q: Quit", DISPLAY_COLOR_WHITE);
-
     /* Draw last multiplayer messages, if any */
     int mp_y = field_y + field_height + 2;
     for (int i = 0; i < g_mp_msg_count && (mp_y + i) < display_height; ++i) {
         draw_string(1, mp_y + i, g_mp_messages[i], DISPLAY_COLOR_CYAN);
     }
-
     /* Draw session id at the bottom-left if present */
     if (g_session_id[0] && display_height > 0) {
         int y = display_height - 1;
@@ -416,10 +412,8 @@ void render_draw(const GameState* game, const char* player_name, HighScore** sco
         snprintf(label, sizeof(label), "Session: %s", g_session_id);
         draw_string(1, y, label, DISPLAY_COLOR_CYAN);
     }
-
     display_present(g_display);
 }
-
 void render_push_mp_message(const char* msg) {
     if (!msg)
         return;
@@ -433,7 +427,6 @@ void render_push_mp_message(const char* msg) {
         g_mp_msg_count++;
     invalidate_front_buffer(g_display);
 }
-
 void render_set_session_id(const char* session) {
     if (!session || !session[0]) {
         g_session_id[0] = '\0';
@@ -442,15 +435,12 @@ void render_set_session_id(const char* session) {
     }
     invalidate_front_buffer(g_display);
 }
-
 void render_draw_remote_players(const GameState* game, const int* x, const int* y, const void* names_ptr, int count) {
     if (!g_display || !game || count <= 0)
         return;
     const char(*names)[32] = (const char(*)[32])names_ptr;
-
     int display_width = 0, display_height = 0;
     display_get_size(g_display, &display_width, &display_height);
-
     int field_width = game->width + 2;
     int field_height = game->height + 2;
     int field_x = (display_width - field_width) / 2;
@@ -459,7 +449,6 @@ void render_draw_remote_players(const GameState* game, const int* x, const int* 
     int field_y = (display_height - field_height) / 2;
     if (field_y < 2)
         field_y = 2;
-
     /* Draw each remote player head as a colored marker */
     for (int i = 0; i < count; i++) {
         int px = field_x + 1 + x[i];
@@ -470,7 +459,6 @@ void render_draw_remote_players(const GameState* game, const int* x, const int* 
             display_put_char(g_display, px, py, DISPLAY_CHAR_CIRCLE, color, DISPLAY_COLOR_BLACK);
         }
     }
-
     /* Draw remote player scores on the right side, below local scores */
     int score_y = field_y + game->num_players * 2 + 2;
     for (int i = 0; i < count && score_y < display_height - 1; i++) {
@@ -481,10 +469,8 @@ void render_draw_remote_players(const GameState* game, const int* x, const int* 
         draw_string(sx, score_y, label, color);
         score_y++;
     }
-
     display_present(g_display);
 }
-
 void render_draw_startup_screen(char* player_name_out, int max_len) {
     if (!g_display || !player_name_out || max_len <= 0)
         return;

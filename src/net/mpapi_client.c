@@ -10,10 +10,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #define MSG_QUEUE_SIZE 64
 #define LINE_BUF_CAP 4096
-
 struct mpclient {
     char server_host[128];
     uint16_t server_port;
@@ -30,7 +28,6 @@ struct mpclient {
     /* session id assigned after host/join */
     char session[16];
 };
-
 static int connect_to_server(const char* host, uint16_t port) {
     if (!host)
         host = "127.0.0.1";
@@ -57,11 +54,8 @@ static int connect_to_server(const char* host, uint16_t port) {
     freeaddrinfo(res);
     return fd;
 }
-
-#include "net_log.h"
-
 #include "console.h"
-
+#include "net_log.h"
 static int send_all(int fd, const char* buf, size_t len) {
     size_t sent = 0;
     while (sent < len) {
@@ -74,7 +68,6 @@ static int send_all(int fd, const char* buf, size_t len) {
     }
     return 0;
 }
-
 static void enqueue_msg(struct mpclient* c, const char* s) {
     if (!c || !s)
         return;
@@ -89,7 +82,6 @@ static void enqueue_msg(struct mpclient* c, const char* s) {
     c->tail = next;
     pthread_mutex_unlock(&c->lock);
 }
-
 int mpclient_poll_message(mpclient* c, char* out, int maxlen) {
     if (!c || !out || maxlen <= 0)
         return 0;
@@ -107,7 +99,6 @@ int mpclient_poll_message(mpclient* c, char* out, int maxlen) {
     free(s);
     return 1;
 }
-
 int mpclient_get_session(mpclient* c, char* out, int maxlen) {
     if (!c || !out || maxlen <= 0)
         return 0;
@@ -121,13 +112,11 @@ int mpclient_get_session(mpclient* c, char* out, int maxlen) {
     pthread_mutex_unlock(&c->lock);
     return 0;
 }
-
 int mpclient_has_session(mpclient* c) {
     if (!c)
         return 0;
     return c->session[0] != '\0';
 }
-
 static char* extract_json_field(const char* line, const char* key) {
     /* Find "key" and the following ':' then locate object or string */
     char needle[128];
@@ -183,7 +172,6 @@ static char* extract_json_field(const char* line, const char* key) {
     }
     return NULL;
 }
-
 static void process_line(struct mpclient* c, const char* line) {
     if (!c || !line)
         return;
@@ -219,7 +207,6 @@ static void process_line(struct mpclient* c, const char* line) {
         }
     }
 }
-
 static void* recv_thread_main(void* arg) {
     struct mpclient* c = (struct mpclient*)arg;
     if (!c)
@@ -254,7 +241,6 @@ static void* recv_thread_main(void* arg) {
     c->running = 0;
     return NULL;
 }
-
 mpclient* mpclient_create(const char* host, uint16_t port, const char* identifier) {
     if (!host || !identifier)
         return NULL;
@@ -271,7 +257,6 @@ mpclient* mpclient_create(const char* host, uint16_t port, const char* identifie
     c->session[0] = '\0';
     return c;
 }
-
 int mpclient_connect_and_start(mpclient* c) {
     if (!c)
         return -1;
@@ -296,7 +281,6 @@ int mpclient_connect_and_start(mpclient* c) {
     c->thread_started = 1;
     return 0;
 }
-
 static int send_command(struct mpclient* c, const char* cmd, const char* session, const char* data_json) {
     if (!c || !cmd)
         return -1;
@@ -320,7 +304,6 @@ static int send_command(struct mpclient* c, const char* cmd, const char* session
     net_log_send(c->sockfd, msg, strlen(msg), "mpclient send_command: full msg");
     return send_all(c->sockfd, msg, strlen(msg));
 }
-
 int mpclient_auto_join_or_host(mpclient* c, const char* name) {
     if (!c || !name)
         return -1;
@@ -363,7 +346,6 @@ int mpclient_auto_join_or_host(mpclient* c, const char* name) {
     }
     return 0;
 }
-
 int mpclient_join(mpclient* c, const char* sessionId, const char* name) {
     if (!c || !sessionId)
         return -1;
@@ -382,7 +364,6 @@ int mpclient_join(mpclient* c, const char* sessionId, const char* name) {
     }
     return 0;
 }
-
 int mpclient_send_game(mpclient* c, const char* data_json) {
     if (!c || !data_json)
         return -1;
@@ -390,7 +371,6 @@ int mpclient_send_game(mpclient* c, const char* data_json) {
         return -1;
     return 0;
 }
-
 void mpclient_stop(mpclient* c) {
     if (!c)
         return;
@@ -405,7 +385,6 @@ void mpclient_stop(mpclient* c) {
         c->thread_started = 0;
     }
 }
-
 void mpclient_destroy(mpclient* c) {
     if (!c)
         return;

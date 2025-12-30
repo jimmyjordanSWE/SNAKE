@@ -68,7 +68,12 @@ bool raycast_cast_ray(const Raycaster3D* rc, float camera_x, float camera_y, flo
     hit_out->shade_level = 0;
     return true;
 }
-bool raycast_cast_ray_fast(const Raycaster3D* rc, float camera_x, float camera_y, float cos_a, float sin_a, RayHit* hit_out) {
+bool raycast_cast_ray_fast(const Raycaster3D* rc,
+                           float camera_x,
+                           float camera_y,
+                           float cos_a,
+                           float sin_a,
+                           RayHit* hit_out) {
     if (!rc || !hit_out)
         return false;
     float dist_right = (float)rc->board_width - camera_x;

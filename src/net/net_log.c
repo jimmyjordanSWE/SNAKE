@@ -6,22 +6,16 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-
 /* Simple thread-safe logger for network I/O. Default file is ./net_io.log
  * Override path with environment variable SNAKE_NET_LOG. Limits payload dump to
  * MAX_DUMP bytes. */
-
 #define MAX_DUMP 256
-
 static FILE* g_log = NULL;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
-
 /* forward */
 static void timestr(char* buf, size_t buflen);
-
 #include <errno.h>
 #include <stdarg.h>
-
 static void open_log_if_needed(void) {
     if (g_log)
         return;
@@ -32,9 +26,8 @@ static void open_log_if_needed(void) {
     const char* path = getenv("SNAKE_NET_LOG");
     if (!path)
         path = "./net_io.log";
-
     /* Only write the initial header when the file did not previously exist to avoid
-       noisy duplicate lines across multiple runs. Include PID for traceability. */
+           noisy duplicate lines across multiple runs. Include PID for traceability. */
     int existed = (access(path, F_OK) == 0);
     FILE* f = fopen(path, "a");
     if (!f) {
@@ -62,7 +55,6 @@ static void open_log_if_needed(void) {
         fflush(g_log);
     }
 }
-
 void net_log_info(const char* fmt, ...) {
     pthread_mutex_lock(&g_lock);
     open_log_if_needed();
@@ -81,7 +73,6 @@ void net_log_info(const char* fmt, ...) {
     fflush(g_log);
     pthread_mutex_unlock(&g_lock);
 }
-
 void net_log_error(const char* fmt, ...) {
     pthread_mutex_lock(&g_lock);
     open_log_if_needed();
@@ -100,7 +91,6 @@ void net_log_error(const char* fmt, ...) {
     fflush(g_log);
     pthread_mutex_unlock(&g_lock);
 }
-
 static void timestr(char* buf, size_t buflen) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -110,7 +100,6 @@ static void timestr(char* buf, size_t buflen) {
     snprintf(buf, buflen, "%04d-%02d-%02d %02d:%02d:%02d.%03d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
              tm.tm_hour, tm.tm_min, tm.tm_sec, ms);
 }
-
 static void hex_dump_to_file(FILE* f, const unsigned char* data, size_t len) {
     size_t i;
     for (i = 0; i < len; ++i) {
@@ -119,7 +108,6 @@ static void hex_dump_to_file(FILE* f, const unsigned char* data, size_t len) {
             fprintf(f, " ");
     }
 }
-
 static void log_io(const char* dir, int fd, const void* buf, size_t len, const char* note) {
     if (!buf)
         return;
@@ -143,22 +131,18 @@ static void log_io(const char* dir, int fd, const void* buf, size_t len, const c
     fflush(g_log);
     pthread_mutex_unlock(&g_lock);
 }
-
 void net_log_send(int fd, const void* buf, size_t len, const char* note) {
     log_io("SEND", fd, buf, len, note);
 }
-
 void net_log_recv(int fd, const void* buf, size_t len, const char* note) {
     log_io("RECV", fd, buf, len, note);
 }
-
 /* Public init/close so the program can create the log file at startup */
 void net_log_init(void) {
     pthread_mutex_lock(&g_lock);
     open_log_if_needed();
     pthread_mutex_unlock(&g_lock);
 }
-
 void net_log_close(void) {
     pthread_mutex_lock(&g_lock);
     if (g_log) {

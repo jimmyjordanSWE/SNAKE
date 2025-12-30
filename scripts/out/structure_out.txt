@@ -738,6 +738,11 @@ src
      name(*hs,*name)
      score(*hs,score)
    f is_known_config_key(*key)
+   f parse_
+    graphics_config(*config,*key,*value)
+    legacy_keys(*config,*key,*value)
+    multiplayer_config(*config,*key,*value)
+    player_config(*config,*key,*value)
    f persist_
     append_score(*filename,*name,score)
     config_has_unknown_keys(*filename)
@@ -938,15 +943,18 @@ src
   render_3d.c
    f render_3d_
     compute_minimap_cell_px(d_w,d_h,m_w,m_h)
-    draw(*game_state,*player_name,*scores,score_count,delta_seconds)
+    draw(*gs,*name,*sc,scc,dt)
     draw_
      char(*disp,x,y,c,col,scale)
      congrats_overlay(score,*name_entered)
      death_overlay(*game,anim_frame,show_prompt)
+     debug_overlays(*r)
+     floor_ceiling_pass(*r,screen_w,screen_h,horizon,interp_cam_x,interp_cam_y,cos_cam,sin_cam,*decals,*buckets,decal_count)
      fps_counter(_)
      minimap(*r,interp_t)
      minimap_into(*ctx,*gs)
      text_centered(*disp,y,*text,col,scale)
+     walls_pass(*r,screen_w,screen_h,horizon,interp_cam_x,interp_cam_y,interp_cam_angle,cos_cam,sin_cam)
      winner_overlay(*game,winner,score)
     init(*game_state,*config)
     log(*fmt)
@@ -956,6 +964,7 @@ src
      active_player(player_index)
      fov(fov_degrees)
      tick_rate_ms(ms)
+    setup_floor_decals(*r,*gs,*decals_out,*buckets_out,*decal_count_out)
     shade_color(col,pct)
     shutdown(_)
     update_fps(delta_seconds)
@@ -1058,8 +1067,14 @@ src
     str(*json,*key,*out,maxlen)
    remote_game_state(*json)
   f snake_game_
+   append_score_if_qualifies(score,player_idx,*cfg_name)
    free(*s)
+   handle_
+    multiplayer_end(*s,*highscores,*highscore_count)
+    resize(*s,board_width,board_height,*highscores,highscore_count)
+   process_inputs(*s,tick)
    run(*s)
+   run_headless(*s,*mpc)
   s <anon>{x,length,score,name,active}
   s SnakeGame{*cfg,*game,has_3d,headless,autoplay}
   t RemotePlayer

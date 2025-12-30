@@ -319,11 +319,9 @@ static void texture_update_derived(Texture3D* tex) {
         tex->mul_x = tex->mul_y = 0.0f;
     }
 }
-
 static inline bool uv_in_unit_range(float u, float v) {
     return u >= 0.0f && u < 1.0f && v >= 0.0f && v < 1.0f;
 }
-
 static uint32_t sample_nearest_norm(const Texture3D* tex, float u, float v) {
     int x = (int)(u * (float)tex->img_w);
     int y = (int)(v * (float)tex->img_h);
@@ -337,7 +335,6 @@ static uint32_t sample_nearest_norm(const Texture3D* tex, float u, float v) {
         y = tex->img_h - 1;
     return tex->pixels[y * tex->img_w + x];
 }
-
 static uint32_t sample_nearest(const Texture3D* tex, float u, float v) {
     if (!tex || !tex->pixels || tex->img_w <= 0 || tex->img_h <= 0)
         return 0;
@@ -419,7 +416,6 @@ static inline uint32_t sample_bilinear_fast(const Texture3D* tex, float u, float
     int b = (b0 * (256 - sy) + b1 * sy + 128) >> 8;
     return ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)g << 8) | (uint32_t)r;
 }
-
 static uint32_t sample_bilinear_slow_normalized(const Texture3D* tex, float u, float v) {
     /* Assumes u,v normalized into [0,1) */
     const int pitch = tex->pitch;
@@ -477,7 +473,6 @@ static uint32_t sample_bilinear_slow_normalized(const Texture3D* tex, float u, f
     uint32_t ib = (uint32_t)(b + 0.5f);
     return (ia << 24) | (ib << 16) | (ig << 8) | ir;
 }
-
 static uint32_t sample_bilinear(const Texture3D* tex, float u, float v) {
     if (!tex || !tex->pixels || tex->img_w <= 0 || tex->img_h <= 0)
         return 0;

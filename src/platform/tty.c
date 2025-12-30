@@ -338,7 +338,6 @@ void tty_flip(tty_context* ctx) {
                 return;
             if (buf_safe_append_char(buf, &pos, &remaining, 'H') < 0)
                 return;
-
             uint8_t fg = COLOR_FG(span_color);
             uint8_t bg = COLOR_BG(span_color);
             if (fg != (uint8_t)current_fg || bg != (uint8_t)current_bg) {

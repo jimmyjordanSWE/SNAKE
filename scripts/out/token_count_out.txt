@@ -1,0 +1,7 @@
+TOKEN ANALYSIS (EXCLUDING VENDOR)
+Total Files Analyzed: 112
+Total Characters:     414489
+------------------------------
+GPT 5.2:                 117550 tokens
+Claude Opus 4.5v:        118457 tokens (est.)
+Gemini 3 Pro:            103650 tokens (est.)

@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
 /* Small helper: clamp float to 0..255 and return uint8_t */
 static inline uint8_t clamp_u8(float v) {
     if (v <= 0.0f)
@@ -17,7 +16,6 @@ static inline uint8_t clamp_u8(float v) {
         return 255;
     return (uint8_t)(v + 0.5f);
 }
-
 struct SpriteRenderer3D {
     Sprite3D* sprites;
     int max_sprites;
@@ -126,7 +124,6 @@ bool sprite_add_rect_color(SpriteRenderer3D* sr,
     s->is_rect = true;
     return true;
 }
-
 /* Shaded sprite helpers: reuse add_* then mark shaded */
 bool sprite_add_color_shaded(SpriteRenderer3D* sr,
                              float world_x,
@@ -146,7 +143,6 @@ bool sprite_add_color_shaded(SpriteRenderer3D* sr,
     s->shaded = true;
     return true;
 }
-
 bool sprite_add_rect_color_shaded(SpriteRenderer3D* sr,
                                   float world_x,
                                   float world_y,
@@ -171,12 +167,10 @@ static inline uint64_t now_ns(void) {
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
 }
-
 /* Accumulators (nanoseconds) */
 static uint64_t sprite_time_project_ns = 0;
 static uint64_t sprite_time_sort_ns = 0;
 static uint64_t sprite_time_draw_ns = 0;
-
 void sprite_project_all(SpriteRenderer3D* sr) {
     if (!sr || !sr->camera || !sr->proj)
         return;
@@ -193,7 +187,6 @@ void sprite_project_all(SpriteRenderer3D* sr) {
     float sin_cam = sinf(cam_angle);
     float sin_half = sinf(half_fov);
     float sin_half_sq = sin_half * sin_half;
-
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* s = &sr->sprites[i];
         float dx = s->world_x - cam_x;
@@ -204,7 +197,7 @@ void sprite_project_all(SpriteRenderer3D* sr) {
             continue;
         }
         /* Camera-space components: forward (along cam dir) and right (lateral)
-           forward == perp (distance along camera forward vector) */
+                   forward == perp (distance along camera forward vector) */
         float forward = dx * cos_cam + dy * sin_cam;
         if (forward <= 0.0f) {
             s->visible = false;
@@ -256,7 +249,6 @@ void sprite_project_all(SpriteRenderer3D* sr) {
     }
     if (do_profile)
         sprite_time_project_ns += now_ns() - start;
-
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* a = &sr->sprites[i];
         if (a->texture_id == -1)
@@ -275,7 +267,6 @@ void sprite_project_all(SpriteRenderer3D* sr) {
     }
 }
 #define SPRITE_SORT_INSERTION_THRESHOLD 32
-
 /* Direct comparator implementing original tie-breaker and local micro-swap rule.
    Returns -1 if a should come before b, 1 if after, 0 if equal. */
 static inline int sprite_cmp_direct(const Sprite3D* a, const Sprite3D* b) {
@@ -299,13 +290,11 @@ static inline int sprite_cmp_direct(const Sprite3D* a, const Sprite3D* b) {
         return 1;
     return 0;
 }
-
 static int sprite_cmp(const void* pa, const void* pb) {
     const Sprite3D* a = pa;
     const Sprite3D* b = pb;
     return sprite_cmp_direct(a, b);
 }
-
 static void sprite_insertion_sort(Sprite3D* arr, int n) {
     for (int i = 1; i < n; ++i) {
         Sprite3D key = arr[i];
@@ -317,7 +306,6 @@ static void sprite_insertion_sort(Sprite3D* arr, int n) {
         arr[j + 1] = key;
     }
 }
-
 void sprite_sort_by_depth(SpriteRenderer3D* sr) {
     if (!sr)
         return;
@@ -325,13 +313,11 @@ void sprite_sort_by_depth(SpriteRenderer3D* sr) {
     int do_profile = getenv("SNAKE_SPRITE_PROFILE") != NULL;
     if (do_profile)
         start = now_ns();
-
     if (sr->count <= SPRITE_SORT_INSERTION_THRESHOLD) {
         sprite_insertion_sort(sr->sprites, sr->count);
     } else {
         qsort(sr->sprites, (size_t)sr->count, sizeof(Sprite3D), sprite_cmp);
     }
-
     if (do_profile)
         sprite_time_sort_ns += now_ns() - start;
 }
@@ -342,10 +328,8 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
     int do_profile = getenv("SNAKE_SPRITE_PROFILE") != NULL;
     if (do_profile)
         start = now_ns();
-
     const int scr_w = render_3d_sdl_get_width(ctx);
     const int scr_h = render_3d_sdl_get_height(ctx);
-
     for (int i = 0; i < sr->count; ++i) {
         Sprite3D* s = &sr->sprites[i];
         if (!s->visible)

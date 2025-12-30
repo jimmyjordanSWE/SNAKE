@@ -60,19 +60,21 @@ def extract_fn_info(node, source_code):
 def extract_symbols(node, source_code):
     symbols = []
     
+    loc = node.end_point[0] - node.start_point[0] + 1
+    
     if node.type == 'function_definition':
         for child in node.children:
             if child.type == 'function_declarator':
                 name, params = extract_fn_info(child, source_code)
                 if name:
-                    symbols.append({'type': 'fn', 'repr': f"{name}({','.join(params)})"})
+                    symbols.append({'type': 'fn', 'repr': f"{name}({','.join(params)})", 'loc': loc, 'is_def': True})
 
     elif node.type == 'declaration':
         for child in node.children:
             if child.type == 'function_declarator':
                 name, params = extract_fn_info(child, source_code)
                 if name:
-                    symbols.append({'type': 'fn', 'repr': f"{name}({','.join(params)})"})
+                    symbols.append({'type': 'fn', 'repr': f"{name}({','.join(params)})", 'loc': loc, 'is_def': False})
 
     elif node.type == 'struct_specifier':
         name = ""
@@ -96,14 +98,14 @@ def extract_symbols(node, source_code):
         if name or fields:
             display_name = name if name else "<anon>"
             field_str = "{" + ",".join(fields) + "}" if fields else ""
-            symbols.append({'type': 'st', 'repr': f"{display_name}{field_str}"})
+            symbols.append({'type': 'st', 'repr': f"{display_name}{field_str}", 'loc': loc})
 
     elif node.type == 'enum_specifier':
         name = ""
         for child in node.children:
             if child.type == 'type_identifier':
                 name = source_code[child.start_byte:child.end_byte].decode('utf-8')
-                symbols.append({'type': 'en', 'repr': name})
+                symbols.append({'type': 'en', 'repr': name, 'loc': loc})
                 break
 
     elif node.type == 'type_definition':
@@ -112,7 +114,7 @@ def extract_symbols(node, source_code):
             if child.type == 'type_identifier':
                 name = source_code[child.start_byte:child.end_byte].decode('utf-8')
         if name:
-            symbols.append({'type': 'ty', 'repr': name})
+            symbols.append({'type': 'ty', 'repr': name, 'loc': loc})
 
     for child in node.children:
         if node.type not in ('compound_statement', 'field_declaration_list', 'parameter_list'):
@@ -142,6 +144,7 @@ def main():
                     source_code = f.read()
                 ast_tree = parser.parse(source_code)
                 curr['__symbols__'] = extract_symbols(ast_tree.root_node, source_code)
+                curr['__loc__'] = len(source_code.splitlines())
 
     def print_hierarchical(syms, indent):
         if not syms: return
@@ -180,7 +183,7 @@ def main():
                 curr = curr[part]
                 if i == len(parts) - 1:
                     if '__leaf__' not in curr: curr['__leaf__'] = []
-                    curr['__leaf__'].append(suffix)
+                    curr['__leaf__'].append((suffix, s['loc']))
 
         def _print_trie(node, prefix_str, current_indent, needs_type=True):
             children = [k for k in node if k != '__leaf__']
@@ -196,20 +199,23 @@ def main():
             if prefix_str:
                 # If this node is a leaf with no children, combine prefix and signature
                 if '__leaf__' in node and not children and len(node['__leaf__']) == 1:
-                    output.append(" " * current_indent + f"{type_tag}{prefix_str}{node['__leaf__'][0]}")
+                    sf, loc = node['__leaf__'][0]
+                    output.append(" " * current_indent + f"{type_tag}{prefix_str}{sf}")
                 else:
                     # Cluster node
                     output.append(" " * current_indent + f"{type_tag}{prefix_str}")
                     # Print leaves directly under cluster
                     for leaf in node.get('__leaf__', []):
-                        output.append(" " * (current_indent + 1) + leaf)
+                        sf, loc = leaf
+                        output.append(" " * (current_indent + 1) + f"{sf}")
                     # Recurse children
                     for child_key in sorted(children):
                         _print_trie(node[child_key], child_key, current_indent + 1, needs_type=False)
             else:
                 # Root of the group analysis
                 for leaf in node.get('__leaf__', []):
-                    output.append(" " * current_indent + f"{sym_type} {leaf}")
+                    sf, loc = leaf
+                    output.append(" " * current_indent + f"{sym_type} {sf}")
                 for child_key in sorted(children):
                     _print_trie(node[child_key], child_key, current_indent, needs_type=True)
 
@@ -222,19 +228,34 @@ def main():
             syms = node['__symbols__']
             for group_type in ['fn', 'st', 'ty', 'en']:
                 type_map = {'fn':'f', 'st':'s', 'ty':'t', 'en':'e'}
-                group_syms = []
-                seen = set()
+                
+                # Filter to unique symbols, preferring definitions and max LOC
+                unique_syms = {}
                 for s in syms:
-                    if s['type'] == group_type and s['repr'] not in seen:
-                        group_syms.append(s)
-                        seen.add(s['repr'])
+                    if s['type'] != group_type: continue
+                    r = s['repr']
+                    if r not in unique_syms:
+                        unique_syms[r] = s
+                    else:
+                        cur = unique_syms[r]
+                        # Prefer definition over declaration
+                        s_def = s.get('is_def', False)
+                        cur_def = cur.get('is_def', False)
+                        if s_def and not cur_def:
+                            unique_syms[r] = s
+                        elif s_def == cur_def:
+                             if s['loc'] > cur['loc']:
+                                 unique_syms[r] = s
+                
+                group_syms = list(unique_syms.values())
+
                 if group_syms:
                     nonlocal sym_type
                     sym_type = type_map[group_type]
                     print_hierarchical(group_syms, indent + 1)
         
         for child_name in sorted(node.keys()):
-            if child_name != '__symbols__':
+            if child_name not in ('__symbols__', '__loc__'):
                 print_tree(node[child_name], child_name, indent + 1)
 
     sym_type = ""

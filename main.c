@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
     /* Initialize network logging early so the file is created by default */
     extern void net_log_init(void);
     net_log_init();
-
     int init_err = 0;
     SnakeGame* game = snake_game_new(config, &init_err);
     if (config)

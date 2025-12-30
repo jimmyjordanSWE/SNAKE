@@ -156,12 +156,11 @@ analyze:
 	if [ ! -f "$$VENV_PYTHON" ]; then echo "Error: Virtual environment not found at $$VENV_PYTHON"; exit 1; fi; \
 	mkdir -p "$$OUT_DIR"; \
 	echo "Refreshing LLM Context (Static Analysis)..."; \
-	echo "=== Structure ==="; \
+	echo "- refreshing structure context..."; \
 	"$$VENV_PYTHON" "$$SCRIPTS_DIR/structure.py" > "$$OUT_DIR/structure_out.txt"; \
-	for script in "memory_map.py" "call_chains.py" "errors.py" "data_flow.py" "hotspots.py" "invariants.py"; do \
+	for script in "memory_map.py" "call_chains.py" "errors.py" "data_flow.py" "hotspots.py" "invariants.py" "long_functions.py" "token_count.py"; do \
 		if [ -f "$$SCRIPTS_DIR/$$script" ]; then name=$${script%.py}; echo "- refreshing $$name context..."; "$$VENV_PYTHON" "$$SCRIPTS_DIR/$$script" > "$$OUT_DIR/$${name}_out.txt"; fi; \
 	done; \
-	echo "=== AST Context ==="; \
 	echo -e "\nLLM Context Updated. Results in $$OUT_DIR/";
 
 unit-tests:

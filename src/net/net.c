@@ -218,7 +218,6 @@ void net_disconnect(NetClient* client) {
     free(client);
 }
 #include "net_log.h"
-
 bool net_send_input(NetClient* client, const InputState* input) {
     if (!client || !input)
         return false;

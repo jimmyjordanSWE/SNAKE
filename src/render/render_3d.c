@@ -1,7 +1,6 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
-
 #include "render_3d.h"
 #include "env.h"
 #include "game_internal.h"
@@ -28,16 +27,13 @@ typedef enum {
     RENDER_MODE_3D,
     RENDER_MODE_COUNT
 } RenderMode;
-
 typedef struct {
     float x, y, radius, factor;
 } Decal;
-
 typedef struct {
     short count;
     short ids[16];
 } TileBucket;
-
 typedef struct {
     const GameState* game_state;
     Camera3D* camera;
@@ -308,7 +304,6 @@ static void render_3d_draw_char(SDL3DContext* disp, int x, int y, char c, uint32
     int h = render_3d_sdl_get_height(disp);
     if (!pix)
         return;
-
     for (int row = 0; row < 7; row++) {
         uint8_t bits = glyph[row];
         for (int colbit = 0; colbit < 5; colbit++) {
@@ -502,176 +497,126 @@ bool render_3d_init(const GameState* game_state, const Render3DConfig* config) {
     g_render_3d.initialized = true;
     return true;
 }
-void render_3d_draw(const GameState* game_state,
-                    const char* player_name,
-                    const void* scores,
-                    int score_count,
-                    float delta_seconds) {
-    (void)player_name;
-    (void)scores;
-    (void)score_count;
-    if (!g_render_3d.initialized || !game_state)
+static void render_3d_draw_debug_overlays(Render3DContext* r) {
+    if (!r->cached_debug_textures)
         return;
-    g_render_3d.game_state = game_state;
-#define MAX_DELTA_SECONDS 0.5f
-    float clamped_delta = delta_seconds;
-    if (clamped_delta > MAX_DELTA_SECONDS)
-        clamped_delta = MAX_DELTA_SECONDS;
-    /* Lazy-cache env_bool flags (avoid per-frame getenv) */
-    if (!g_render_3d.env_cached) {
-        g_render_3d.cached_debug_timing = env_bool("SNAKE_DEBUG_3D_TIMING", 0);
-        g_render_3d.cached_fast_wall_tex = env_bool("SNAKE_3D_FAST_WALLS", 1);
-        g_render_3d.cached_fast_floor_tex = env_bool("SNAKE_3D_FAST_FLOOR", 1);
-        g_render_3d.cached_debug_textures = env_bool("SNAKE_DEBUG_TEXTURES", 0);
-        g_render_3d.env_cached = true;
-    }
-    int debug_timing = g_render_3d.cached_debug_timing;
-    int fast_wall_tex = g_render_3d.cached_fast_wall_tex;
-    int fast_floor_tex = g_render_3d.cached_fast_floor_tex;
-    double t0 = debug_timing ? render_3d_now() : 0.0;
-    camera_update_interpolation(g_render_3d.camera, clamped_delta);
-    render_3d_update_fps(delta_seconds);
-    float frame_interp_t = camera_get_interpolation_fraction(g_render_3d.camera);
-    uint32_t floor_color = render_3d_sdl_color(139, 69, 19, 255);    /* 0xFF8B4513 */
-    uint32_t ceiling_color = render_3d_sdl_color(65, 105, 225, 255); /* 0xFF4169E1 */
-    const int screen_w = render_3d_sdl_get_width(g_render_3d.display);
-    const int screen_h = render_3d_sdl_get_height(g_render_3d.display);
-    uint32_t* pix = render_3d_sdl_get_pixels(g_render_3d.display);
-    int horizon = screen_h / 2;
-    const bool has_floor_tex = texture_has_image(g_render_3d.floor_texture);
-    const int map_w = g_render_3d.game_state->width;
-    const int map_h = g_render_3d.game_state->height;
-    double t_setup_end = debug_timing ? render_3d_now() : 0.0;
-    double t_before_walls = 0.0, t_after_walls = 0.0, t_after_sprites = 0.0, t_after_overlays = 0.0;
-    double t_before_present = 0.0, t_after_present = 0.0;
-
-    /* Precompute per-column ray angle offsets and their trig values */
-    camera_prepare_angle_offsets(g_render_3d.camera, screen_w);
-    const float* s_angle_offsets = camera_get_cached_angle_offsets(g_render_3d.camera);
-    if (screen_w != g_render_3d.offsets_cap && s_angle_offsets) {
-        g_render_3d.cos_offsets = realloc(g_render_3d.cos_offsets, (size_t)screen_w * sizeof(float));
-        g_render_3d.sin_offsets = realloc(g_render_3d.sin_offsets, (size_t)screen_w * sizeof(float));
-        for (int i = 0; i < screen_w; i++) {
-            g_render_3d.cos_offsets[i] = cosf(s_angle_offsets[i]);
-            g_render_3d.sin_offsets[i] = sinf(s_angle_offsets[i]);
-        }
-        g_render_3d.offsets_cap = screen_w;
-    }
-
-    if (g_render_3d.cached_debug_textures) {
-        const uint32_t* wp = texture_get_pixels(g_render_3d.wall_texture);
-        if (wp) {
-            for (int yy = 0; yy < 16; yy++) {
-                for (int xx = 0; xx < 16; xx++) {
-                    uint32_t c = texture_sample(g_render_3d.wall_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
-                    if (8 + xx >= 0 && 8 + xx < render_3d_sdl_get_width(g_render_3d.display) && 8 + yy >= 0 &&
-                        8 + yy < render_3d_sdl_get_height(g_render_3d.display))
-                        render_3d_sdl_get_pixels(
-                            g_render_3d.display)[(8 + yy) * render_3d_sdl_get_width(g_render_3d.display) + (8 + xx)] =
-                            c;
-                }
+    const uint32_t* wp = texture_get_pixels(r->wall_texture);
+    if (wp) {
+        for (int yy = 0; yy < 16; yy++) {
+            for (int xx = 0; xx < 16; xx++) {
+                uint32_t c = texture_sample(r->wall_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
+                if (8 + xx >= 0 && 8 + xx < render_3d_sdl_get_width(r->display) && 8 + yy >= 0 &&
+                    8 + yy < render_3d_sdl_get_height(r->display))
+                    render_3d_sdl_get_pixels(r->display)[(8 + yy) * render_3d_sdl_get_width(r->display) + (8 + xx)] = c;
             }
         }
-        const uint32_t* fp = texture_get_pixels(g_render_3d.floor_texture);
-        if (fp) {
-            for (int yy = 0; yy < 16; yy++) {
-                for (int xx = 0; xx < 16; xx++) {
-                    uint32_t c = texture_sample(g_render_3d.floor_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
-                    if (8 + xx >= 0 && 8 + xx < render_3d_sdl_get_width(g_render_3d.display) && 28 + yy >= 0 &&
-                        28 + yy < render_3d_sdl_get_height(g_render_3d.display))
-                        render_3d_sdl_get_pixels(
-                            g_render_3d.display)[(28 + yy) * render_3d_sdl_get_width(g_render_3d.display) + (8 + xx)] =
-                            c;
-                }
+    }
+    const uint32_t* fp = texture_get_pixels(r->floor_texture);
+    if (fp) {
+        for (int yy = 0; yy < 16; yy++) {
+            for (int xx = 0; xx < 16; xx++) {
+                uint32_t c = texture_sample(r->floor_texture, (float)xx / 16.0f, (float)yy / 16.0f, true);
+                if (8 + xx >= 0 && 8 + xx < render_3d_sdl_get_width(r->display) && 28 + yy >= 0 &&
+                    28 + yy < render_3d_sdl_get_height(r->display))
+                    render_3d_sdl_get_pixels(r->display)[(28 + yy) * render_3d_sdl_get_width(r->display) + (8 + xx)] =
+                        c;
             }
         }
-        fprintf(stderr, "render_3d: debug texture overlay drawn\n");
     }
-    float interp_cam_x, interp_cam_y;
-    camera_get_interpolated_position(g_render_3d.camera, &interp_cam_x, &interp_cam_y);
-    float interp_cam_angle = camera_get_interpolated_angle(g_render_3d.camera);
-    float cos_cam = cosf(interp_cam_angle);
-    float sin_cam = sinf(interp_cam_angle);
-
-    /* Floor and Ceiling pass (Row-major) */
-    /* Use pre-allocated pools instead of per-frame allocation */
-    Decal* decals = NULL;
-    TileBucket* buckets = NULL;
+    fprintf(stderr, "render_3d: debug texture overlay drawn\n");
+}
+static void render_3d_setup_floor_decals(Render3DContext* r,
+                                         const GameState* gs,
+                                         Decal** decals_out,
+                                         TileBucket** buckets_out,
+                                         int* decal_count_out) {
+    int map_w = gs->width;
+    int map_h = gs->height;
+    int bucket_count = map_w * map_h;
+    if (bucket_count > r->bucket_pool_cap) {
+        r->bucket_pool = realloc(r->bucket_pool, (size_t)bucket_count * sizeof(*r->bucket_pool));
+        r->bucket_pool_cap = bucket_count;
+    }
+    *buckets_out = r->bucket_pool;
+    if (*buckets_out)
+        memset(*buckets_out, 0, (size_t)bucket_count * sizeof(**buckets_out));
+    int max_decals = gs->food_count;
+    for (int pi = 0; pi < gs->num_players; pi++)
+        max_decals += gs->players[pi].length;
+    if (max_decals > r->decal_pool_cap) {
+        r->decal_pool = realloc(r->decal_pool, (size_t)max_decals * sizeof(*r->decal_pool));
+        r->decal_pool_cap = max_decals;
+    }
+    *decals_out = r->decal_pool;
     int decal_count = 0;
-
-    t_before_walls = debug_timing ? render_3d_now() : 0.0;
-    float wall_scale = has_floor_tex ? projection_get_wall_scale(g_render_3d.projector) : 0.0f;
-    const uint32_t* floor_pix = has_floor_tex ? texture_get_pixels(g_render_3d.floor_texture) : NULL;
-    int floor_w = has_floor_tex ? texture_get_img_w(g_render_3d.floor_texture) : 0;
-    int floor_h_tex = has_floor_tex ? texture_get_img_h(g_render_3d.floor_texture) : 0;
-    float floor_tex_scale = g_render_3d.config.floor_texture_scale;
-
-    if (has_floor_tex) {
-        /* Grow bucket pool if needed */
-        int bucket_count = map_w * map_h;
-        if (bucket_count > g_render_3d.bucket_pool_cap) {
-            g_render_3d.bucket_pool =
-                realloc(g_render_3d.bucket_pool, (size_t)bucket_count * sizeof(*g_render_3d.bucket_pool));
-            g_render_3d.bucket_pool_cap = bucket_count;
+    if (*buckets_out && *decals_out) {
+        Decal* decals = *decals_out;
+        TileBucket* buckets = *buckets_out;
+        for (int i = 0; i < gs->food_count; i++) {
+            decals[decal_count].x = (float)gs->food[i].x + 0.5f;
+            decals[decal_count].y = (float)gs->food[i].y + 0.5f;
+            decals[decal_count].radius = 0.15f;
+            decals[decal_count].factor = 0.4f;
+            decal_count++;
         }
-        buckets = g_render_3d.bucket_pool;
-        if (buckets)
-            memset(buckets, 0, (size_t)bucket_count * sizeof(*buckets));
-
-        /* Grow decal pool if needed */
-        int max_decals = game_state->food_count;
-        for (int pi = 0; pi < game_state->num_players; pi++)
-            max_decals += game_state->players[pi].length;
-        if (max_decals > g_render_3d.decal_pool_cap) {
-            g_render_3d.decal_pool =
-                realloc(g_render_3d.decal_pool, (size_t)max_decals * sizeof(*g_render_3d.decal_pool));
-            g_render_3d.decal_pool_cap = max_decals;
-        }
-        decals = g_render_3d.decal_pool;
-        if (buckets && decals) {
-            for (int i = 0; i < game_state->food_count; i++) {
-                decals[decal_count].x = (float)game_state->food[i].x + 0.5f;
-                decals[decal_count].y = (float)game_state->food[i].y + 0.5f;
-                decals[decal_count].radius = 0.15f;
+        for (int pi = 0; pi < gs->num_players; pi++) {
+            const PlayerState* player = &gs->players[pi];
+            if (!player->active)
+                continue;
+            for (int bi = 0; bi < player->length; bi++) {
+                decals[decal_count].x = (float)player->body[bi].x + 0.5f;
+                decals[decal_count].y = (float)player->body[bi].y + 0.5f;
+                decals[decal_count].radius = (bi == 0) ? 0.25f : 0.2f;
                 decals[decal_count].factor = 0.4f;
                 decal_count++;
             }
-            for (int pi = 0; pi < game_state->num_players; pi++) {
-                const PlayerState* player = &game_state->players[pi];
-                if (!player->active)
-                    continue;
-                for (int bi = 0; bi < player->length; bi++) {
-                    decals[decal_count].x = (float)player->body[bi].x + 0.5f;
-                    decals[decal_count].y = (float)player->body[bi].y + 0.5f;
-                    decals[decal_count].radius = (bi == 0) ? 0.25f : 0.2f;
-                    decals[decal_count].factor = 0.4f;
-                    decal_count++;
-                }
-            }
-            /* Insert decals into buckets */
-            for (int di = 0; di < decal_count; di++) {
-                int min_tx = (int)floorf(decals[di].x - decals[di].radius);
-                int max_tx = (int)floorf(decals[di].x + decals[di].radius);
-                int min_ty = (int)floorf(decals[di].y - decals[di].radius);
-                int max_ty = (int)floorf(decals[di].y + decals[di].radius);
-                if (min_tx < 0)
-                    min_tx = 0;
-                if (min_ty < 0)
-                    min_ty = 0;
-                if (max_tx >= map_w)
-                    max_tx = map_w - 1;
-                if (max_ty >= map_h)
-                    max_ty = map_h - 1;
-                for (int ty = min_ty; ty <= max_ty; ty++) {
-                    for (int tx = min_tx; tx <= max_tx; tx++) {
-                        TileBucket* b = &buckets[ty * map_w + tx];
-                        if (b->count < (int)(sizeof(b->ids) / sizeof(b->ids[0]))) {
-                            b->ids[b->count++] = (short)di;
-                        }
-                    }
+        }
+        for (int di = 0; di < decal_count; di++) {
+            int min_tx = (int)floorf(decals[di].x - decals[di].radius);
+            int max_tx = (int)floorf(decals[di].x + decals[di].radius);
+            int min_ty = (int)floorf(decals[di].y - decals[di].radius);
+            int max_ty = (int)floorf(decals[di].y + decals[di].radius);
+            if (min_tx < 0)
+                min_tx = 0;
+            if (min_ty < 0)
+                min_ty = 0;
+            if (max_tx >= map_w)
+                max_tx = map_w - 1;
+            if (max_ty >= map_h)
+                max_ty = map_h - 1;
+            for (int ty = min_ty; ty <= max_ty; ty++) {
+                for (int tx = min_tx; tx <= max_tx; tx++) {
+                    TileBucket* b = &buckets[ty * map_w + tx];
+                    if (b->count < (int)(sizeof(b->ids) / sizeof(b->ids[0])))
+                        b->ids[b->count++] = (short)di;
                 }
             }
         }
+    }
+    *decal_count_out = decal_count;
+}
+static void render_3d_draw_floor_ceiling_pass(Render3DContext* r,
+                                              int screen_w,
+                                              int screen_h,
+                                              int horizon,
+                                              float interp_cam_x,
+                                              float interp_cam_y,
+                                              float cos_cam,
+                                              float sin_cam,
+                                              Decal* decals,
+                                              TileBucket* buckets,
+                                              int decal_count) {
+    uint32_t floor_color = render_3d_sdl_color(139, 69, 19, 255);
+    uint32_t ceiling_color = render_3d_sdl_color(65, 105, 225, 255);
+    uint32_t* pix = render_3d_sdl_get_pixels(r->display);
+    float wall_scale = projection_get_wall_scale(r->projector);
+    const uint32_t* floor_pix = texture_get_pixels(r->floor_texture);
+    int floor_w = texture_get_img_w(r->floor_texture);
+    int floor_h_tex = texture_get_img_h(r->floor_texture);
+    float floor_tex_scale = r->config.floor_texture_scale;
+    int map_w = r->game_state->width;
+    int map_h = r->game_state->height;
+    bool fast_floor_tex = r->cached_fast_floor_tex;
     for (int y = 0; y < screen_h; y++) {
         if (y < horizon) {
             uint32_t* row_pix = &pix[y * screen_w];
@@ -682,65 +627,35 @@ void render_3d_draw(const GameState* game_state,
         float p = (float)(y - horizon);
         if (p < 1.0f)
             p = 1.0f;
-        /* Floor calculation: wall_height = screen_h * wall_scale / distance
-         * Therefore: distance = screen_h * wall_scale / wall_height
-         * Camera height is 0.5 world units, so pos_z = 0.5 * screen_h * wall_scale */
         float pos_z = 0.5f * (float)screen_h * wall_scale;
         float row_distance_center = pos_z / p;
-
         uint32_t* row_pix = &pix[y * screen_w];
         for (int x = 0; x < screen_w; x++) {
-            /* Use per-column angle to compute correct floor position */
-            float cos_a = cos_cam * g_render_3d.cos_offsets[x] - sin_cam * g_render_3d.sin_offsets[x];
-            float sin_a = sin_cam * g_render_3d.cos_offsets[x] + cos_cam * g_render_3d.sin_offsets[x];
-            /* Correct for fisheye: actual distance = perpendicular_distance / cos(angle_offset) */
-            float cos_angle_diff = g_render_3d.cos_offsets[x];
+            float cos_a = cos_cam * r->cos_offsets[x] - sin_cam * r->sin_offsets[x];
+            float sin_a = sin_cam * r->cos_offsets[x] + cos_cam * r->sin_offsets[x];
+            float cos_angle_diff = r->cos_offsets[x];
             float actual_distance =
                 (cos_angle_diff > 0.01f) ? row_distance_center / cos_angle_diff : row_distance_center;
             float floor_x = interp_cam_x + cos_a * actual_distance;
             float floor_y = interp_cam_y + sin_a * actual_distance;
-
-            /* Check for cached decals in the tile containing the floor sample */
             uint32_t base_col;
             bool in_shadow = false;
             float shadow_factor = 1.0f;
             if (buckets) {
-                int tx = (int)floorf(floor_x);
-                int ty = (int)floorf(floor_y);
+                int tx = (int)floorf(floor_x), ty = (int)floorf(floor_y);
                 if (tx >= 0 && tx < map_w && ty >= 0 && ty < map_h) {
                     TileBucket* b = &buckets[ty * map_w + tx];
                     for (int bi = 0; bi < b->count; bi++) {
                         int di = b->ids[bi];
-                        float dx = floor_x - decals[di].x;
-                        float dy = floor_y - decals[di].y;
-                        float dist_sq = dx * dx + dy * dy;
-                        float r = decals[di].radius;
-                        if (dist_sq < r * r) {
+                        float dx = floor_x - decals[di].x, dy = floor_y - decals[di].y;
+                        if (dx * dx + dy * dy < decals[di].radius * decals[di].radius) {
                             in_shadow = true;
                             shadow_factor = decals[di].factor;
                             break;
                         }
                     }
                 }
-            } else {
-                /* Fallback: brute-force check (rare if allocation failed) */
-                for (int di = 0; di < decal_count; di++) {
-                    float dx = floor_x - decals[di].x;
-                    float dy = floor_y - decals[di].y;
-                    float dist_sq = dx * dx + dy * dy;
-                    float r = decals[di].radius;
-                    if (dist_sq < r * r) {
-                        in_shadow = true;
-                        shadow_factor = decals[di].factor;
-                        break;
-                    }
-                }
             }
-
-            /* If we have a floor texture, sample it even when the computed world
-             * coordinates fall just outside the map bounds. This avoids a 1-pixel
-             * color border at the base of walls caused by strict bounds checking.
-             */
             if (floor_pix) {
                 if (fast_floor_tex) {
                     int tx = (int)(floor_x * floor_tex_scale * (float)floor_w) % floor_w;
@@ -751,176 +666,166 @@ void render_3d_draw(const GameState* game_state,
                         ty += floor_h_tex;
                     base_col = floor_pix[ty * floor_w + tx];
                 } else {
-                    base_col = texture_sample(g_render_3d.floor_texture, floor_x * floor_tex_scale,
-                                              floor_y * floor_tex_scale, !fast_floor_tex);
+                    base_col =
+                        texture_sample(r->floor_texture, floor_x * floor_tex_scale, floor_y * floor_tex_scale, true);
                 }
-            } else if (floor_x >= 0 && floor_x < (float)map_w && floor_y >= 0 && floor_y < (float)map_h) {
-                base_col = floor_color;
             } else {
                 base_col = floor_color;
             }
-
-            /* Apply shadow darkening */
             if (in_shadow) {
-                uint8_t r = (uint8_t)((base_col >> 16) & 0xFF);
-                uint8_t g = (uint8_t)((base_col >> 8) & 0xFF);
-                uint8_t b = (uint8_t)(base_col & 0xFF);
-                r = (uint8_t)((float)r * shadow_factor);
-                g = (uint8_t)((float)g * shadow_factor);
-                b = (uint8_t)((float)b * shadow_factor);
-                row_pix[x] = (0xFFu << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
+                uint8_t r_s = (uint8_t)((float)((base_col >> 16) & 0xFF) * shadow_factor);
+                uint8_t g_s = (uint8_t)((float)((base_col >> 8) & 0xFF) * shadow_factor);
+                uint8_t b_s = (uint8_t)((float)(base_col & 0xFF) * shadow_factor);
+                row_pix[x] = (0xFFu << 24) | ((uint32_t)r_s << 16) | ((uint32_t)g_s << 8) | (uint32_t)b_s;
             } else {
                 row_pix[x] = base_col;
             }
         }
     }
-} else {
-    for (int y = 0; y < screen_h; y++) {
-        uint32_t col = (y < horizon) ? ceiling_color : floor_color;
-        uint32_t* row_pix = &pix[y * screen_w];
-        for (int x = 0; x < screen_w; x++)
-            row_pix[x] = col;
-    }
 }
-
-/* Pools are kept for reuse; freed in shutdown */
-
-/* Wall pass (Column-major) */
-for (int x = 0; x < screen_w; x++) {
-    float ray_angle = interp_cam_angle + s_angle_offsets[x];
-    /* Compute full ray trig from camera angle and cached offsets (avoids per-ray cosf/sinf) */
-    float ray_cos = cos_cam * g_render_3d.cos_offsets[x] - sin_cam * g_render_3d.sin_offsets[x];
-    float ray_sin = sin_cam * g_render_3d.cos_offsets[x] + cos_cam * g_render_3d.sin_offsets[x];
-    RayHit hit;
-    if (raycast_cast_ray_fast(g_render_3d.raycaster, interp_cam_x, interp_cam_y, ray_cos, ray_sin, &hit)) {
-        WallProjection proj;
-        projection_project_wall_perp(g_render_3d.projector, hit.distance, ray_angle, interp_cam_angle, &proj);
-        float cos_angle_diff = g_render_3d.cos_offsets[x];
-        float pd = hit.distance * cos_angle_diff;
-        if (pd <= 0.001f)
-            pd = 0.001f;
-        if (g_render_3d.column_depths)
-            g_render_3d.column_depths[x] = pd;
-        float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * g_render_3d.config.wall_texture_scale;
-        /* Use unclamped wall_height for texture mapping, not the clamped screen coordinates.
-         * This prevents texture stretching when walls extend beyond screen bounds. */
-        int full_wall_h = proj.wall_height;
-        if (full_wall_h <= 0)
-            full_wall_h = 1;
-        float tex_v_coord_step = (1.0f / (float)full_wall_h) * g_render_3d.config.wall_texture_scale;
-
-        /* Calculate starting texture coordinate based on how much of the wall is clipped at top */
-        int unclamped_start = horizon - (full_wall_h / 2);
-        float tex_v_start = (float)(proj.draw_start - unclamped_start) * tex_v_coord_step;
-
-        const uint32_t* wall_pix = texture_get_pixels(g_render_3d.wall_texture);
-        int wall_w = texture_get_img_w(g_render_3d.wall_texture);
-        int wall_h_tex = texture_get_img_h(g_render_3d.wall_texture);
-
-        if (wall_pix && fast_wall_tex) {
-            int tx = (int)(tex_coord * (float)wall_w) % wall_w;
-            if (tx < 0)
-                tx += wall_w;
-            float ty_f = tex_v_start * (float)wall_h_tex;
-            float ty_step = tex_v_coord_step * (float)wall_h_tex;
-            for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
-                int ty = (int)ty_f % wall_h_tex;
-                if (ty < 0)
-                    ty += wall_h_tex;
-                if (pix && yy >= 0 && yy < screen_h)
-                    pix[yy * screen_w + x] = wall_pix[ty * wall_w + tx];
-                ty_f += ty_step;
+static void render_3d_draw_walls_pass(Render3DContext* r,
+                                      int screen_w,
+                                      int screen_h,
+                                      int horizon,
+                                      float interp_cam_x,
+                                      float interp_cam_y,
+                                      float interp_cam_angle,
+                                      float cos_cam,
+                                      float sin_cam) {
+    uint32_t* pix = render_3d_sdl_get_pixels(r->display);
+    const float* s_angle_offsets = camera_get_cached_angle_offsets(r->camera);
+    const uint32_t* wall_pix = texture_get_pixels(r->wall_texture);
+    int wall_w = texture_get_img_w(r->wall_texture);
+    int wall_h_tex = texture_get_img_h(r->wall_texture);
+    bool fast_wall_tex = r->cached_fast_wall_tex;
+    for (int x = 0; x < screen_w; x++) {
+        float ray_angle = interp_cam_angle + s_angle_offsets[x];
+        float ray_cos = cos_cam * r->cos_offsets[x] - sin_cam * r->sin_offsets[x];
+        float ray_sin = sin_cam * r->cos_offsets[x] + cos_cam * r->sin_offsets[x];
+        RayHit hit;
+        if (raycast_cast_ray_fast(r->raycaster, interp_cam_x, interp_cam_y, ray_cos, ray_sin, &hit)) {
+            WallProjection proj;
+            projection_project_wall_perp(r->projector, hit.distance, ray_angle, interp_cam_angle, &proj);
+            float pd = hit.distance * r->cos_offsets[x];
+            if (pd <= 0.001f)
+                pd = 0.001f;
+            if (r->column_depths)
+                r->column_depths[x] = pd;
+            float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * r->config.wall_texture_scale;
+            int full_wall_h = proj.wall_height > 0 ? proj.wall_height : 1;
+            float tex_v_coord_step = (1.0f / (float)full_wall_h) * r->config.wall_texture_scale;
+            int unclamped_start = horizon - (full_wall_h / 2);
+            float tex_v_start = (float)(proj.draw_start - unclamped_start) * tex_v_coord_step;
+            if (wall_pix && fast_wall_tex) {
+                int tx = (int)(tex_coord * (float)wall_w) % wall_w;
+                if (tx < 0)
+                    tx += wall_w;
+                float ty_f = tex_v_start * (float)wall_h_tex, ty_step = tex_v_coord_step * (float)wall_h_tex;
+                for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
+                    int ty = (int)ty_f % wall_h_tex;
+                    if (ty < 0)
+                        ty += wall_h_tex;
+                    if (pix && yy >= 0 && yy < screen_h)
+                        pix[yy * screen_w + x] = wall_pix[ty * wall_w + tx];
+                    ty_f += ty_step;
+                }
+            } else {
+                float tex_v_c = tex_v_start;
+                for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
+                    uint32_t col = texture_sample(r->wall_texture, tex_coord, tex_v_c, !fast_wall_tex);
+                    if (pix && yy >= 0 && yy < screen_h)
+                        pix[yy * screen_w + x] = col;
+                    tex_v_c += tex_v_coord_step;
+                }
             }
-        } else {
-            float tex_v_coord = tex_v_start;
-            for (int yy = proj.draw_start; yy <= proj.draw_end; yy++) {
-                uint32_t col = texture_sample(g_render_3d.wall_texture, tex_coord, tex_v_coord, !fast_wall_tex);
-                if (pix && yy >= 0 && yy < screen_h)
-                    pix[yy * screen_w + x] = col;
-                tex_v_coord += tex_v_coord_step;
-            }
-        }
-    } else {
-        if (g_render_3d.column_depths)
-            g_render_3d.column_depths[x] = INFINITY;
-    }
-}
-t_after_walls = debug_timing ? render_3d_now() : 0.0;
-if (g_render_3d.sprite_renderer) {
-    sprite_clear(g_render_3d.sprite_renderer);
-
-    /* Render sprites (shadows are now floor decals) */
-    for (int i = 0; i < game_state->food_count; i++) {
-        uint32_t apple_col = render_3d_sdl_color(255, 0, 0, 255);
-        sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)game_state->food[i].x + 0.5f,
-                                (float)game_state->food[i].y + 0.5f, 0.25f, -0.5f, true, -1, 0, apple_col);
-    }
-    for (int p = 0; p < game_state->num_players; p++) {
-        if (p == g_render_3d.config.active_player)
-            continue;
-        const PlayerState* player = &game_state->players[p];
-        if (!player->active || player->length == 0)
-            continue;
-        float head_x = player->prev_head_x + (((float)player->body[0].x + 0.5f) - player->prev_head_x) * frame_interp_t;
-        float head_y = player->prev_head_y + (((float)player->body[0].y + 0.5f) - player->prev_head_y) * frame_interp_t;
-        uint32_t pcol = player->color ? player->color : render_3d_sdl_color(0, 128, 0, 255);
-        sprite_add_color_shaded(g_render_3d.sprite_renderer, head_x, head_y, 1.0f, 0.0f, true, -1, 0, pcol);
-    }
-    for (int p = 0; p < game_state->num_players; p++) {
-        const PlayerState* player = &game_state->players[p];
-        if (!player->active || player->length <= 1)
-            continue;
-        uint32_t body_col =
-            player->color ? render_3d_shade_color(player->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
-        for (int bi = 1; bi < player->length; bi++) {
-            float seg_x = (float)player->body[bi].x + 0.5f;
-            float seg_y = (float)player->body[bi].y + 0.5f;
-            if (player->prev_segment_x && player->prev_segment_y) {
-                seg_x = player->prev_segment_x[bi] +
-                        (((float)player->body[bi].x + 0.5f) - player->prev_segment_x[bi]) * frame_interp_t;
-                seg_y = player->prev_segment_y[bi] +
-                        (((float)player->body[bi].y + 0.5f) - player->prev_segment_y[bi]) * frame_interp_t;
-            }
-            float tail_h = g_render_3d.config.tail_height_scale;
-            sprite_add_color(g_render_3d.sprite_renderer, seg_x, seg_y, tail_h, 0.0f, true, -1, 0, body_col);
+        } else if (r->column_depths) {
+            r->column_depths[x] = INFINITY;
         }
     }
 }
-{
-    if (env_bool("SNAKE_DEBUG_TAIL", 0)) {
-        fprintf(stderr, "[tail-dbg] sprite_count=%d\n", sprite_get_count(g_render_3d.sprite_renderer));
+void render_3d_draw(const GameState* gs, const char* name, const void* sc, int scc, float dt) {
+    (void)name;
+    (void)sc;
+    (void)scc;
+    if (!g_render_3d.initialized || !gs)
+        return;
+    g_render_3d.game_state = gs;
+    float c_dt = dt > 0.5f ? 0.5f : dt;
+    if (!g_render_3d.env_cached) {
+        g_render_3d.cached_debug_timing = env_bool("SNAKE_DEBUG_3D_TIMING", 0);
+        g_render_3d.cached_fast_wall_tex = env_bool("SNAKE_3D_FAST_WALLS", 1);
+        g_render_3d.cached_fast_floor_tex = env_bool("SNAKE_3D_FAST_FLOOR", 1);
+        g_render_3d.cached_debug_textures = env_bool("SNAKE_DEBUG_TEXTURES", 0);
+        g_render_3d.env_cached = true;
     }
-}
-sprite_project_all(g_render_3d.sprite_renderer);
-sprite_sort_by_depth(g_render_3d.sprite_renderer);
-sprite_draw(g_render_3d.sprite_renderer, g_render_3d.display, g_render_3d.column_depths);
-t_after_sprites = debug_timing ? render_3d_now() : 0.0;
-render_3d_draw_minimap(&g_render_3d, frame_interp_t);
-render_3d_draw_fps_counter();
-t_after_overlays = debug_timing ? render_3d_now() : 0.0;
-t_before_present = debug_timing ? render_3d_now() : 0.0;
-if (!render_3d_sdl_present(g_render_3d.display)) {
-}
-t_after_present = debug_timing ? render_3d_now() : 0.0;
-if (debug_timing) {
-    double t_end = (t_after_present > 0.0) ? t_after_present : render_3d_now();
-    double setup_ms = (t_setup_end - t0) * 1000.0;
-    double walls_ms = (t_after_walls - t_before_walls) * 1000.0;
-    double sprites_ms = (t_after_sprites - t_after_walls) * 1000.0;
-    double overlays_ms = (t_after_overlays - t_after_sprites) * 1000.0;
-    double present_ms = (t_after_present - t_before_present) * 1000.0;
-    double total_ms = (t_end - t0) * 1000.0;
-    double pct_setup = (total_ms > 0.0) ? (100.0 * (setup_ms / total_ms)) : 0.0;
-    double pct_walls = (total_ms > 0.0) ? (100.0 * (walls_ms / total_ms)) : 0.0;
-    double pct_sprites = (total_ms > 0.0) ? (100.0 * (sprites_ms / total_ms)) : 0.0;
-    double pct_overlays = (total_ms > 0.0) ? (100.0 * (overlays_ms / total_ms)) : 0.0;
-    double pct_present = (total_ms > 0.0) ? (100.0 * (present_ms / total_ms)) : 0.0;
-    render_3d_log("3D_TIMING: total=%.2fms setup=%.2fms(%.1f%%) walls=%.2fms(%.1f%%) sprites=%.2fms(%.1f%%) \
-                     overlays=%.2fms(%.1f%%) present=%.2fms(%.1f%%) screen=%dx%d map=%dx%d sprites=%d\n",
-                  total_ms, setup_ms, pct_setup, walls_ms, pct_walls, sprites_ms, pct_sprites, overlays_ms,
-                  pct_overlays, present_ms, pct_present, screen_w, screen_h, map_w, map_h,
-                  g_render_3d.sprite_renderer ? sprite_get_count(g_render_3d.sprite_renderer) : 0);
-}
+    double t0 = g_render_3d.cached_debug_timing ? render_3d_now() : 0.0;
+    camera_update_interpolation(g_render_3d.camera, c_dt);
+    render_3d_update_fps(dt);
+    float f_interp = camera_get_interpolation_fraction(g_render_3d.camera);
+    const int sw = render_3d_sdl_get_width(g_render_3d.display), sh = render_3d_sdl_get_height(g_render_3d.display);
+    int horizon = sh / 2;
+    camera_prepare_angle_offsets(g_render_3d.camera, sw);
+    const float* offsets = camera_get_cached_angle_offsets(g_render_3d.camera);
+    if (sw != g_render_3d.offsets_cap && offsets) {
+        g_render_3d.cos_offsets = realloc(g_render_3d.cos_offsets, (size_t)sw * sizeof(float));
+        g_render_3d.sin_offsets = realloc(g_render_3d.sin_offsets, (size_t)sw * sizeof(float));
+        for (int i = 0; i < sw; i++) {
+            g_render_3d.cos_offsets[i] = cosf(offsets[i]);
+            g_render_3d.sin_offsets[i] = sinf(offsets[i]);
+        }
+        g_render_3d.offsets_cap = sw;
+    }
+    render_3d_draw_debug_overlays(&g_render_3d);
+    float icx, icy, ica;
+    camera_get_interpolated_position(g_render_3d.camera, &icx, &icy);
+    ica = camera_get_interpolated_angle(g_render_3d.camera);
+    float cos_c = cosf(ica), sin_c = sinf(ica);
+    Decal* d_p = NULL;
+    TileBucket* b_p = NULL;
+    int d_c = 0;
+    render_3d_setup_floor_decals(&g_render_3d, gs, &d_p, &b_p, &d_c);
+    render_3d_draw_floor_ceiling_pass(&g_render_3d, sw, sh, horizon, icx, icy, cos_c, sin_c, d_p, b_p, d_c);
+    render_3d_draw_walls_pass(&g_render_3d, sw, sh, horizon, icx, icy, ica, cos_c, sin_c);
+    if (g_render_3d.sprite_renderer) {
+        sprite_clear(g_render_3d.sprite_renderer);
+        for (int i = 0; i < gs->food_count; i++)
+            sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)gs->food[i].x + 0.5f,
+                                    (float)gs->food[i].y + 0.5f, 0.25f, -0.5f, true, -1, 0,
+                                    render_3d_sdl_color(255, 0, 0, 255));
+        for (int p = 0; p < gs->num_players; p++) {
+            const PlayerState* pl = &gs->players[p];
+            if (!pl->active || pl->length == 0 || p == g_render_3d.config.active_player)
+                continue;
+            float hx = pl->prev_head_x + (((float)pl->body[0].x + 0.5f) - pl->prev_head_x) * f_interp;
+            float hy = pl->prev_head_y + (((float)pl->body[0].y + 0.5f) - pl->prev_head_y) * f_interp;
+            sprite_add_color_shaded(g_render_3d.sprite_renderer, hx, hy, 1.0f, 0.0f, true, -1, 0,
+                                    pl->color ? pl->color : render_3d_sdl_color(0, 128, 0, 255));
+        }
+        for (int p = 0; p < gs->num_players; p++) {
+            const PlayerState* pl = &gs->players[p];
+            if (!pl->active || pl->length <= 1)
+                continue;
+            uint32_t bc = pl->color ? render_3d_shade_color(pl->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
+            for (int bi = 1; bi < pl->length; bi++) {
+                float sx =
+                    pl->prev_segment_x[bi] + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment_x[bi]) * f_interp;
+                float sy =
+                    pl->prev_segment_y[bi] + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment_y[bi]) * f_interp;
+                sprite_add_color(g_render_3d.sprite_renderer, sx, sy, g_render_3d.config.tail_height_scale, 0.0f, true,
+                                 -1, 0, bc);
+            }
+        }
+        sprite_project_all(g_render_3d.sprite_renderer);
+        sprite_sort_by_depth(g_render_3d.sprite_renderer);
+        sprite_draw(g_render_3d.sprite_renderer, g_render_3d.display, g_render_3d.column_depths);
+    }
+    render_3d_draw_minimap(&g_render_3d, f_interp);
+    render_3d_draw_fps_counter();
+    (void)render_3d_sdl_present(g_render_3d.display);
+    if (g_render_3d.cached_debug_timing) {
+        render_3d_log("3D_TIMING: total=%.2fms screen=%dx%d map=%dx%d\n", (render_3d_now() - t0) * 1000.0, sw, sh,
+                      gs->width, gs->height);
+    }
 }
 void render_3d_set_active_player(int player_index) __attribute__((used));
 void render_3d_set_active_player(int player_index) {

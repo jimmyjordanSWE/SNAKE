@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #define PERSIST_SCORE_BUFFER 256
@@ -97,17 +98,14 @@ struct GameConfig {
     /* Per-player metadata */
     char player_name_arr[SNAKE_MAX_PLAYERS][PERSIST_PLAYER_NAME_MAX];
     uint32_t player_color_arr[SNAKE_MAX_PLAYERS];
-
     /* Multiplayer config */
     int mp_enabled; /* 0 = disabled, 1 = enabled */
     char mp_server_host[PERSIST_MP_HOST_MAX];
     int mp_server_port;
     char mp_identifier[PERSIST_MP_IDENTIFIER_MAX];
     char mp_session[PERSIST_MP_SESSION_MAX];
-
     /* Headless mode: no TTY/SDL graphics */
     int headless;
-
     /* Autoplay mode: snake turns right every 3rd tick (testing) */
     int autoplay;
 };
@@ -148,7 +146,6 @@ GameConfig* game_config_create(void) {
     c->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
     c->key_restart = PERSIST_CONFIG_DEFAULT_KEY_RESTART;
     c->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
-
     /* Multiplayer defaults */
     c->mp_enabled = 0;
     snprintf(c->mp_server_host, PERSIST_MP_HOST_MAX, "%s", "mpapi.se");
@@ -178,13 +175,10 @@ GameConfig* game_config_create(void) {
     c->key_left = c->key_left_arr[0];
     c->key_right = c->key_right_arr[0];
     /* keep player name and color defaults synchronized */
-    for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i) {
-        /* already initialized above */
+    for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i) { /* already initialized above */
     }
-
     /* Autoplay: -1 = unset (will be auto-determined based on mode) */
     c->autoplay = -1;
-
     return c;
 }
 void game_config_destroy(GameConfig* cfg) {
@@ -395,7 +389,6 @@ void game_config_set_key_pause(GameConfig* cfg, char c) {
 char game_config_get_key_pause(const GameConfig* cfg) {
     return cfg ? cfg->key_pause : '\0';
 }
-
 void game_config_set_player_name_for(GameConfig* cfg, int player_idx, const char* name) {
     if (!cfg || !name || player_idx < 0 || player_idx >= cfg->max_players)
         return;
@@ -418,7 +411,6 @@ uint32_t game_config_get_player_color(const GameConfig* cfg, int player_idx) {
         return 0u;
     return cfg->player_color_arr[player_idx];
 }
-
 void game_config_set_enable_external_3d_view(GameConfig* cfg, int v) {
     if (!cfg)
         return;
@@ -435,7 +427,6 @@ void game_config_set_active_player(GameConfig* cfg, int v) {
 int game_config_get_active_player(const GameConfig* cfg) {
     return cfg ? cfg->active_player : 0;
 }
-
 /* Multiplayer accessors */
 void game_config_set_mp_enabled(GameConfig* cfg, int v) {
     if (!cfg)
@@ -465,7 +456,6 @@ void game_config_set_mp_identifier(GameConfig* cfg, const char* id) {
 const char* game_config_get_mp_identifier(const GameConfig* cfg) {
     return cfg ? cfg->mp_identifier : NULL;
 }
-
 void game_config_set_mp_session(GameConfig* cfg, const char* session) {
     if (!cfg)
         return;
@@ -478,7 +468,6 @@ void game_config_set_mp_session(GameConfig* cfg, const char* session) {
 const char* game_config_get_mp_session(const GameConfig* cfg) {
     return cfg ? cfg->mp_session : NULL;
 }
-
 void game_config_set_headless(GameConfig* cfg, int v) {
     if (!cfg)
         return;
@@ -657,6 +646,161 @@ void persist_free_scores(HighScore** scores, int count) {
     }
     free(scores);
 }
+static void parse_graphics_config(GameConfig* config, const char* key, char* value) {
+    if (strcmp(key, "render_glyphs") == 0 || strcmp(key, "glyphs") == 0 || strcmp(key, "charset") == 0) {
+        if (isdigit((unsigned char)value[0])) {
+            char* endptr = NULL;
+            errno = 0;
+            long v = strtol(value, &endptr, 10);
+            if (errno == 0 && endptr != value)
+                config->render_glyphs = clamp_int((int)v, 0, 1);
+        } else {
+            for (char* p = value; *p; p++)
+                *p = (char)tolower((unsigned char)*p);
+            if (strcmp(value, "utf8") == 0 || strcmp(value, "unicode") == 0 || strcmp(value, "box") == 0)
+                config->render_glyphs = 0;
+            else if (strcmp(value, "ascii") == 0 || strcmp(value, "legacy") == 0)
+                config->render_glyphs = 1;
+        }
+    } else if (strcmp(key, "enable_external_3d_view") == 0) {
+        for (char* p = value; *p; p++)
+            *p = (char)tolower((unsigned char)*p);
+        if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+            config->enable_external_3d_view = 1;
+        else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+            config->enable_external_3d_view = 0;
+    } else if (strcmp(key, "fov_degrees") == 0) {
+        char* endptr = NULL;
+        errno = 0;
+        double dv = strtod(value, &endptr);
+        if (errno == 0 && endptr != value)
+            config->fov_degrees = (float)dv;
+    } else if (strcmp(key, "wall_height_scale") == 0) {
+        char* endptr = NULL;
+        errno = 0;
+        double dv = strtod(value, &endptr);
+        if (errno == 0 && endptr != value)
+            config->wall_height_scale = (float)dv;
+    } else if (strcmp(key, "tail_height_scale") == 0) {
+        char* endptr = NULL;
+        errno = 0;
+        double dv = strtod(value, &endptr);
+        if (errno == 0 && endptr != value)
+            config->tail_height_scale = (float)dv;
+    } else if (strcmp(key, "wall_texture_scale") == 0) {
+        char* endptr = NULL;
+        errno = 0;
+        double dv = strtod(value, &endptr);
+        if (errno == 0 && endptr != value)
+            config->wall_texture_scale = (float)dv;
+    } else if (strcmp(key, "floor_texture_scale") == 0) {
+        char* endptr = NULL;
+        errno = 0;
+        double dv = strtod(value, &endptr);
+        if (errno == 0 && endptr != value)
+            config->floor_texture_scale = (float)dv;
+    } else if (strcmp(key, "wall_texture") == 0) {
+        snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
+    } else if (strcmp(key, "floor_texture") == 0) {
+        snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
+    } else if (strcmp(key, "show_sprite_debug") == 0) {
+        for (char* p = value; *p; p++)
+            *p = (char)tolower((unsigned char)*p);
+        if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+            config->show_sprite_debug = 1;
+        else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+            config->show_sprite_debug = 0;
+    }
+}
+static void parse_player_config(GameConfig* config, const char* key, char* value) {
+    if (strcmp(key, "player_name") == 0) {
+        snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", value);
+    } else if (strncmp(key, "p", 1) == 0 && isdigit((unsigned char)key[1])) {
+        char* endptr = NULL;
+        long v = strtol(key + 1, &endptr, 10);
+        if (endptr != key + 1 && *endptr == '_') {
+            int idx = (int)(v - 1);
+            if (idx >= 0 && idx < SNAKE_MAX_PLAYERS) {
+                const char* suffix = endptr + 1;
+                if (strcmp(suffix, "left") == 0)
+                    config->key_left_arr[idx] = value[0];
+                else if (strcmp(suffix, "right") == 0)
+                    config->key_right_arr[idx] = value[0];
+                else if (strcmp(suffix, "name") == 0)
+                    snprintf(config->player_name_arr[idx], PERSIST_PLAYER_NAME_MAX, "%s", value);
+                else if (strcmp(suffix, "color") == 0)
+                    config->player_color_arr[idx] = (uint32_t)strtoul(value, NULL, 0);
+                if (idx == 0) {
+                    config->key_left = config->key_left_arr[0];
+                    config->key_right = config->key_right_arr[0];
+                    snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", config->player_name_arr[0]);
+                }
+            }
+        }
+    } else if (strcmp(key, "active_player") == 0) {
+        config->active_player = (int)strtol(value, NULL, 10);
+    } else if (strcmp(key, "num_players") == 0) {
+        config->num_players = (int)strtol(value, NULL, 10);
+        if (config->max_players < config->num_players)
+            config->max_players = config->num_players;
+    } else if (strcmp(key, "max_players") == 0) {
+        config->max_players = (int)strtol(value, NULL, 10);
+    } else if (strcmp(key, "max_length") == 0) {
+        config->max_length = (int)strtol(value, NULL, 10);
+    } else if (strcmp(key, "max_food") == 0) {
+        config->max_food = (int)strtol(value, NULL, 10);
+    }
+}
+static void parse_multiplayer_config(GameConfig* config, const char* key, char* value) {
+    if (strcmp(key, "mp_enabled") == 0) {
+        for (char* p = value; *p; p++)
+            *p = (char)tolower((unsigned char)*p);
+        if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+            config->mp_enabled = 1;
+        else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+            config->mp_enabled = 0;
+    } else if (strcmp(key, "mp_server_host") == 0) {
+        snprintf(config->mp_server_host, PERSIST_MP_HOST_MAX, "%s", value);
+    } else if (strcmp(key, "mp_server_port") == 0) {
+        config->mp_server_port = (int)strtol(value, NULL, 10);
+    } else if (strcmp(key, "mp_identifier") == 0) {
+        snprintf(config->mp_identifier, PERSIST_MP_IDENTIFIER_MAX, "%s", value);
+    } else if (strcmp(key, "mp_session") == 0 || strcmp(key, "mp_session_id") == 0) {
+        snprintf(config->mp_session, PERSIST_MP_SESSION_MAX, "%s", value);
+    }
+}
+static void parse_legacy_keys(GameConfig* config, const char* key, char* value) {
+    char c = value[0];
+    if (strcmp(key, "key_quit") == 0) {
+        if (strcasecmp(value, "ESC") == 0)
+            config->key_quit = '\x1b';
+        else
+            config->key_quit = c;
+    } else if (strcmp(key, "key_restart") == 0) {
+        config->key_restart = c;
+    } else if (strcmp(key, "key_pause") == 0) {
+        config->key_pause = c;
+    } else if (strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0) {
+        int idx = 0;
+        const char* p = strchr(key, '_');
+        if (p) {
+            char* endp = NULL;
+            long v = strtol(p + 1, &endp, 10);
+            if (endp != p + 1)
+                idx = (int)(v - 1);
+        }
+        if (idx >= 0 && idx < SNAKE_MAX_PLAYERS) {
+            if (strncmp(key, "key_left", 8) == 0)
+                config->key_left_arr[idx] = c;
+            else if (strncmp(key, "key_right", 9) == 0)
+                config->key_right_arr[idx] = c;
+            if (idx == 0) {
+                config->key_left = config->key_left_arr[0];
+                config->key_right = config->key_right_arr[0];
+            }
+        }
+    }
+}
 bool persist_load_config(const char* filename, GameConfig** out_config) {
     if (out_config == NULL)
         return false;
@@ -672,307 +816,45 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
         *out_config = config;
         return false;
     }
-    bool file_exists = true;
     char buffer[PERSIST_CONFIG_BUFFER];
     while (fgets(buffer, (int)sizeof(buffer), fp) != NULL) {
         size_t len = strlen(buffer);
-        if (len > 0 && buffer[len - 1] == '\n') {
-            buffer[len - 1] = '\0';
-            len--;
-        }
+        if (len > 0 && buffer[len - 1] == '\n')
+            buffer[--len] = '\0';
         if (len == 0 || buffer[0] == '#')
             continue;
-        char* eq_pos = strchr(buffer, '=');
-        if (eq_pos == NULL)
+        char* eq = strchr(buffer, '=');
+        if (!eq)
             continue;
-        *eq_pos = '\0';
+        *eq = '\0';
         char* key = trim_in_place(buffer);
-        char* value = trim_in_place(eq_pos + 1);
-        char* endptr = NULL;
-        if (key == NULL || value == NULL || *key == '\0' || *value == '\0')
+        char* val = trim_in_place(eq + 1);
+        if (!key || !val || !*key || !*val)
             continue;
-        if (strcmp(key, "render_glyphs") == 0 || strcmp(key, "glyphs") == 0 || strcmp(key, "charset") == 0) {
-            if (isdigit((unsigned char)value[0])) {
-                char* endptr2 = NULL;
-                errno = 0;
-                long v = strtol(value, &endptr2, 10);
-                if (errno != 0 || endptr2 == value)
-                    continue;
-                config->render_glyphs = clamp_int((int)v, 0, 1);
-            } else {
-                for (char* p = value; *p; p++)
-                    *p = (char)tolower((unsigned char)*p);
-                if (strcmp(value, "utf8") == 0 || strcmp(value, "unicode") == 0 || strcmp(value, "box") == 0)
-                    config->render_glyphs = 0;
-                else if (strcmp(value, "ascii") == 0 || strcmp(value, "legacy") == 0)
-                    config->render_glyphs = 1;
-            }
-            continue;
-        }
-        if (strcmp(key, "enable_external_3d_view") == 0) {
-            for (char* p = value; *p; p++)
-                *p = (char)tolower((unsigned char)*p);
-            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
-                config->enable_external_3d_view = 1;
-            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
-                config->enable_external_3d_view = 0;
-            continue;
-        } else if (strcmp(key, "seed") == 0) {
-            errno = 0;
-            unsigned long v = strtoul(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->seed = (uint32_t)v;
-            continue;
-        } else if (strcmp(key, "fov_degrees") == 0) {
-            char* endptr2 = NULL;
-            errno = 0;
-            double dv = strtod(value, &endptr2);
-            if (errno != 0 || endptr2 == value)
-                continue;
-            config->fov_degrees = (float)dv;
-            continue;
-        } else if (strcmp(key, "player_name") == 0) {
-            snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", value);
-            continue;
-        } else if (strcmp(key, "wall_height_scale") == 0) {
-            char* endptr2 = NULL;
-            errno = 0;
-            double dv = strtod(value, &endptr2);
-            if (errno != 0 || endptr2 == value)
-                continue;
-            config->wall_height_scale = (float)dv;
-            continue;
-        } else if (strcmp(key, "tail_height_scale") == 0) {
-            char* endptr2 = NULL;
-            errno = 0;
-            double dv = strtod(value, &endptr2);
-            if (errno != 0 || endptr2 == value)
-                continue;
-            config->tail_height_scale = (float)dv;
-            continue;
-        } else if (strcmp(key, "wall_texture_scale") == 0) {
-            char* endptr2 = NULL;
-            errno = 0;
-            double dv = strtod(value, &endptr2);
-            if (errno != 0 || endptr2 == value)
-                continue;
-            config->wall_texture_scale = (float)dv;
-            continue;
-        } else if (strcmp(key, "floor_texture_scale") == 0) {
-            char* endptr2 = NULL;
-            errno = 0;
-            double dv = strtod(value, &endptr2);
-            if (errno != 0 || endptr2 == value)
-                continue;
-            config->floor_texture_scale = (float)dv;
-            continue;
-        } else if (strcmp(key, "wall_texture") == 0) {
-            snprintf(config->wall_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
-            continue;
-        } else if (strcmp(key, "floor_texture") == 0) {
-            snprintf(config->floor_texture, PERSIST_TEXTURE_PATH_MAX, "%s", value);
-            continue;
-        } else if (strncmp(key, "p", 1) == 0 && isdigit((unsigned char)key[1])) {
-            /* support keys like p1_left, p2_right for player indexes 1-based */
-            char c = value[0];
-            char* endptr2 = NULL;
-            long v = strtol(key + 1, &endptr2, 10);
-            if (endptr2 == key + 1 || *endptr2 != '_')
-                continue;
-            int player_idx = (int)(v - 1);
-            if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-                continue;
-            const char* suffix = endptr2 + 1;
-            if (strcmp(suffix, "left") == 0)
-                config->key_left_arr[player_idx] = c;
-            else if (strcmp(suffix, "right") == 0)
-                config->key_right_arr[player_idx] = c;
-            if (player_idx == 0) {
-                config->key_left = config->key_left_arr[0];
-                config->key_right = config->key_right_arr[0];
-            }
-            continue;
-        } else if (strncmp(key, "key_left", 8) == 0 || strncmp(key, "key_right", 9) == 0 ||
-                   strcmp(key, "key_quit") == 0 || strcmp(key, "key_restart") == 0 || strcmp(key, "key_pause") == 0) {
-            /* support legacy keys like key_left, key_left_2, key_right_3, etc. (left/right only) */
-            char c = value[0];
-            if (strcmp(key, "key_quit") == 0) {
-                /* Accept special token ESC (case-insensitive) to represent the escape byte */
-                if ((value[0] == 'E' || value[0] == 'e') && (value[1] == 'S' || value[1] == 's') &&
-                    (value[2] == 'C' || value[2] == 'c') && value[3] == '\0') {
-                    config->key_quit = '\x1b';
-                } else {
-                    config->key_quit = c;
-                }
-            } else if (strcmp(key, "key_restart") == 0) {
-                config->key_restart = c;
-            } else if (strcmp(key, "key_pause") == 0) {
-                config->key_pause = c;
-            } else {
-                /* parse optional suffix _N */
-                int player_idx = 0;
-                const char* base = key;
-                const char* suffix = NULL;
-                const char* p = strchr(key, '_');
-                if (p && p != key) {
-                    /* check if suffix is a number */
-                    suffix = p + 1;
-                    long v = strtol(suffix, &endptr, 10);
-                    if ((endptr != suffix) && *endptr == '\0')
-                        player_idx = (int)(v - 1);
-                    else
-                        player_idx = -1;
-                    /* base now up to '_' */
-                    size_t baselen = (size_t)(p - key);
-                    char basebuf[16];
-                    if (baselen < sizeof(basebuf)) {
-                        memcpy(basebuf, key, baselen);
-                        basebuf[baselen] = '\0';
-                        base = basebuf;
-                    }
-                }
-                if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
-                    continue;
-                if (strcmp(base, "key_left") == 0)
-                    config->key_left_arr[player_idx] = c;
-                else if (strcmp(base, "key_right") == 0)
-                    config->key_right_arr[player_idx] = c;
-                else if (strcmp(base, "name") == 0) {
-                    snprintf(config->player_name_arr[player_idx], PERSIST_PLAYER_NAME_MAX, "%s", value);
-                } else if (strcmp(base, "color") == 0) {
-                    /* accept hex like 0xRRGGBB[A] or decimal */
-                    char* endptr2 = NULL;
-                    uint32_t v = (uint32_t)strtoul(value, &endptr2, 0);
-                    config->player_color_arr[player_idx] = v;
-                }
-                if (player_idx == 0) {
-                    /* keep single-char fields in sync */
-                    if (strcmp(base, "key_left") == 0)
-                        config->key_left = config->key_left_arr[0];
-                    else if (strcmp(base, "key_right") == 0)
-                        config->key_right = config->key_right_arr[0];
-                    else if (strcmp(base, "name") == 0)
-                        snprintf(config->player_name, PERSIST_PLAYER_NAME_MAX, "%s", config->player_name_arr[0]);
-                }
-            }
-            continue;
-        } else if (strcmp(key, "show_sprite_debug") == 0) {
-            for (char* p = value; *p; p++)
-                *p = (char)tolower((unsigned char)*p);
-            int b = -1;
-            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
-                b = 1;
-            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
-                b = 0;
-            if (b == -1)
-                continue;
-            config->show_sprite_debug = b;
-            continue;
-        } else if (strcmp(key, "active_player") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->active_player = (int)v;
-            continue;
-        } else if (strcmp(key, "num_players") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->num_players = (int)v;
-            if (config->max_players < config->num_players)
-                config->max_players = config->num_players;
-            continue;
-        } else if (strcmp(key, "max_players") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->max_players = (int)v;
-            continue;
-        } else if (strcmp(key, "max_length") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->max_length = (int)v;
-            continue;
-        } else if (strcmp(key, "max_food") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            config->max_food = (int)v;
-            continue;
-        } else if (strcmp(key, "mp_enabled") == 0) {
-            for (char* p = value; *p; p++)
-                *p = (char)tolower((unsigned char)*p);
-            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
-                config->mp_enabled = 1;
-            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
-                config->mp_enabled = 0;
-            continue;
-        } else if (strcmp(key, "mp_server_host") == 0) {
-            snprintf(config->mp_server_host, PERSIST_MP_HOST_MAX, "%s", value);
-            continue;
-        } else if (strcmp(key, "mp_server_port") == 0) {
-            errno = 0;
-            long v = strtol(value, &endptr, 10);
-            if (errno != 0 || endptr == value)
-                continue;
-            if (v < 1 || v > 65535)
-                continue;
-            config->mp_server_port = (int)v;
-            continue;
-        } else if (strcmp(key, "mp_identifier") == 0) {
-            /* accept any non-empty string up to the max */
-            if (value && value[0])
-                snprintf(config->mp_identifier, PERSIST_MP_IDENTIFIER_MAX, "%s", value);
-            continue;
-        } else if (strcmp(key, "mp_session") == 0 || strcmp(key, "mp_session_id") == 0) {
-            /* session code (e.g. ABC123) */
-            if (value && value[0])
-                snprintf(config->mp_session, PERSIST_MP_SESSION_MAX, "%s", value);
-            continue;
-        } else if (strcmp(key, "headless") == 0) {
-            for (char* p = value; *p; p++)
-                *p = (char)tolower((unsigned char)*p);
-            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
-                config->headless = 1;
-            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
-                config->headless = 0;
-            continue;
-        } else if (strcmp(key, "autoplay") == 0) {
-            for (char* p = value; *p; p++)
-                *p = (char)tolower((unsigned char)*p);
-            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
-                config->autoplay = 1;
-            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
-                config->autoplay = 0;
-            continue;
-        }
-        errno = 0;
-        long parsed_value = strtol(value, &endptr, 10);
-        if (errno != 0 || endptr == value)
-            continue;
-        if (parsed_value < (long)INT_MIN || parsed_value > (long)INT_MAX)
-            continue;
-        if (strcmp(key, "board_width") == 0)
-            config->board_width = clamp_int((int)parsed_value, 20, 100);
+        parse_graphics_config(config, key, val);
+        parse_player_config(config, key, val);
+        parse_multiplayer_config(config, key, val);
+        parse_legacy_keys(config, key, val);
+        if (strcmp(key, "seed") == 0)
+            config->seed = (uint32_t)strtoul(val, NULL, 10);
+        else if (strcmp(key, "headless") == 0)
+            config->headless = (strcasecmp(val, "true") == 0 || strcmp(val, "1") == 0);
+        else if (strcmp(key, "autoplay") == 0)
+            config->autoplay = (strcasecmp(val, "true") == 0 || strcmp(val, "1") == 0);
+        else if (strcmp(key, "board_width") == 0)
+            config->board_width = clamp_int((int)strtol(val, NULL, 10), 20, 100);
         else if (strcmp(key, "board_height") == 0)
-            config->board_height = clamp_int((int)parsed_value, 10, 100);
+            config->board_height = clamp_int((int)strtol(val, NULL, 10), 10, 100);
         else if (strcmp(key, "tick_rate_ms") == 0)
-            config->tick_rate_ms = clamp_int((int)parsed_value, 10, 1000);
+            config->tick_rate_ms = clamp_int((int)strtol(val, NULL, 10), 10, 1000);
         else if (strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0)
-            config->screen_width = clamp_int((int)parsed_value, 20, 4096);
+            config->screen_width = clamp_int((int)strtol(val, NULL, 10), 20, 4096);
         else if (strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0)
-            config->screen_height = clamp_int((int)parsed_value, 10, 2160);
+            config->screen_height = clamp_int((int)strtol(val, NULL, 10), 10, 2160);
     }
     fclose(fp);
     *out_config = config;
-    return file_exists;
+    return true;
 }
 bool persist_write_config(const char* filename, const GameConfig* config) {
     if (filename == NULL || config == NULL)
@@ -1029,7 +911,6 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
         goto write_fail;
     if (fprintf(fp, "key_left=%c\n", config->key_left) < 0)
         goto write_fail;
-
     /* Multiplayer settings */
     if (fprintf(fp, "mp_enabled=%s\n", (config->mp_enabled ? "true" : "false")) < 0)
         goto write_fail;

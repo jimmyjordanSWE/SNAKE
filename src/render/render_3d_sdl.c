@@ -207,7 +207,6 @@ static inline uint32_t blend_px(uint32_t dst, uint32_t src) {
     uint8_t rb = (uint8_t)(((sb * sa + db * inv) + 128) >> 8);
     return (0xFFu << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
 }
-
 void render_3d_sdl_blend_pixel(SDL3DContext* ctx, int x, int y, uint32_t src_col) {
     if (!ctx || !ctx->pixels || x < 0 || x >= ctx->width || y < 0 || y >= ctx->height)
         return;

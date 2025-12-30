@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 /* Remote player data received from other clients */
 #define MAX_REMOTE_PLAYERS 8
 typedef struct {
@@ -29,7 +28,6 @@ typedef struct {
 } RemotePlayer;
 static RemotePlayer g_remote_players[MAX_REMOTE_PLAYERS];
 static int g_remote_player_count = 0;
-
 /* Simple JSON field extraction (reusable) */
 static int parse_json_int(const char* json, const char* key) {
     char needle[64];
@@ -45,7 +43,6 @@ static int parse_json_int(const char* json, const char* key) {
         p++;
     return atoi(p);
 }
-
 static void parse_json_str(const char* json, const char* key, char* out, int maxlen) {
     out[0] = '\0';
     char needle[64];
@@ -71,12 +68,10 @@ static void parse_json_str(const char* json, const char* key, char* out, int max
     }
     out[i] = '\0';
 }
-
 /* Parse incoming game state JSON from another client */
 static void parse_remote_game_state(const char* json) {
     if (!json || !strstr(json, "\"type\":\"state\""))
         return;
-
     /* Find players array */
     const char* players = strstr(json, "\"players\":[");
     if (!players)
@@ -85,9 +80,7 @@ static void parse_remote_game_state(const char* json) {
     if (!players)
         return;
     players++;
-
     g_remote_player_count = 0;
-
     /* Parse each player object */
     while (*players && g_remote_player_count < MAX_REMOTE_PLAYERS) {
         const char* obj_start = strchr(players, '{');
@@ -96,14 +89,12 @@ static void parse_remote_game_state(const char* json) {
         const char* obj_end = strchr(obj_start, '}');
         if (!obj_end)
             break;
-
         /* Extract a single player object */
         int len = (int)(obj_end - obj_start + 1);
         if (len > 0 && len < 512) {
             char obj[512];
             memcpy(obj, obj_start, (size_t)len);
             obj[len] = '\0';
-
             RemotePlayer* rp = &g_remote_players[g_remote_player_count];
             rp->x = parse_json_int(obj, "x");
             rp->y = parse_json_int(obj, "y");
@@ -113,13 +104,10 @@ static void parse_remote_game_state(const char* json) {
             rp->active = true;
             g_remote_player_count++;
         }
-
         players = obj_end + 1;
     }
 }
-
 /* JSON helpers for lightweight serialization of GameState */
-
 static char* escape_json_str(const char* s) {
     if (!s)
         return strdup("");
@@ -163,7 +151,6 @@ static char* escape_json_str(const char* s) {
     *q = '\0';
     return out;
 }
-
 static char* game_state_to_json(const GameState* gs, int tick) {
     if (!gs)
         return strdup("{}");
@@ -243,7 +230,6 @@ static char* game_state_to_json(const GameState* gs, int tick) {
     char* out = realloc(buf, len + 1);
     return out ? out : buf;
 }
-
 struct SnakeGame {
     GameConfig* cfg;
     Game* game;
@@ -251,7 +237,6 @@ struct SnakeGame {
     bool headless;
     bool autoplay;
 };
-
 /* Headless mode: print minimal game state to stdout */
 static void headless_print_state(const GameState* gs, int tick) {
     if (!gs)
@@ -303,7 +288,6 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     const int board_width = bw;
     const int board_height = bh;
     bool has_3d = false;
-
     /* Headless mode: skip all graphics and input initialization */
     if (s->headless) {
         fprintf(stderr, "HEADLESS MODE: game running without graphics\n");
@@ -325,7 +309,6 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
             *err_out = 0;
         return s;
     }
-
     /* Normal mode: full graphics initialization */
     render_set_glyphs((game_config_get_render_glyphs(config_in) == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
     input_set_bindings_from_config(config_in);
@@ -426,152 +409,40 @@ out_err:
     }
     return NULL;
 }
-int snake_game_run(SnakeGame* s) {
-    if (!s)
-        return 1;
-    int err = 0;
+static mpclient* snake_game_init_multiplayer(SnakeGame* s) {
+    GameConfig* cfg = s->cfg;
+    if (!game_config_get_mp_enabled(cfg))
+        return NULL;
+    const char* host = game_config_get_mp_server_host(cfg);
+    int port = game_config_get_mp_server_port(cfg);
+    const char* ident = game_config_get_mp_identifier(cfg);
+    if (!ident)
+        ident = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
+    mpclient* mpc = mpclient_create(host ? host : "127.0.0.1", (uint16_t)(port ? port : 9001), ident);
+    if (mpc) {
+        if (mpclient_connect_and_start(mpc) == 0) {
+            const char* forced = game_config_get_mp_session(cfg);
+            if (forced && forced[0]) {
+                (void)mpclient_join(mpc, forced, game_config_get_player_name(cfg));
+                if (!s->headless)
+                    render_set_session_id(forced);
+            } else {
+                mpclient_auto_join_or_host(mpc, game_config_get_player_name(cfg));
+            }
+        }
+    }
+    return mpc;
+}
+static void snake_game_run_headless(SnakeGame* s, mpclient* mpc) {
     Game* game = s->game;
     GameConfig* cfg = s->cfg;
-    int bw = 0, bh = 0;
-    game_config_get_board_size(cfg, &bw, &bh);
-
-    /* Multiplayer client (optional) */
-    mpclient* mpc = NULL;
-    if (game_config_get_mp_enabled(cfg)) {
-        const char* host = game_config_get_mp_server_host(cfg);
-        int port = game_config_get_mp_server_port(cfg);
-        const char* ident = game_config_get_mp_identifier(cfg);
-        if (!ident)
-            ident = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
-        mpc = mpclient_create(host ? host : "127.0.0.1", (uint16_t)(port ? port : 9001), ident);
-        if (mpc) {
-            if (mpclient_connect_and_start(mpc) == 0) {
-                const char* forced = game_config_get_mp_session(cfg);
-                if (forced && forced[0]) {
-                    (void)mpclient_join(mpc, forced, game_config_get_player_name(cfg));
-                    if (!s->headless)
-                        render_set_session_id(forced);
-                } else {
-                    mpclient_auto_join_or_host(mpc, game_config_get_player_name(cfg));
-                }
-            }
-        }
-    }
-
-    /* HEADLESS MODE: simplified game loop with no graphics/input */
-    if (s->headless) {
-        int tick = 0;
-        fprintf(stderr, "HEADLESS: game loop starting (tick_rate=%dms, autoplay=%s)\n",
-                game_config_get_tick_rate_ms(cfg), s->autoplay ? "ON" : "OFF");
-        while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
-            /* Autoplay: turn right every 3rd tick to circle and avoid walls */
-            if (s->autoplay && (tick % 3) == 0) {
-                int np = game_get_num_players(game);
-                for (int i = 0; i < np; ++i) {
-                    InputState auto_in = {0};
-                    auto_in.turn_right = 1;
-                    (void)game_enqueue_input(game, i, &auto_in);
-                }
-            }
-            GameEvents events = {0};
-            game_step(game, &events);
-            headless_print_state(game_get_state(game), tick);
-
-            /* Handle multiplayer message exchange */
-            if (mpc) {
-                char mpbuf[1024];
-                while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
-                    if (strstr(mpbuf, "\"type\":\"state\"")) {
-                        parse_remote_game_state(mpbuf);
-                    }
-                }
-                /* Send current game state */
-                if (mpclient_has_session(mpc)) {
-                    char* state_json = game_state_to_json(game_get_state(game), tick);
-                    if (state_json) {
-                        (void)mpclient_send_game(mpc, state_json);
-                        free(state_json);
-                    }
-                }
-            }
-
-            /* Auto-restart if all players dead */
-            const GameState* gs = game_get_state(game);
-            int active = 0;
-            for (int i = 0; i < gs->num_players; ++i)
-                if (gs->players[i].active)
-                    active++;
-            if (active == 0) {
-                fprintf(stderr, "HEADLESS: all players dead, restarting\n");
-                game_reset(game);
-            }
-
-            platform_sleep_ms((uint32_t)game_config_get_tick_rate_ms(cfg));
-            tick++;
-        }
-        if (mpc) {
-            mpclient_stop(mpc);
-            mpclient_destroy(mpc);
-        }
-        if (game) {
-            game_destroy(game);
-            s->game = NULL;
-        }
-        return 0;
-    }
-
-    /* NORMAL MODE: full graphics game loop */
-    const int board_width = bw;
-    const int board_height = bh;
-    bool has_3d = s->has_3d;
     int tick = 0;
-    HighScore** highscores = NULL;
-    int highscore_count = persist_read_scores(".snake_scores", &highscores);
-    render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-
-    /* Track session id and reflect in HUD when it appears/changes */
-    char prev_session[16] = {0};
-
+    fprintf(stderr, "HEADLESS: game loop starting (tick_rate=%dms, autoplay=%s)\n", game_config_get_tick_rate_ms(cfg),
+            s->autoplay ? "ON" : "OFF");
     while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
-        if (platform_was_resized()) {
-            int new_w = 0, new_h = 0;
-            if (!platform_get_terminal_size(&new_w, &new_h)) {
-                new_w = 120;
-                new_h = 30;
-            }
-            if (!tty_size_sufficient_for_board(new_w, new_h, board_width, board_height)) {
-                render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-                console_box_paused_terminal_small(new_w, new_h, board_width + 4, board_height + 4);
-                while (1) {
-                    InputState in = {0};
-                    input_poll(&in);
-                    if (in.quit)
-                        goto clean_done;
-                    int check_w = 0, check_h = 0;
-                    if (!platform_get_terminal_size(&check_w, &check_h)) {
-                        check_w = 120;
-                        check_h = 30;
-                    }
-                    if (tty_size_sufficient_for_board(check_w, check_h, board_width, board_height)) {
-                        console_terminal_resized(check_w, check_h);
-                        break;
-                    }
-                    platform_sleep_ms(250);
-                }
-            }
-        }
-        int num_players = game_get_num_players(game);
-        InputState inputs[SNAKE_MAX_PLAYERS];
-        for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
-            inputs[i] = (InputState){0};
-        input_poll_all(inputs, num_players);
-        if (num_players > 0 && inputs[0].quit)
-            goto clean_done;
-        for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
-            (void)game_enqueue_input(game, i, &inputs[i]);
-        /* Autoplay: turn right every 3rd tick to circle and avoid walls */
         if (s->autoplay && (tick % 3) == 0) {
-            for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i) {
+            int np = game_get_num_players(game);
+            for (int i = 0; i < np; ++i) {
                 InputState auto_in = {0};
                 auto_in.turn_right = 1;
                 (void)game_enqueue_input(game, i, &auto_in);
@@ -579,96 +450,213 @@ int snake_game_run(SnakeGame* s) {
         }
         GameEvents events = {0};
         game_step(game, &events);
-        if (has_3d)
+        headless_print_state(game_get_state(game), tick);
+        if (mpc) {
+            char mpbuf[1024];
+            while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
+                if (strstr(mpbuf, "\"type\":\"state\""))
+                    parse_remote_game_state(mpbuf);
+            }
+            if (mpclient_has_session(mpc)) {
+                char* state_json = game_state_to_json(game_get_state(game), tick);
+                if (state_json) {
+                    (void)mpclient_send_game(mpc, state_json);
+                    free(state_json);
+                }
+            }
+        }
+        const GameState* gs = game_get_state(game);
+        int active = 0;
+        for (int i = 0; i < gs->num_players; ++i)
+            if (gs->players[i].active)
+                active++;
+        if (active == 0) {
+            fprintf(stderr, "HEADLESS: all players dead, restarting\n");
+            game_reset(game);
+        }
+        platform_sleep_ms((uint32_t)game_config_get_tick_rate_ms(cfg));
+        tick++;
+    }
+}
+static void
+snake_game_handle_resize(SnakeGame* s, int board_width, int board_height, HighScore** highscores, int highscore_count) {
+    int new_w = 0, new_h = 0;
+    if (!platform_get_terminal_size(&new_w, &new_h)) {
+        new_w = 120;
+        new_h = 30;
+    }
+    if (!tty_size_sufficient_for_board(new_w, new_h, board_width, board_height)) {
+        render_draw(game_get_state(s->game), game_config_get_player_name(s->cfg), highscores, highscore_count);
+        console_box_paused_terminal_small(new_w, new_h, board_width + 4, board_height + 4);
+        while (1) {
+            InputState in = {0};
+            input_poll(&in);
+            if (in.quit)
+                exit(0); /* Simplified quit for now, though run loop needs better exit signal */
+            int check_w = 0, check_h = 0;
+            if (!platform_get_terminal_size(&check_w, &check_h)) {
+                check_w = 120;
+                check_h = 30;
+            }
+            if (tty_size_sufficient_for_board(check_w, check_h, board_width, board_height)) {
+                console_terminal_resized(check_w, check_h);
+                break;
+            }
+            platform_sleep_ms(250);
+        }
+    }
+}
+static bool snake_game_process_inputs(SnakeGame* s, int tick) {
+    Game* game = s->game;
+    int num_players = game_get_num_players(game);
+    InputState inputs[SNAKE_MAX_PLAYERS];
+    for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
+        inputs[i] = (InputState){0};
+    input_poll_all(inputs, num_players);
+    if (num_players > 0 && inputs[0].quit)
+        return true;
+    for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
+        (void)game_enqueue_input(game, i, &inputs[i]);
+    if (s->autoplay && (tick % 3) == 0) {
+        for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i) {
+            InputState auto_in = {0};
+            auto_in.turn_right = 1;
+            (void)game_enqueue_input(game, i, &auto_in);
+        }
+    }
+    return false;
+}
+static void snake_game_append_score_if_qualifies(int score, int player_idx, const char* cfg_name) {
+    if (score <= 0)
+        return;
+    HighScore** cur = NULL;
+    int cur_cnt = persist_read_scores(".snake_scores", &cur);
+    bool qualifies = (cur_cnt < PERSIST_MAX_SCORES);
+    for (int i = 0; cur && !qualifies && i < cur_cnt; i++) {
+        if (cur[i] && score > highscore_get_score(cur[i]))
+            qualifies = true;
+    }
+    char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
+    if (qualifies)
+        snprintf(name_buf, sizeof(name_buf), "P%d", player_idx + 1);
+    else
+        snprintf(name_buf, sizeof(name_buf), "%s", cfg_name);
+    if (!persist_append_score(".snake_scores", name_buf, score))
+        console_warn("Failed to append score for %s\n", name_buf);
+    render_note_session_score(name_buf, score);
+    if (cur)
+        persist_free_scores(cur, cur_cnt);
+}
+static bool snake_game_handle_multiplayer_end(SnakeGame* s, HighScore*** highscores, int* highscore_count) {
+    const GameState* gs = game_get_state(s->game);
+    int active_count = 0;
+    int last_active = -1;
+    for (int i = 0; i < gs->num_players; i++) {
+        if (gs->players[i].active) {
+            active_count++;
+            last_active = i;
+        }
+    }
+    if (active_count > 1)
+        return false;
+    render_draw(gs, game_config_get_player_name(s->cfg), *highscores, *highscore_count);
+    if (s->has_3d) {
+        if (active_count == 1)
+            render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+        else
+            render_3d_draw_death_overlay(gs, 0, true);
+    } else {
+        if (active_count == 1)
+            render_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+        else
+            render_draw_death_overlay(gs, 0, true);
+    }
+    if (active_count == 1) {
+        int final_score = gs->players[last_active].score;
+        if (final_score > 0) {
+            char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
+            render_prompt_for_highscore_name(name_buf, (int)sizeof(name_buf), final_score);
+            if (!persist_append_score(".snake_scores_multi", name_buf, final_score))
+                console_warn("Failed to append multiplayer highscore for %s\n", name_buf);
+            game_reset(s->game);
+            return true;
+        }
+    }
+    while (1) {
+        InputState in = {0};
+        input_poll(&in);
+        if (in.quit)
+            return true;
+        if (in.any_key) {
+            game_reset(s->game);
+            return false;
+        }
+        if (s->has_3d) {
+            if (active_count == 1)
+                render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+            else
+                render_3d_draw_death_overlay(gs, 0, true);
+        } else {
+            if (active_count == 1)
+                render_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
+            else
+                render_draw_death_overlay(gs, 0, true);
+        }
+        platform_sleep_ms(20);
+    }
+}
+int snake_game_run(SnakeGame* s) {
+    if (!s)
+        return 1;
+    Game* game = s->game;
+    GameConfig* cfg = s->cfg;
+    int bw = 0, bh = 0;
+    game_config_get_board_size(cfg, &bw, &bh);
+    mpclient* mpc = snake_game_init_multiplayer(s);
+    if (s->headless) {
+        snake_game_run_headless(s, mpc);
+        if (mpc) {
+            mpclient_stop(mpc);
+            mpclient_destroy(mpc);
+        }
+        game_destroy(game);
+        s->game = NULL;
+        return 0;
+    }
+    HighScore** highscores = NULL;
+    int highscore_count = persist_read_scores(".snake_scores", &highscores);
+    render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
+    char prev_session[16] = {0};
+    int tick = 0;
+    while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
+        if (platform_was_resized())
+            snake_game_handle_resize(s, bw, bh, highscores, highscore_count);
+        if (snake_game_process_inputs(s, tick))
+            goto clean_done;
+        GameEvents events = {0};
+        game_step(game, &events);
+        if (s->has_3d)
             render_3d_on_tick(game_get_state(game));
-        if (highscores) {
-            persist_free_scores(highscores, highscore_count);
-            highscores = NULL;
-        }
-        bool auto_restart_after_highscore = false;
-        highscore_count = persist_read_scores(".snake_scores", &highscores);
         for (int ei = 0; ei < events.died_count; ei++) {
-            int death_score = events.died_scores[ei];
-            int death_player = events.died_players[ei];
-            if (death_score > 0) {
-                HighScore** cur = NULL;
-                int cur_cnt = persist_read_scores(".snake_scores", &cur);
-                bool qualifies = false;
-                if (cur_cnt < PERSIST_MAX_SCORES)
-                    qualifies = true;
-                for (int i = 0; cur && !qualifies && i < cur_cnt; i++) {
-                    if (cur[i] && death_score > highscore_get_score(cur[i]))
-                        qualifies = true;
-                }
-                char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
-                if (qualifies) {
-                    /* Default highscore name to player id (P1..P4) for now */
-                    snprintf(name_buf, sizeof(name_buf), "P%d", death_player + 1);
-                    if (death_player == 0)
-                        auto_restart_after_highscore = true;
-                } else {
-                    snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
-                }
-                if (!persist_append_score(".snake_scores", name_buf, death_score)) {
-                    console_warn("Failed to append score for %s\n", name_buf);
-                }
-                render_note_session_score(name_buf, death_score);
-                if (cur) {
-                    persist_free_scores(cur, cur_cnt);
-                    cur = NULL;
-                }
-                if (highscores) {
-                    persist_free_scores(highscores, highscore_count);
-                    highscores = NULL;
-                }
-                highscore_count = persist_read_scores(".snake_scores", &highscores);
-            }
+            snake_game_append_score_if_qualifies(events.died_scores[ei], events.died_players[ei],
+                                                 game_config_get_player_name(cfg));
+            if (highscores)
+                persist_free_scores(highscores, highscore_count);
+            highscore_count = persist_read_scores(".snake_scores", &highscores);
         }
-        /* Multiplayer mode: end when <= 1 active players remain (last man standing).
-                   Handle end-of-match overlays and highscore saving to a multiplayer list. */
         if (game_get_num_players(game) > 1) {
-            const GameState* gs = game_get_state(game);
-            int active_count = 0;
-            int last_active = -1;
-            int np = game_get_num_players(game);
-            for (int i = 0; i < np; i++) {
-                if (gs->players[i].active) {
-                    active_count++;
-                    last_active = i;
-                }
-            }
-            if (active_count <= 1) {
-                /* Render final board */
+            if (snake_game_handle_multiplayer_end(s, &highscores, &highscore_count))
+                goto clean_done;
+        } else {
+            bool p0_died = false;
+            for (int ei = 0; ei < events.died_count; ei++)
+                if (events.died_players[ei] == 0)
+                    p0_died = true;
+            if (p0_died) {
                 render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-                if (has_3d) {
-                    if (active_count == 1)
-                        render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
-                    else
-                        render_3d_draw_death_overlay(game_get_state(game), 0, true);
-                } else {
-                    if (active_count == 1)
-                        render_draw_winner_overlay(game_get_state(game), last_active, gs->players[last_active].score);
-                    else
-                        render_draw_death_overlay(game_get_state(game), 0, true);
-                }
-                /* If there is a winner and a non-zero score, prompt for name and append to multiplayer scores. */
-                if (active_count == 1) {
-                    int final_score = gs->players[last_active].score;
-                    if (final_score > 0) {
-                        char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
-                        render_prompt_for_highscore_name(name_buf, (int)sizeof(name_buf), final_score);
-                        if (!persist_append_score(".snake_scores_multi", name_buf, final_score))
-                            console_warn("Failed to append multiplayer highscore for %s\n", name_buf);
-                        /* Treat the Enter used to confirm the name as an implicit restart command. */
-                        auto_restart_after_highscore = true;
-                    }
-                }
-                /* If player already confirmed name with Enter, restart immediately. */
-                if (auto_restart_after_highscore) {
-                    game_reset(game);
-                    continue;
-                }
-                /* Wait for user input to restart or quit. */
+                render_draw_death_overlay(game_get_state(game), 0, true);
+                if (s->has_3d)
+                    render_3d_draw_death_overlay(game_get_state(game), 0, true);
                 while (1) {
                     InputState in = {0};
                     input_poll(&in);
@@ -678,48 +666,9 @@ int snake_game_run(SnakeGame* s) {
                         game_reset(game);
                         break;
                     }
-                    if (has_3d) {
-                        if (active_count == 1)
-                            render_3d_draw_winner_overlay(gs, last_active, gs->players[last_active].score);
-                        else
-                            render_3d_draw_death_overlay(game_get_state(game), 0, true);
-                    } else {
-                        if (active_count == 1)
-                            render_draw_winner_overlay(game_get_state(game), last_active,
-                                                       gs->players[last_active].score);
-                        else
-                            render_draw_death_overlay(game_get_state(game), 0, true);
-                    }
+                    if (s->has_3d)
+                        render_3d_draw_death_overlay(game_get_state(game), 0, true);
                     platform_sleep_ms(20);
-                }
-            }
-        } else {
-            /* Single-player existing behavior: if player 0 died, show death overlay and optionally restart. */
-            bool player0_died = false;
-            for (int ei = 0; ei < events.died_count; ei++)
-                if (events.died_players[ei] == 0)
-                    player0_died = true;
-            if (player0_died) {
-                render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-                render_draw_death_overlay(game_get_state(game), 0, true);
-                if (has_3d)
-                    render_3d_draw_death_overlay(game_get_state(game), 0, true);
-                if (auto_restart_after_highscore) {
-                    game_reset(game);
-                } else {
-                    while (1) {
-                        InputState in = {0};
-                        input_poll(&in);
-                        if (in.quit)
-                            goto clean_done;
-                        if (in.any_key) {
-                            game_reset(game);
-                            break;
-                        }
-                        if (has_3d)
-                            render_3d_draw_death_overlay(game_get_state(game), 0, true);
-                        platform_sleep_ms(20);
-                    }
                 }
             }
         }
@@ -730,32 +679,12 @@ int snake_game_run(SnakeGame* s) {
             uint64_t now = platform_now_ms();
             float delta_s = (float)(now - prev_frame) / 1000.0f;
             prev_frame = now;
-            /* Poll inputs for all players frequently so rapid taps for non-player-1 are captured.
-               Previously we only polled single-player in this inner loop which ignored quick
-               non-player-1 inputs that occurred after the initial per-tick sample. */
-            if (num_players <= 1) {
-                InputState in = {0};
-                input_poll(&in);
-                if (in.quit)
-                    goto clean_done;
-                (void)game_enqueue_input(game, 0, &in);
-            } else {
-                InputState ins[SNAKE_MAX_PLAYERS];
-                for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i)
-                    ins[i] = (InputState){0};
-                input_poll_all(ins, num_players);
-                for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i) {
-                    if (ins[i].quit)
-                        goto clean_done;
-                    (void)game_enqueue_input(game, i, &ins[i]);
-                }
-            }
+            if (snake_game_process_inputs(s, tick))
+                goto clean_done;
             render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
-            if (has_3d)
+            if (s->has_3d)
                 render_3d_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count,
                                delta_s);
-
-            /* Draw remote multiplayer players over the local board */
             if (g_remote_player_count > 0) {
                 int remote_x[MAX_REMOTE_PLAYERS];
                 int remote_y[MAX_REMOTE_PLAYERS];
@@ -768,92 +697,51 @@ int snake_game_run(SnakeGame* s) {
                 render_draw_remote_players(game_get_state(game), remote_x, remote_y, remote_names,
                                            g_remote_player_count);
             }
-
-            /* Poll incoming multiplayer messages and show them on HUD */
             if (mpc) {
                 char mpbuf[1024];
                 while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
-                    /* Parse as game state if it looks like one, otherwise show as message */
-                    if (strstr(mpbuf, "\"type\":\"state\"")) {
+                    if (strstr(mpbuf, "\"type\":\"state\""))
                         parse_remote_game_state(mpbuf);
-                        net_log_info("parsed remote state: %d players", g_remote_player_count);
-                    } else {
+                    else
                         render_push_mp_message(mpbuf);
-                    }
                 }
-
-                /* Update displayed session id when it becomes available or changes */
                 char cur_sess[16] = {0};
                 if (mpclient_get_session(mpc, cur_sess, (int)sizeof(cur_sess)) && strcmp(prev_session, cur_sess) != 0) {
                     strncpy(prev_session, cur_sess, sizeof(prev_session) - 1);
                     prev_session[sizeof(prev_session) - 1] = '\0';
                     render_set_session_id(prev_session);
                 }
-
-                /* Send current game state as a 'game' message (JSON object) */
-                if (mpc && mpclient_has_session(mpc)) {
-                    const GameState* gs = game_get_state(game);
-                    char* state_json = game_state_to_json(gs, tick);
+                if (mpclient_has_session(mpc)) {
+                    char* state_json = game_state_to_json(game_get_state(game), tick);
                     if (state_json) {
-                        net_log_info("sending game state: tick=%d len=%zu", tick, strlen(state_json));
                         (void)mpclient_send_game(mpc, state_json);
                         free(state_json);
                     }
                 }
             }
-
             platform_sleep_ms(1);
         }
         tick++;
     }
 clean_done:
-    if (game_player_is_active(game, 0) && game_player_current_score(game, 0) > 0) {
-        int final_score = game_player_current_score(game, 0);
-        HighScore** cur = NULL;
-        int cur_cnt = persist_read_scores(".snake_scores", &cur);
-        bool qualifies = false;
-        if (cur_cnt < PERSIST_MAX_SCORES)
-            qualifies = true;
-        for (int i = 0; cur && !qualifies && i < cur_cnt; i++) {
-            if (cur[i] && final_score > highscore_get_score(cur[i]))
-                qualifies = true;
-        }
-        char name_buf[PERSIST_PLAYER_NAME_MAX] = {0};
-        if (qualifies) {
-            /* For now, auto-name final highscores P1 until we add per-player names */
-            snprintf(name_buf, sizeof(name_buf), "P1");
-        } else {
-            snprintf(name_buf, sizeof(name_buf), "%s", game_config_get_player_name(cfg));
-        }
-        if (!persist_append_score(".snake_scores", name_buf, final_score)) {
-            console_warn("Failed to append final score for %s\n", name_buf);
-        }
-        render_note_session_score(name_buf, final_score);
-        if (cur)
-            persist_free_scores(cur, cur_cnt);
-    }
-    if (highscores) {
+    if (game_player_is_active(game, 0) && game_player_current_score(game, 0) > 0)
+        snake_game_append_score_if_qualifies(game_player_current_score(game, 0), 0, game_config_get_player_name(cfg));
+    if (highscores)
         persist_free_scores(highscores, highscore_count);
-        highscores = NULL;
-    }
     if (game) {
         game_destroy(game);
         s->game = NULL;
     }
-
-    /* Cleanup multiplayer client if active */
     if (mpc) {
         mpclient_stop(mpc);
         mpclient_destroy(mpc);
-        mpc = NULL;
     }
-
     input_shutdown();
     render_shutdown();
-    if (has_3d)
+    if (s->has_3d)
         render_3d_shutdown();
     console_game_ran(tick);
-    return err;
+    return 0;
 }
 void snake_game_free(SnakeGame* s) {
     if (!s)

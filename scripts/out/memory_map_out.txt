@@ -2,20 +2,20 @@
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
 src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 405f 406f 407f 409f 413f
 src/core/player.c: 12c 22f
-src/net/mpapi_client.c: 85f 107f 154m 177m 196f 203f 210f 216f 261c 417f 418f
-src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 254m 259f 265f
-src/persist/persist.c: 39c 50f 115c 193f 506c 564f 623r 658f 1089m 1090m 1104f 1105f
-src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 460c 461c 462m 464f 465f 466f 482f 483f 484f
-src/render/camera.c: 55c 64f 66f 231r
+src/net/mpapi_client.c: 78f 99f 143m 166m 184f 191f 198f 204f 247c 396f 397f
+src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 253m 258f 264f
+src/persist/persist.c: 40c 51f 113c 187f 495c 553f 612r 647f 970m 971m 985f 986f
+src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 459c 460c 461m 463f 464f 465f 481f 482f 483f
+src/render/camera.c: 54c 63f 65f 228r
 src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 496c 552r 553r 614r 627r 962f 966f 970f 976f 981f
-src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 339m 344f
-src/render/sprite.c: 35c 493f 501c 511f
+src/render/render_3d.c: 491c 537r 547r 770r 771r 867f 871f 875f 881f 886f
+src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 338m 343f
+src/render/sprite.c: 33c 477f 485c 495f
 src/render/texture.c: 26c 41m 59f 258f 276m 300f
-src/snakegame.c: 135m 172m 179f 197f 199f 205r 207f 215f 222f 228r 230f 238f 243r 275m 280f 425f 493f 800f 869f
+src/snakegame.c: 123m 159m 166f 184f 186f 192r 194f 202f 209f 215r 217f 225f 230r 260m 265f 408f 464f 718f 757f
 src/tools/render_bench.c: 36m 37m 38m 99f 100f 101f
 src/tools/sprite_bench.c: 45c 61f
 tests/unity/test_collision.c: 21c 24c 34f 35f

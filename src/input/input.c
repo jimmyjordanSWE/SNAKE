@@ -133,12 +133,11 @@ void input_poll_from_buf(InputState* out, const unsigned char* buf, size_t n) {
         }
     }
 }
-
 void input_set_player_key_bindings(int player_idx, char left, char right) {
     if (player_idx < 0 || player_idx >= SNAKE_MAX_PLAYERS)
         return;
     /* For non-primary players we swap left/right to match historical layout
-       expectations (fixes Q/W inversion reported by users). */
+           expectations (fixes Q/W inversion reported by users). */
     if (player_idx == 0) {
         if (left)
             s_key_left[player_idx] = left;

@@ -15,7 +15,7 @@ Flow:
  render->display_tty,persist,platform,render_3d,render_input
  render_3d->camera,env,oom_overrides,projection,raycast,render_3d_sdl,sprite,texture
  render_3d_sdl->oom_overrides
- snakegame->console,game,input,mpapi_client,net_log,oom_overrides,persist,platform,render,render_3d,tty
+ snakegame->console,game,input,mpapi_client,oom_overrides,persist,platform,render,render_3d,tty
  sprite->camera,oom_overrides,projection,render_3d_sdl
  test_camera_angles->camera
  test_game_colors->game,persist
@@ -54,6 +54,11 @@ Tree(main):
         timestr
     persist_load_config
       clamp_int
+      parse_graphics_config
+        clamp_int
+      parse_legacy_keys
+      parse_multiplayer_config
+      parse_player_config
     projection_destroy
       free (see above)
     projection_project_wall_perp
@@ -97,20 +102,20 @@ Tree(main):
           tty_close
             free (see above)
     snake_game_run
-      console_box_paused_terminal_small
-        console_info
       console_game_ran
         console_info
-      console_terminal_resized
-        console_info
-      console_warn
       free (see above)
       game_config_get_board_size
-      game_config_get_mp_enabled
-      game_config_get_mp_server_port
       game_config_get_tick_rate_ms
       game_destroy (see above)
-      game_enqueue_input
+      game_get_num_players
+        game_state_get_num_players
+      game_get_status
+      game_player_current_score
+        game_state_player_current_score
+      game_player_is_active
+        game_state_player_is_active
+      game_reset
         game_state_reset
           food_respawn
             point_in_any_snake
@@ -126,17 +131,6 @@ Tree(main):
             opposite_dir
             point_in_player
             snake_rng_range (see above)
-        snake_dir_turn_left
-        snake_dir_turn_right
-      game_get_num_players
-        game_state_get_num_players
-      game_get_status
-      game_player_current_score
-        game_state_player_current_score
-      game_player_is_active
-        game_state_player_is_active
-      game_reset
-        game_state_reset (see above)
       game_step
         game_state_get_num_players
         game_tick
@@ -151,30 +145,23 @@ Tree(main):
           opposite_dir
           player_move
           spawn_player (see above)
-      headless_print_state
-      highscore_get_score
       input_poll
         input_poll_from_buf
           ascii_tolower
           parse_arrow_key
-      input_poll_all
-        input_poll_all_from_buf_impl
-          ascii_tolower
-          parse_arrow_key
       input_shutdown (see above)
-      mpclient_auto_join_or_host
-        mpclient_connect_and_start
-          connect_to_server
-          console_warn
-          net_log_error
-            open_log_if_needed (see above)
-            timestr
+      mpclient_destroy
+        free (see above)
+        mpclient_stop
+      mpclient_get_session
+      mpclient_has_session
+      mpclient_poll_message
+        free (see above)
+      mpclient_send_game
+        send_command
           net_log_info
             open_log_if_needed (see above)
             timestr
-        platform_sleep_ms
-        send_command
-          net_log_info (see above)
           net_log_send
             log_io
               hex_dump_to_file
@@ -182,40 +169,16 @@ Tree(main):
               timestr
           send_all
             net_log_send (see above)
-      mpclient_connect_and_start (see above)
-      mpclient_destroy
-        free (see above)
-        mpclient_stop
-      mpclient_get_session
-      mpclient_has_session
-      mpclient_join
-        mpclient_connect_and_start (see above)
-        platform_sleep_ms
-        send_command (see above)
-      mpclient_poll_message
-        free (see above)
-      mpclient_send_game
-        send_command (see above)
       mpclient_stop
-      net_log_info (see above)
       parse_remote_game_state
         parse_json_int
         parse_json_str
-      persist_append_score
-        highscore_get_score
-        highscore_set_name
-        highscore_set_score
-        persist_free_scores
+      persist_free_scores
+        free (see above)
+        highscore_destroy
           free (see above)
-          highscore_destroy
-            free (see above)
-        persist_read_scores
-          free (see above)
-        persist_write_scores
-          highscore_get_score
-      persist_free_scores (see above)
-      persist_read_scores (see above)
-      platform_get_terminal_size
+      persist_read_scores
+        free (see above)
       platform_now_ms
       platform_sleep_ms
       platform_was_resized
@@ -226,10 +189,22 @@ Tree(main):
         camera_prepare_angle_offsets
         camera_update_interpolation
         env_bool
-        projection_get_wall_scale
-        projection_project_wall_perp (see above)
-        raycast_cast_ray_fast
-        raycast_get_texture_coord
+        render_3d_draw_debug_overlays
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          texture_sample
+            sample_bilinear
+              sample_bilinear_fast
+              sample_bilinear_slow_normalized
+              uv_in_unit_range
+            sample_nearest
+              sample_nearest_norm
+              uv_in_unit_range
+        render_3d_draw_floor_ceiling_pass
+          projection_get_wall_scale
+          texture_get_img_h
+          texture_get_img_w
+          texture_sample (see above)
         render_3d_draw_fps_counter
           render_3d_draw_char
             render_3d_sdl_get_height
@@ -246,12 +221,20 @@ Tree(main):
           render_3d_sdl_get_height
           render_3d_sdl_get_width
           render_3d_shade_color
+        render_3d_draw_walls_pass
+          projection_project_wall_perp (see above)
+          raycast_cast_ray_fast
+          raycast_get_texture_coord
+          texture_get_img_h
+          texture_get_img_w
+          texture_sample (see above)
         render_3d_log
         render_3d_now
         render_3d_sdl_get_height
         render_3d_sdl_get_width
         render_3d_sdl_present
           free (see above)
+        render_3d_setup_floor_decals
         render_3d_shade_color
         render_3d_update_fps
         sprite_add_color
@@ -265,7 +248,6 @@ Tree(main):
           render_3d_sdl_draw_column
           render_3d_sdl_get_height
           render_3d_sdl_get_width
-        sprite_get_count
         sprite_project_all
           camera_get_interpolated_angle (see above)
           camera_get_interpolated_position
@@ -278,27 +260,10 @@ Tree(main):
           now_ns
           sprite_insertion_sort
             sprite_cmp_direct
-        texture_get_img_h
-        texture_get_img_w
-        texture_has_image
-        texture_sample
-          sample_bilinear
-            sample_bilinear_fast
-            sample_bilinear_slow_normalized
-            uv_in_unit_range
-          sample_nearest
-            sample_nearest_norm
-            uv_in_unit_range
       render_3d_draw_death_overlay
         render_3d_draw_text_centered
           render_3d_draw_char (see above)
           render_3d_sdl_get_width
-        render_3d_sdl_draw_filled_rect (see above)
-        render_3d_sdl_get_height
-        render_3d_sdl_get_width
-        render_3d_sdl_present (see above)
-      render_3d_draw_winner_overlay
-        render_3d_draw_text_centered (see above)
         render_3d_sdl_draw_filled_rect (see above)
         render_3d_sdl_get_height
         render_3d_sdl_get_width
@@ -368,34 +333,95 @@ Tree(main):
         display_present (see above)
         display_put_char (see above)
         draw_string (see above)
-      render_draw_winner_overlay
-        display_get_size (see above)
-        display_present (see above)
-        draw_box (see above)
-        draw_centered_string (see above)
-        fill_rect (see above)
-      render_note_session_score
-      render_prompt_for_highscore_name
-        display_clear (see above)
-        display_get_size (see above)
-        display_present (see above)
-        display_put_char (see above)
-        draw_centered_string (see above)
-        draw_string (see above)
-        platform_sleep_ms
-        render_3d_draw_congrats_overlay
-          render_3d_draw_text_centered (see above)
-          render_3d_sdl_draw_filled_rect (see above)
-          render_3d_sdl_get_height
-          render_3d_sdl_get_width
-          render_3d_sdl_present (see above)
-        render_sanitize_player_name
       render_push_mp_message
         invalidate_front_buffer (see above)
       render_set_session_id
         invalidate_front_buffer (see above)
       render_shutdown (see above)
-      tty_size_sufficient_for_board
+      snake_game_append_score_if_qualifies
+        console_warn
+        highscore_get_score
+        persist_append_score
+          highscore_get_score
+          highscore_set_name
+          highscore_set_score
+          persist_free_scores (see above)
+          persist_read_scores (see above)
+          persist_write_scores
+            highscore_get_score
+        persist_free_scores (see above)
+        persist_read_scores (see above)
+        render_note_session_score
+      snake_game_handle_multiplayer_end
+        console_warn
+        game_reset (see above)
+        input_poll (see above)
+        persist_append_score (see above)
+        platform_sleep_ms
+        render_3d_draw_death_overlay (see above)
+        render_3d_draw_winner_overlay
+          render_3d_draw_text_centered (see above)
+          render_3d_sdl_draw_filled_rect (see above)
+          render_3d_sdl_get_height
+          render_3d_sdl_get_width
+          render_3d_sdl_present (see above)
+        render_draw (see above)
+        render_draw_death_overlay (see above)
+        render_draw_winner_overlay
+          display_get_size (see above)
+          display_present (see above)
+          draw_box (see above)
+          draw_centered_string (see above)
+          fill_rect (see above)
+        render_prompt_for_highscore_name
+          display_clear (see above)
+          display_get_size (see above)
+          display_present (see above)
+          display_put_char (see above)
+          draw_centered_string (see above)
+          draw_string (see above)
+          platform_sleep_ms
+          render_3d_draw_congrats_overlay
+            render_3d_draw_text_centered (see above)
+            render_3d_sdl_draw_filled_rect (see above)
+            render_3d_sdl_get_height
+            render_3d_sdl_get_width
+            render_3d_sdl_present (see above)
+          render_sanitize_player_name
+      snake_game_handle_resize
+        console_box_paused_terminal_small
+          console_info
+        console_terminal_resized
+          console_info
+        input_poll (see above)
+        platform_get_terminal_size
+        platform_sleep_ms
+        render_draw (see above)
+        tty_size_sufficient_for_board
+      snake_game_process_inputs
+        game_enqueue_input
+          game_state_reset (see above)
+          snake_dir_turn_left
+          snake_dir_turn_right
+        game_get_num_players (see above)
+        input_poll_all
+          input_poll_all_from_buf_impl
+            ascii_tolower
+            parse_arrow_key
+      snake_game_run_headless
+        free (see above)
+        game_config_get_tick_rate_ms
+        game_enqueue_input (see above)
+        game_get_num_players (see above)
+        game_get_status
+        game_reset (see above)
+        game_step (see above)
+        headless_print_state
+        mpclient_has_session
+        mpclient_poll_message (see above)
+        mpclient_send_game (see above)
+        parse_remote_game_state (see above)
+        platform_sleep_ms
     sprite_add_color
     sprite_destroy (see above)
     sprite_draw (see above)

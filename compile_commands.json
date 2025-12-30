@@ -1,0 +1,162 @@
+[
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/wall_perspective.c",
+    "file": "/home/jimmy/SNAKE/src/render/wall_perspective.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/projection.c",
+    "file": "/home/jimmy/SNAKE/src/render/projection.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/render.c",
+    "file": "/home/jimmy/SNAKE/src/render/render.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/display_tty.c",
+    "file": "/home/jimmy/SNAKE/src/render/display_tty.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/raycast.c",
+    "file": "/home/jimmy/SNAKE/src/render/raycast.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/render_3d_sdl.c",
+    "file": "/home/jimmy/SNAKE/src/render/render_3d_sdl.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/render_input.c",
+    "file": "/home/jimmy/SNAKE/src/render/render_input.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/camera.c",
+    "file": "/home/jimmy/SNAKE/src/render/camera.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/texture.c",
+    "file": "/home/jimmy/SNAKE/src/render/texture.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/sprite.c",
+    "file": "/home/jimmy/SNAKE/src/render/sprite.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/render_3d.c",
+    "file": "/home/jimmy/SNAKE/src/render/render_3d.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/render/display_3d.c",
+    "file": "/home/jimmy/SNAKE/src/render/display_3d.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/validate.c",
+    "file": "/home/jimmy/SNAKE/src/utils/validate.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/bounds.c",
+    "file": "/home/jimmy/SNAKE/src/utils/bounds.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/direction.c",
+    "file": "/home/jimmy/SNAKE/src/utils/direction.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/utils.c",
+    "file": "/home/jimmy/SNAKE/src/utils/utils.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/env.c",
+    "file": "/home/jimmy/SNAKE/src/utils/env.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/utils/rng.c",
+    "file": "/home/jimmy/SNAKE/src/utils/rng.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/input/input.c",
+    "file": "/home/jimmy/SNAKE/src/input/input.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/platform/tty.c",
+    "file": "/home/jimmy/SNAKE/src/platform/tty.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/platform/platform.c",
+    "file": "/home/jimmy/SNAKE/src/platform/platform.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/net/net.c",
+    "file": "/home/jimmy/SNAKE/src/net/net.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/net/net_log.c",
+    "file": "/home/jimmy/SNAKE/src/net/net_log.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/net/mpapi_client.c",
+    "file": "/home/jimmy/SNAKE/src/net/mpapi_client.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/core/player.c",
+    "file": "/home/jimmy/SNAKE/src/core/player.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/core/collision.c",
+    "file": "/home/jimmy/SNAKE/src/core/collision.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/core/game.c",
+    "file": "/home/jimmy/SNAKE/src/core/game.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/snakegame.c",
+    "file": "/home/jimmy/SNAKE/src/snakegame.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/console/console.c",
+    "file": "/home/jimmy/SNAKE/src/console/console.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/src/persist/persist.c",
+    "file": "/home/jimmy/SNAKE/src/persist/persist.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/main.c",
+    "file": "/home/jimmy/SNAKE/main.c"
+  },
+  {
+    "directory": "/home/jimmy/SNAKE",
+    "command": "/usr/bin/cc -I/home/jimmy/SNAKE/include/snake -I/home/jimmy/SNAKE/src/core -I/home/jimmy/SNAKE/src/render -I/home/jimmy/SNAKE/src/render/internal -I/home/jimmy/SNAKE/vendor/stb -D_POSIX_C_SOURCE=200809L -I/usr/include/SDL2 -D_REENTRANT -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wcast-align -Wwrite-strings -Wformat=2 -Wundef -Wvla -Wconversion -Wsign-conversion -Wno-unused-parameter -Werror -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -c /home/jimmy/SNAKE/vendor/stb/stb_image.c",
+    "file": "/home/jimmy/SNAKE/vendor/stb/stb_image.c"
+  }
+]

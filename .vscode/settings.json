@@ -1,0 +1,8 @@
+{
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}",
+        "--header-insertion=never"
+    ],
+    "editor.semanticHighlighting.enabled": true
+}

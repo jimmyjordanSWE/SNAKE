@@ -74,3 +74,4 @@ build/fuzz/artifacts/
 vendor/mpapi
 scripts/out/
 /logs/
+*.idx

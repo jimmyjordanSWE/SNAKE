@@ -2,6 +2,40 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Make: quick build",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "quick"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "close": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "Make: debug-full",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "debug-full"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "close": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
       "label": "Make: build",
       "type": "shell",
       "command": "make",
@@ -23,7 +57,9 @@
       "label": "Make: clean",
       "type": "shell",
       "command": "make",
-      "args": ["clean"],
+      "args": [
+        "clean"
+      ],
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -31,10 +67,29 @@
       }
     },
     {
+      "label": "Make: build (no ASAN)",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "CONFIG=debug"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "close": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
       "label": "Make: debug (build + gdb)",
       "type": "shell",
       "command": "make",
-      "args": ["gdb"],
+      "args": [
+        "gdb"
+      ],
       "presentation": {
         "close": true
       }

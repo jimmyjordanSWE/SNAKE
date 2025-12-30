@@ -2,25 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Snake (gdb)",
-      "type": "cppdbg",
+      "name": "Debug Snake (lldb)",
+      "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/snakegame",
+      "program": "${workspaceFolder}/snakegame.out",
       "args": [],
-      "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "preLaunchTask": "Make: build",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
+      "preLaunchTask": "Make: debug-full",
+      "terminal": "integrated",
+      "env": {
+        "ASAN_OPTIONS": "detect_leaks=0"
+      }
+    },
+    {
+      "name": "Debug Snake (lldb, no ASAN)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/snakegame.out",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Make: build (no ASAN)",
+      "terminal": "integrated"
     }
   ]
 }

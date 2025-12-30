@@ -60,8 +60,13 @@ FORMAT_FILES = $(SRC) $(HDR)
 ifeq ($(CONFIG),debug-asan)
 BUILD_DIR := $(BUILD_ROOT)/debug-asan
 CPPFLAGS := $(CPPFLAGS_BASE)
-	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(DEBUG_FLAGS) $(ASAN_FLAGS)
+CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(DEBUG_FLAGS) $(ASAN_FLAGS)
 LDFLAGS := $(LDFLAGS_BASE) $(ASAN_FLAGS)
+else ifeq ($(CONFIG),debug)
+BUILD_DIR := $(BUILD_ROOT)/debug
+CPPFLAGS := $(CPPFLAGS_BASE)
+CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(DEBUG_FLAGS)
+LDFLAGS := $(LDFLAGS_BASE)
 else ifeq ($(CONFIG),release)
 BUILD_DIR := $(BUILD_ROOT)/release
 CPPFLAGS := $(CPPFLAGS_BASE)
@@ -73,7 +78,7 @@ CPPFLAGS := $(CPPFLAGS_BASE)
 	CFLAGS := $(CFLAGS_BASE) $(WARNINGS) $(DEBUG_FLAGS) -fno-omit-frame-pointer
 LDFLAGS := $(LDFLAGS_BASE)
 else
-$(error Unknown CONFIG '$(CONFIG)'. Use CONFIG=debug-asan|release|valgrind)
+$(error Unknown CONFIG '$(CONFIG)'. Use CONFIG=debug-asan|debug|release|valgrind)
 endif
 
 OBJ_DIR := $(BUILD_DIR)/obj
@@ -94,7 +99,7 @@ else
 MAYBE_ANALYZE :=
 endif
 
-.PHONY: all build debug release valgrind gdb clean format-llm format-human context llvm-context unit-tests test analyze static-analysis run-sanitizers
+.PHONY: all build debug release valgrind gdb clean format-llm format-human context llvm-context unit-tests test analyze static-analysis run-sanitizers compile_commands.json
 
 all: $(MAYBE_ANALYZE) debug
 
@@ -102,13 +107,19 @@ all: $(MAYBE_ANALYZE) debug
 # Use `make quick` from an IDE integrated terminal to avoid background hangups caused by long-running analysis.
 .PHONY: quick
 quick:
-	@$(MAKE) CONFIG=debug-asan build
+	@$(MAKE) CONFIG=debug-asan build compile_commands.json
 
 build: $(MAYBE_ANALYZE) $(BIN)
 
 debug: $(MAYBE_ANALYZE)
+	@$(MAKE) CONFIG=debug $(PREBUILD) build
+	@echo "$(OK_MSG)"
+
+debug-asan: $(MAYBE_ANALYZE)
 	@$(MAKE) CONFIG=debug-asan $(PREBUILD) build
 	@echo "$(OK_MSG)"
+
+debug-full: format debug-asan
 
 release: $(MAYBE_ANALYZE)
 	@$(MAKE) CONFIG=release $(PREBUILD) build
@@ -223,6 +234,10 @@ vendor-mpapi:
 
 mpapi-start:
 	@./scripts/run_mpapi_server.sh
+
+compile_commands.json:
+	@echo "Generating compile_commands.json..."
+	@$(VENV_PYTHON) scripts/gen_compile_commands.py compile_commands.json "$$(which $(CC))" "$(CPPFLAGS) $(CFLAGS)" $(SRC)
 
 -include $(DEP)
 

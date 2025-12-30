@@ -3,11 +3,20 @@
     {
       "name": "Linux",
       "includePath": [
-        "${workspaceFolder}",
+        "${workspaceFolder}/include/snake",
+        "${workspaceFolder}/src/core",
+        "${workspaceFolder}/src/render",
+        "${workspaceFolder}/src/render/internal",
+        "${workspaceFolder}/vendor/stb",
+        "/usr/include/SDL2",
         "${workspaceFolder}/**"
       ],
-      "defines": [],
-      "compilerPath": "/usr/bin/gcc",
+      "defines": [
+        "_POSIX_C_SOURCE=200809L",
+        "_REENTRANT"
+      ],
+      "compileCommands": "${workspaceFolder}/compile_commands.json",
+      "compilerPath": "/usr/bin/cc",
       "cStandard": "c99",
       "cppStandard": "c++17",
       "intelliSenseMode": "linux-gcc-x64"

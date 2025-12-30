@@ -1,4 +1,1 @@
-Checks: '*, -clang-analyzer-alpha*'
-WarningsAsErrors: '*'
-HeaderFilterRegex: 'include/.*'
-FormatStyle: file
+Checks: '-*'

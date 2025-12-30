@@ -57,7 +57,7 @@ dkms.conf
 
 # Exclude the generated binary but not headers/sources
 *.out
-.snake_scores
+.snake_scores*
 /build/
 .venv/
 

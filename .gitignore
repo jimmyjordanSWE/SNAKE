@@ -71,3 +71,4 @@ stb_run.log
 
 # Specific artifact directories (build is already ignored but being explicit helps)
 build/fuzz/artifacts/
+vendor/mpapi

@@ -32,38 +32,51 @@ int main(void) {
 
     const int frames = 200;
     volatile uint32_t acc = 0; /* prevent optimizations */
+    /* Precompute angle offsets and their trig values */
+    float* angle_offsets = malloc(sizeof(float) * (size_t)screen_w);
+    float* cos_offsets = malloc(sizeof(float) * (size_t)screen_w);
+    float* sin_offsets = malloc(sizeof(float) * (size_t)screen_w);
+    if (angle_offsets && cos_offsets && sin_offsets) {
+        camera_fill_ray_angle_offsets(cam, angle_offsets);
+        for(int i=0; i<screen_w; i++) {
+            cos_offsets[i] = cosf(angle_offsets[i]);
+            sin_offsets[i] = sinf(angle_offsets[i]);
+        }
+    }
+
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
     for (int f = 0; f < frames; f++) {
         (void)0; /* placeholder - no camera interpolation in this microbench */
-        int screen_w_local = screen_w;
-        float* angle_offsets = NULL;
-        bool use_precomp = getenv("PRECOMP_ANGLE") != NULL;
-        if (use_precomp) {
-            angle_offsets = malloc(sizeof(float) * (size_t)screen_w_local);
-            if (angle_offsets)
-                camera_fill_ray_angle_offsets(cam, angle_offsets);
-        }
+        
+        float cam_angle = camera_get_interpolated_angle(cam);
+        float cos_cam = cosf(cam_angle);
+        float sin_cam = sinf(cam_angle);
+
+        float origin_x = (float)map_w / 2.0f;
+        float origin_y = (float)map_h / 2.0f;
+
         for (int x = 0; x < screen_w; x++) {
-            float ray_angle;
-            if (angle_offsets)
-                ray_angle = camera_get_interpolated_angle(cam) + angle_offsets[x];
-            else
-                camera_get_ray_angle(cam, x, &ray_angle);
             RayHit hit;
-            float cos_a = cosf(ray_angle);
-            float sin_a = sinf(ray_angle);
-            float eps_fwd = 0.0002f;
-            float eps_perp = 0.0002f;
-            float origin_x = (float)map_w / 2.0f + cos_a * eps_fwd - sin_a * eps_perp;
-            float origin_y = (float)map_h / 2.0f + sin_a * eps_fwd + cos_a * eps_perp;
-            if (raycast_cast_ray(rc, origin_x, origin_y, ray_angle, &hit)) {
+            float ray_cos, ray_sin;
+            float ray_angle = cam_angle + angle_offsets[x];
+            
+            if (cos_offsets && sin_offsets) {
+                 ray_cos = cos_cam * cos_offsets[x] - sin_cam * sin_offsets[x];
+                 ray_sin = sin_cam * cos_offsets[x] + cos_cam * sin_offsets[x];
+            } else {
+                 ray_cos = cosf(ray_angle);
+                 ray_sin = sinf(ray_angle);
+            }
+
+            if (raycast_cast_ray_fast(rc, origin_x, origin_y, ray_cos, ray_sin, &hit)) {
                 WallProjection p;
                 projection_project_wall_perp(proj, hit.distance, ray_angle, ray_angle, &p);
                 int wall_h = p.draw_end - p.draw_start + 1;
                 if (wall_h <= 0)
                     wall_h = 1;
                 float tex_coord = raycast_get_texture_coord(&hit, hit.is_vertical) * 1.0f;
+                // Simple checksum loop matching original logic
                 for (int yy = p.draw_start; yy <= p.draw_end; yy++) {
                     float v = (float)(yy - p.draw_start) / (float)wall_h;
                     float tex_v = v * 1.0f;
@@ -78,13 +91,14 @@ int main(void) {
                     acc ^= col;
                 }
             } else {
-                /* miss: sample floor or do nothing */
+                /* miss */
                 (void)0;
             }
         }
-        if (angle_offsets)
-            free(angle_offsets);
     }
+    if (angle_offsets) free(angle_offsets);
+    if (cos_offsets) free(cos_offsets);
+    if (sin_offsets) free(sin_offsets);
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double ms = timespec_diff_ms(&t0, &t1);
     printf("render_bench: frames=%d screen=%dx%d total_ms=%.3f avg_ms_per_frame=%.6f acc=0x%08x\n", frames, screen_w,

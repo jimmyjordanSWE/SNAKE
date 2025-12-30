@@ -41,8 +41,6 @@ Tree(main):
       interpolate_angle
         angle_difference
         normalize_angle
-    camera_get_ray_angle
-      camera_get_interpolated_angle (see above)
     camera_set_angle
       normalize_angle
       update_vectors
@@ -60,7 +58,7 @@ Tree(main):
       free (see above)
     projection_project_wall_perp
       projection_project_wall
-    raycast_cast_ray
+    raycast_cast_ray_fast
     raycast_get_texture_coord
     raycaster_destroy
       free (see above)
@@ -228,10 +226,9 @@ Tree(main):
         camera_prepare_angle_offsets
         camera_update_interpolation
         env_bool
-        free (see above)
         projection_get_wall_scale
         projection_project_wall_perp (see above)
-        raycast_cast_ray
+        raycast_cast_ray_fast
         raycast_get_texture_coord
         render_3d_draw_fps_counter
           render_3d_draw_char

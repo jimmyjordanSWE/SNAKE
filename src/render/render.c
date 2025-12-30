@@ -421,14 +421,16 @@ void render_draw(const GameState* game, const char* player_name, HighScore** sco
 }
 
 void render_push_mp_message(const char* msg) {
-    if (!msg) return;
+    if (!msg)
+        return;
     /* shift older down safely (memmove handles overlap) */
     for (int i = (SESSION_MAX_SCORES - 1); i > 0; --i) {
-        memmove(g_mp_messages[i], g_mp_messages[i-1], sizeof(g_mp_messages[0]));
+        memmove(g_mp_messages[i], g_mp_messages[i - 1], sizeof(g_mp_messages[0]));
         g_mp_messages[i][sizeof(g_mp_messages[0]) - 1] = '\0';
     }
     snprintf(g_mp_messages[0], sizeof(g_mp_messages[0]), "%.*s", (int)sizeof(g_mp_messages[0]) - 1, msg);
-    if (g_mp_msg_count < SESSION_MAX_SCORES) g_mp_msg_count++;
+    if (g_mp_msg_count < SESSION_MAX_SCORES)
+        g_mp_msg_count++;
     invalidate_front_buffer(g_display);
 }
 
@@ -442,19 +444,22 @@ void render_set_session_id(const char* session) {
 }
 
 void render_draw_remote_players(const GameState* game, const int* x, const int* y, const void* names_ptr, int count) {
-    if (!g_display || !game || count <= 0) return;
-    const char (*names)[32] = (const char (*)[32])names_ptr;
-    
+    if (!g_display || !game || count <= 0)
+        return;
+    const char(*names)[32] = (const char(*)[32])names_ptr;
+
     int display_width = 0, display_height = 0;
     display_get_size(g_display, &display_width, &display_height);
-    
+
     int field_width = game->width + 2;
     int field_height = game->height + 2;
     int field_x = (display_width - field_width) / 2;
-    if (field_x < 1) field_x = 1;
+    if (field_x < 1)
+        field_x = 1;
     int field_y = (display_height - field_height) / 2;
-    if (field_y < 2) field_y = 2;
-    
+    if (field_y < 2)
+        field_y = 2;
+
     /* Draw each remote player head as a colored marker */
     for (int i = 0; i < count; i++) {
         int px = field_x + 1 + x[i];
@@ -465,7 +470,7 @@ void render_draw_remote_players(const GameState* game, const int* x, const int* 
             display_put_char(g_display, px, py, DISPLAY_CHAR_CIRCLE, color, DISPLAY_COLOR_BLACK);
         }
     }
-    
+
     /* Draw remote player scores on the right side, below local scores */
     int score_y = field_y + game->num_players * 2 + 2;
     for (int i = 0; i < count && score_y < display_height - 1; i++) {
@@ -476,7 +481,7 @@ void render_draw_remote_players(const GameState* game, const int* x, const int* 
         draw_string(sx, score_y, label, color);
         score_y++;
     }
-    
+
     display_present(g_display);
 }
 

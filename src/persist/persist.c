@@ -107,6 +107,9 @@ struct GameConfig {
 
     /* Headless mode: no TTY/SDL graphics */
     int headless;
+
+    /* Autoplay mode: snake turns right every 3rd tick (testing) */
+    int autoplay;
 };
 GameConfig* game_config_create(void) {
     GameConfig* c = calloc(1, sizeof *c);
@@ -178,6 +181,9 @@ GameConfig* game_config_create(void) {
     for (int i = 0; i < SNAKE_MAX_PLAYERS; ++i) {
         /* already initialized above */
     }
+
+    /* Autoplay: -1 = unset (will be auto-determined based on mode) */
+    c->autoplay = -1;
 
     return c;
 }
@@ -461,8 +467,12 @@ const char* game_config_get_mp_identifier(const GameConfig* cfg) {
 }
 
 void game_config_set_mp_session(GameConfig* cfg, const char* session) {
-    if (!cfg) return;
-    if (!session) { cfg->mp_session[0] = '\0'; return; }
+    if (!cfg)
+        return;
+    if (!session) {
+        cfg->mp_session[0] = '\0';
+        return;
+    }
     snprintf(cfg->mp_session, PERSIST_MP_SESSION_MAX, "%s", session);
 }
 const char* game_config_get_mp_session(const GameConfig* cfg) {
@@ -470,11 +480,20 @@ const char* game_config_get_mp_session(const GameConfig* cfg) {
 }
 
 void game_config_set_headless(GameConfig* cfg, int v) {
-    if (!cfg) return;
+    if (!cfg)
+        return;
     cfg->headless = v ? 1 : 0;
 }
 int game_config_get_headless(const GameConfig* cfg) {
     return cfg ? cfg->headless : 0;
+}
+void game_config_set_autoplay(GameConfig* cfg, int v) {
+    if (!cfg)
+        return;
+    cfg->autoplay = v ? 1 : 0;
+}
+int game_config_get_autoplay(const GameConfig* cfg) {
+    return cfg ? cfg->autoplay : 0;
 }
 int persist_read_scores(const char* filename, HighScore*** out_scores) {
     if (filename == NULL || out_scores == NULL)
@@ -903,7 +922,8 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
             long v = strtol(value, &endptr, 10);
             if (errno != 0 || endptr == value)
                 continue;
-            if (v < 1 || v > 65535) continue;
+            if (v < 1 || v > 65535)
+                continue;
             config->mp_server_port = (int)v;
             continue;
         } else if (strcmp(key, "mp_identifier") == 0) {
@@ -923,6 +943,14 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
                 config->headless = 1;
             else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
                 config->headless = 0;
+            continue;
+        } else if (strcmp(key, "autoplay") == 0) {
+            for (char* p = value; *p; p++)
+                *p = (char)tolower((unsigned char)*p);
+            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+                config->autoplay = 1;
+            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+                config->autoplay = 0;
             continue;
         }
         errno = 0;
@@ -1172,6 +1200,8 @@ static bool is_known_config_key(const char* key) {
     if (strcmp(key, "screen_width") == 0 || strcmp(key, "min_screen_width") == 0)
         return true;
     if (strcmp(key, "screen_height") == 0 || strcmp(key, "min_screen_height") == 0)
+        return true;
+    if (strcmp(key, "headless") == 0 || strcmp(key, "autoplay") == 0)
         return true;
     return false;
 }

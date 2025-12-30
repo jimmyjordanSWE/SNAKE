@@ -68,6 +68,41 @@ bool raycast_cast_ray(const Raycaster3D* rc, float camera_x, float camera_y, flo
     hit_out->shade_level = 0;
     return true;
 }
+bool raycast_cast_ray_fast(const Raycaster3D* rc, float camera_x, float camera_y, float cos_a, float sin_a, RayHit* hit_out) {
+    if (!rc || !hit_out)
+        return false;
+    float dist_right = (float)rc->board_width - camera_x;
+    float dist_left = camera_x;
+    float dist_up = camera_y;
+    float dist_down = (float)rc->board_height - camera_y;
+    const float eps = 1e-6f;
+    float dist_x;
+    if (fabsf(cos_a) < eps) {
+        dist_x = FLT_MAX;
+    } else {
+        dist_x = (cos_a > 0) ? dist_right / cos_a : dist_left / -cos_a;
+        if (!isfinite(dist_x) || dist_x < 0.0f)
+            dist_x = FLT_MAX;
+    }
+    float dist_y;
+    if (fabsf(sin_a) < eps) {
+        dist_y = FLT_MAX;
+    } else {
+        dist_y = (sin_a > 0) ? dist_down / sin_a : dist_up / -sin_a;
+        if (!isfinite(dist_y) || dist_y < 0.0f)
+            dist_y = FLT_MAX;
+    }
+    float distance = fminf(dist_x, dist_y);
+    if (!isfinite(distance) || distance <= 0.0f) {
+        return false;
+    }
+    hit_out->distance = distance;
+    hit_out->hit_x = camera_x + cos_a * distance;
+    hit_out->hit_y = camera_y + sin_a * distance;
+    hit_out->is_vertical = (dist_x < dist_y);
+    hit_out->shade_level = 0;
+    return true;
+}
 bool raycast_is_wall(const Raycaster3D* rc, float x, float y) {
     if (!rc || !rc->board)
         return false;

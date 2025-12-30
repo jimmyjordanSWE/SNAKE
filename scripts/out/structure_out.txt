@@ -136,6 +136,7 @@ include
     destroy(*cfg)
     get_
      active_player(*cfg)
+     autoplay(*cfg)
      board_size(*cfg,*w_out,*h_out)
      enable_external_3d_view(*cfg)
      floor_texture_scale(*cfg)
@@ -169,6 +170,7 @@ include
       texture_scale(*cfg)
     set_
      active_player(*cfg,v)
+     autoplay(*cfg,v)
      board_size(*cfg,w,h)
      enable_external_3d_view(*cfg,v)
      floor_
@@ -369,7 +371,9 @@ include
    t WallProjection
   render_3d_raycast.h
    f raycast_
-    cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+    cast_
+     ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+     ray_fast(*rc,camera_x,camera_y,cos_a,sin_a,*hit_out)
     get_texture_coord(*hit,is_vertical)
     init(*rc,width,height,*board)
     is_wall(*rc,x,y)
@@ -654,6 +658,7 @@ src
     destroy(*cfg)
     get_
      active_player(*cfg)
+     autoplay(*cfg)
      board_size(*cfg,*w_out,*h_out)
      enable_external_3d_view(*cfg)
      floor_texture_scale(*cfg)
@@ -687,6 +692,7 @@ src
       texture_scale(*cfg)
     set_
      active_player(*cfg,v)
+     autoplay(*cfg,v)
      board_size(*cfg,w,h)
      enable_external_3d_view(*cfg,v)
      floor_
@@ -741,7 +747,7 @@ src
     write_
      config(*filename,*config)
      scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS,mp_enabled,PERSIST_MP_HOST_MAX,mp_server_port,PERSIST_MP_IDENTIFIER_MAX,PERSIST_MP_SESSION_MAX,headless}
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS,mp_enabled,PERSIST_MP_HOST_MAX,mp_server_port,PERSIST_MP_IDENTIFIER_MAX,PERSIST_MP_SESSION_MAX,headless,autoplay}
    s HighScore{PERSIST_NAME_MAX,score}
  platform
   platform.c
@@ -880,7 +886,9 @@ src
    s Projection3D{screen_width,screen_height,fov_radians,horizon_y,wall_scale}
   raycast.c
    f raycast_
-    cast_ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+    cast_
+     ray(*rc,camera_x,camera_y,ray_angle,*hit_out)
+     ray_fast(*rc,camera_x,camera_y,cos_a,sin_a,*hit_out)
     get_texture_coord(*hit,is_vertical)
     init(*rc,width,height,*board)
     is_wall(*rc,x,y)
@@ -951,10 +959,15 @@ src
     shade_color(col,pct)
     shutdown(_)
     update_fps(delta_seconds)
-   s <anon>{*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps,*cos_offsets,*sin_offsets,offsets_cap}
+   s <anon>
+    {x}
+    {count,ids}
+    {*game_state,*camera,*raycaster,*projector,*texture,*wall_texture,*floor_texture,*sprite_renderer,*display,config,initialized,*column_depths,frame_times,frame_time_idx,current_fps,*cos_offsets,*sin_offsets,offsets_cap,cached_debug_timing,cached_fast_wall_tex,cached_fast_floor_tex,cached_debug_textures,env_cached,*decal_pool,decal_pool_cap,*bucket_pool,bucket_pool_cap}
    s SDL3DContext
+   t Decal
    t Render3DContext
    t RenderMode
+   t TileBucket
   render_3d_sdl.c
    f blend_px(dst,src)
    f call_lsan_
@@ -1048,7 +1061,7 @@ src
    free(*s)
    run(*s)
   s <anon>{x,length,score,name,active}
-  s SnakeGame{*cfg,*game,has_3d,headless}
+  s SnakeGame{*cfg,*game,has_3d,headless,autoplay}
   t RemotePlayer
  tools
   render_bench.c

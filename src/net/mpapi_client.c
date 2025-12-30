@@ -1,15 +1,15 @@
 #include "mpapi_client.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <errno.h>
-#include <ctype.h>
 #include "platform.h"
+#include <ctype.h>
+#include <errno.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MSG_QUEUE_SIZE 64
 #define LINE_BUF_CAP 4096
@@ -32,7 +32,8 @@ struct mpclient {
 };
 
 static int connect_to_server(const char* host, uint16_t port) {
-    if (!host) host = "127.0.0.1";
+    if (!host)
+        host = "127.0.0.1";
     char port_str[16];
     snprintf(port_str, sizeof(port_str), "%u", (unsigned int)port);
     struct addrinfo hints;
@@ -41,12 +42,15 @@ static int connect_to_server(const char* host, uint16_t port) {
     hints.ai_socktype = SOCK_STREAM;
     struct addrinfo* res = NULL;
     int err = getaddrinfo(host, port_str, &hints, &res);
-    if (err != 0) return -1;
+    if (err != 0)
+        return -1;
     int fd = -1;
     for (struct addrinfo* rp = res; rp != NULL; rp = rp->ai_next) {
         fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (fd == -1) continue;
-        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == 0) break;
+        if (fd == -1)
+            continue;
+        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == 0)
+            break;
         close(fd);
         fd = -1;
     }
@@ -62,7 +66,8 @@ static int send_all(int fd, const char* buf, size_t len) {
     size_t sent = 0;
     while (sent < len) {
         ssize_t rc = send(fd, buf + sent, len - sent, 0);
-        if (rc <= 0) return -1;
+        if (rc <= 0)
+            return -1;
         /* log this chunk */
         net_log_send(fd, buf + sent, (size_t)rc, "mpclient send_all: chunk");
         sent += (size_t)rc;
@@ -71,7 +76,8 @@ static int send_all(int fd, const char* buf, size_t len) {
 }
 
 static void enqueue_msg(struct mpclient* c, const char* s) {
-    if (!c || !s) return;
+    if (!c || !s)
+        return;
     pthread_mutex_lock(&c->lock);
     int next = (c->tail + 1) % MSG_QUEUE_SIZE;
     if (next == c->head) {
@@ -85,7 +91,8 @@ static void enqueue_msg(struct mpclient* c, const char* s) {
 }
 
 int mpclient_poll_message(mpclient* c, char* out, int maxlen) {
-    if (!c || !out || maxlen <= 0) return 0;
+    if (!c || !out || maxlen <= 0)
+        return 0;
     pthread_mutex_lock(&c->lock);
     if (c->head == c->tail) {
         pthread_mutex_unlock(&c->lock);
@@ -102,7 +109,8 @@ int mpclient_poll_message(mpclient* c, char* out, int maxlen) {
 }
 
 int mpclient_get_session(mpclient* c, char* out, int maxlen) {
-    if (!c || !out || maxlen <= 0) return 0;
+    if (!c || !out || maxlen <= 0)
+        return 0;
     pthread_mutex_lock(&c->lock);
     if (c->session[0]) {
         strncpy(out, c->session, (size_t)maxlen - 1);
@@ -115,7 +123,8 @@ int mpclient_get_session(mpclient* c, char* out, int maxlen) {
 }
 
 int mpclient_has_session(mpclient* c) {
-    if (!c) return 0;
+    if (!c)
+        return 0;
     return c->session[0] != '\0';
 }
 
@@ -124,20 +133,27 @@ static char* extract_json_field(const char* line, const char* key) {
     char needle[128];
     snprintf(needle, sizeof(needle), "\"%s\"", key);
     const char* p = strstr(line, needle);
-    if (!p) return NULL;
+    if (!p)
+        return NULL;
     p = strchr(p, ':');
-    if (!p) return NULL;
+    if (!p)
+        return NULL;
     p++;
-    while (*p && isspace((unsigned char)*p)) p++;
+    while (*p && isspace((unsigned char)*p))
+        p++;
     if (*p == '"') {
         p++;
         const char* start = p;
         while (*p && *p != '"') {
-            if (*p == '\\' && p[1]) p += 2; else p++;
+            if (*p == '\\' && p[1])
+                p += 2;
+            else
+                p++;
         }
         size_t len = (size_t)(p - start);
         char* out = (char*)malloc(len + 1);
-        if (!out) return NULL;
+        if (!out)
+            return NULL;
         memcpy(out, start, len);
         out[len] = '\0';
         return out;
@@ -146,16 +162,21 @@ static char* extract_json_field(const char* line, const char* key) {
         const char* start = p;
         int depth = 0;
         while (*p) {
-            if (*p == '{') depth++;
+            if (*p == '{')
+                depth++;
             else if (*p == '}') {
                 depth--;
-                if (depth == 0) { p++; break; }
+                if (depth == 0) {
+                    p++;
+                    break;
+                }
             }
             p++;
         }
         size_t len = (size_t)(p - start);
         char* out = (char*)malloc(len + 1);
-        if (!out) return NULL;
+        if (!out)
+            return NULL;
         memcpy(out, start, len);
         out[len] = '\0';
         return out;
@@ -164,7 +185,8 @@ static char* extract_json_field(const char* line, const char* key) {
 }
 
 static void process_line(struct mpclient* c, const char* line) {
-    if (!c || !line) return;
+    if (!c || !line)
+        return;
     /* look for cmd */
     if (strstr(line, "\"cmd\":\"game\"") != NULL || strstr(line, "\"cmd\": \"game\"") != NULL) {
         char* data = extract_json_field(line, "data");
@@ -200,7 +222,8 @@ static void process_line(struct mpclient* c, const char* line) {
 
 static void* recv_thread_main(void* arg) {
     struct mpclient* c = (struct mpclient*)arg;
-    if (!c) return NULL;
+    if (!c)
+        return NULL;
     char buf[LINE_BUF_CAP];
     size_t buf_len = 0;
     while (c->running) {
@@ -217,7 +240,8 @@ static void* recv_thread_main(void* arg) {
             char ch = tmp[i];
             if (ch == '\n') {
                 buf[buf_len] = '\0';
-                if (buf_len > 0) process_line(c, buf);
+                if (buf_len > 0)
+                    process_line(c, buf);
                 buf_len = 0;
             } else if (buf_len + 1 < LINE_BUF_CAP) {
                 buf[buf_len++] = ch;
@@ -232,9 +256,11 @@ static void* recv_thread_main(void* arg) {
 }
 
 mpclient* mpclient_create(const char* host, uint16_t port, const char* identifier) {
-    if (!host || !identifier) return NULL;
+    if (!host || !identifier)
+        return NULL;
     struct mpclient* c = calloc(1, sizeof(*c));
-    if (!c) return NULL;
+    if (!c)
+        return NULL;
     snprintf(c->server_host, sizeof(c->server_host), "%s", host);
     c->server_port = port;
     snprintf(c->identifier, sizeof(c->identifier), "%s", identifier);
@@ -247,8 +273,10 @@ mpclient* mpclient_create(const char* host, uint16_t port, const char* identifie
 }
 
 int mpclient_connect_and_start(mpclient* c) {
-    if (!c) return -1;
-    if (c->sockfd >= 0) return 0;
+    if (!c)
+        return -1;
+    if (c->sockfd >= 0)
+        return 0;
     net_log_info("mpclient: connecting to %s:%u..", c->server_host, (unsigned int)c->server_port);
     int fd = connect_to_server(c->server_host, c->server_port);
     if (fd < 0) {
@@ -270,16 +298,20 @@ int mpclient_connect_and_start(mpclient* c) {
 }
 
 static int send_command(struct mpclient* c, const char* cmd, const char* session, const char* data_json) {
-    if (!c || !cmd) return -1;
+    if (!c || !cmd)
+        return -1;
     char msg[2048];
     if (session && session[0]) {
         if (data_json)
-            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"session\":\"%s\",\"cmd\":\"%s\",\"data\":%s}\n", c->identifier, session, cmd, data_json);
+            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"session\":\"%s\",\"cmd\":\"%s\",\"data\":%s}\n",
+                     c->identifier, session, cmd, data_json);
         else
-            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"session\":\"%s\",\"cmd\":\"%s\",\"data\":{}}\n", c->identifier, session, cmd);
+            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"session\":\"%s\",\"cmd\":\"%s\",\"data\":{}}\n",
+                     c->identifier, session, cmd);
     } else {
         if (data_json)
-            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"cmd\":\"%s\",\"data\":%s}\n", c->identifier, cmd, data_json);
+            snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"cmd\":\"%s\",\"data\":%s}\n", c->identifier, cmd,
+                     data_json);
         else
             snprintf(msg, sizeof(msg), "{\"identifier\":\"%s\",\"cmd\":\"%s\",\"data\":{}}\n", c->identifier, cmd);
     }
@@ -290,17 +322,21 @@ static int send_command(struct mpclient* c, const char* cmd, const char* session
 }
 
 int mpclient_auto_join_or_host(mpclient* c, const char* name) {
-    if (!c || !name) return -1;
+    if (!c || !name)
+        return -1;
     /* ensure connected */
-    if (mpclient_connect_and_start(c) != 0) return -1;
+    if (mpclient_connect_and_start(c) != 0)
+        return -1;
     /* Send list */
-    if (send_command(c, "list", NULL, "{\"type\":\"sessions\"}") != 0) return -1;
+    if (send_command(c, "list", NULL, "{\"type\":\"sessions\"}") != 0)
+        return -1;
     /* Wait briefly for response */
     int waited = 0;
     while (waited < 2000) {
         pthread_mutex_lock(&c->lock);
         pthread_mutex_unlock(&c->lock);
-        if (c->session[0]) break;
+        if (c->session[0])
+            break;
         platform_sleep_ms(100);
         waited += 100;
     }
@@ -308,17 +344,20 @@ int mpclient_auto_join_or_host(mpclient* c, const char* name) {
         /* If session already set (unlikely), join it */
         char payload[256];
         snprintf(payload, sizeof(payload), "{\"name\":\"%s\"}", name);
-        if (send_command(c, "join", c->session, payload) != 0) return -1;
+        if (send_command(c, "join", c->session, payload) != 0)
+            return -1;
         return 0;
     }
     /* No session yet; host a new session */
     char payload[256];
     snprintf(payload, sizeof(payload), "{\"name\":\"%s\",\"private\":false}", name);
-    if (send_command(c, "host", NULL, payload) != 0) return -1;
+    if (send_command(c, "host", NULL, payload) != 0)
+        return -1;
     /* wait for host response and session id to be populated */
     waited = 0;
     while (waited < 2000) {
-        if (c->session[0]) return 0;
+        if (c->session[0])
+            return 0;
         platform_sleep_ms(100);
         waited += 100;
     }
@@ -326,14 +365,18 @@ int mpclient_auto_join_or_host(mpclient* c, const char* name) {
 }
 
 int mpclient_join(mpclient* c, const char* sessionId, const char* name) {
-    if (!c || !sessionId) return -1;
-    if (mpclient_connect_and_start(c) != 0) return -1;
+    if (!c || !sessionId)
+        return -1;
+    if (mpclient_connect_and_start(c) != 0)
+        return -1;
     char payload[256];
     snprintf(payload, sizeof(payload), "{\"name\":\"%s\"}", name ? name : "");
-    if (send_command(c, "join", sessionId, payload) != 0) return -1;
+    if (send_command(c, "join", sessionId, payload) != 0)
+        return -1;
     int waited = 0;
     while (waited < 2000) {
-        if (c->session[0]) return 0;
+        if (c->session[0])
+            return 0;
         platform_sleep_ms(100);
         waited += 100;
     }
@@ -341,13 +384,16 @@ int mpclient_join(mpclient* c, const char* sessionId, const char* name) {
 }
 
 int mpclient_send_game(mpclient* c, const char* data_json) {
-    if (!c || !data_json) return -1;
-    if (send_command(c, "game", c->session[0] ? c->session : NULL, data_json) != 0) return -1;
+    if (!c || !data_json)
+        return -1;
+    if (send_command(c, "game", c->session[0] ? c->session : NULL, data_json) != 0)
+        return -1;
     return 0;
 }
 
 void mpclient_stop(mpclient* c) {
-    if (!c) return;
+    if (!c)
+        return;
     c->running = 0;
     if (c->sockfd >= 0) {
         shutdown(c->sockfd, SHUT_RDWR);
@@ -361,10 +407,13 @@ void mpclient_stop(mpclient* c) {
 }
 
 void mpclient_destroy(mpclient* c) {
-    if (!c) return;
+    if (!c)
+        return;
     mpclient_stop(c);
     pthread_mutex_destroy(&c->lock);
     /* free queued messages */
-    for (int i = 0; i < MSG_QUEUE_SIZE; ++i) if (c->msgs[i]) free(c->msgs[i]);
+    for (int i = 0; i < MSG_QUEUE_SIZE; ++i)
+        if (c->msgs[i])
+            free(c->msgs[i]);
     free(c);
 }

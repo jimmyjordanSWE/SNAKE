@@ -3,20 +3,20 @@
 #include "game.h"
 #include "game_internal.h"
 #include "input.h"
+#include "mpapi_client.h"
+#include "net_log.h"
 #include "persist.h"
 #include "platform.h"
 #include "render.h"
 #include "render_3d.h"
 #include "tty.h"
 #include "types.h"
-#include "mpapi_client.h"
-#include "net_log.h"
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 /* Remote player data received from other clients */
 #define MAX_REMOTE_PLAYERS 8
@@ -35,11 +35,14 @@ static int parse_json_int(const char* json, const char* key) {
     char needle[64];
     snprintf(needle, sizeof(needle), "\"%s\"", key);
     const char* p = strstr(json, needle);
-    if (!p) return 0;
+    if (!p)
+        return 0;
     p = strchr(p, ':');
-    if (!p) return 0;
+    if (!p)
+        return 0;
     p++;
-    while (*p && isspace((unsigned char)*p)) p++;
+    while (*p && isspace((unsigned char)*p))
+        p++;
     return atoi(p);
 }
 
@@ -48,16 +51,22 @@ static void parse_json_str(const char* json, const char* key, char* out, int max
     char needle[64];
     snprintf(needle, sizeof(needle), "\"%s\"", key);
     const char* p = strstr(json, needle);
-    if (!p) return;
+    if (!p)
+        return;
     p = strchr(p, ':');
-    if (!p) return;
+    if (!p)
+        return;
     p++;
-    while (*p && isspace((unsigned char)*p)) p++;
-    if (*p != '"') return;
+    while (*p && isspace((unsigned char)*p))
+        p++;
+    if (*p != '"')
+        return;
     p++;
     int i = 0;
     while (*p && *p != '"' && i < maxlen - 1) {
-        if (*p == '\\' && p[1]) { p++; }
+        if (*p == '\\' && p[1]) {
+            p++;
+        }
         out[i++] = *p++;
     }
     out[i] = '\0';
@@ -65,31 +74,36 @@ static void parse_json_str(const char* json, const char* key, char* out, int max
 
 /* Parse incoming game state JSON from another client */
 static void parse_remote_game_state(const char* json) {
-    if (!json || !strstr(json, "\"type\":\"state\"")) return;
-    
+    if (!json || !strstr(json, "\"type\":\"state\""))
+        return;
+
     /* Find players array */
     const char* players = strstr(json, "\"players\":[");
-    if (!players) return;
+    if (!players)
+        return;
     players = strchr(players, '[');
-    if (!players) return;
+    if (!players)
+        return;
     players++;
-    
+
     g_remote_player_count = 0;
-    
+
     /* Parse each player object */
     while (*players && g_remote_player_count < MAX_REMOTE_PLAYERS) {
         const char* obj_start = strchr(players, '{');
-        if (!obj_start) break;
+        if (!obj_start)
+            break;
         const char* obj_end = strchr(obj_start, '}');
-        if (!obj_end) break;
-        
+        if (!obj_end)
+            break;
+
         /* Extract a single player object */
         int len = (int)(obj_end - obj_start + 1);
         if (len > 0 && len < 512) {
             char obj[512];
             memcpy(obj, obj_start, (size_t)len);
             obj[len] = '\0';
-            
+
             RemotePlayer* rp = &g_remote_players[g_remote_player_count];
             rp->x = parse_json_int(obj, "x");
             rp->y = parse_json_int(obj, "y");
@@ -99,7 +113,7 @@ static void parse_remote_game_state(const char* json) {
             rp->active = true;
             g_remote_player_count++;
         }
-        
+
         players = obj_end + 1;
     }
 }
@@ -107,7 +121,8 @@ static void parse_remote_game_state(const char* json) {
 /* JSON helpers for lightweight serialization of GameState */
 
 static char* escape_json_str(const char* s) {
-    if (!s) return strdup("");
+    if (!s)
+        return strdup("");
     size_t need = 1;
     for (const unsigned char* p = (const unsigned char*)s; *p; ++p) {
         if (*p == '"' || *p == '\\' || *p == '\n' || *p == '\r' || *p == '\t')
@@ -118,70 +133,111 @@ static char* escape_json_str(const char* s) {
             need += 1;
     }
     char* out = malloc(need);
-    if (!out) return NULL;
+    if (!out)
+        return NULL;
     char* q = out;
     for (const unsigned char* p = (const unsigned char*)s; *p; ++p) {
         unsigned char c = *p;
-        if (c == '"') { *q++ = '\\'; *q++ = '"'; }
-        else if (c == '\\') { *q++ = '\\'; *q++ = '\\'; }
-        else if (c == '\n') { *q++ = '\\'; *q++ = 'n'; }
-        else if (c == '\r') { *q++ = '\\'; *q++ = 'r'; }
-        else if (c == '\t') { *q++ = '\\'; *q++ = 't'; }
-        else if (c < 0x20) { int n = snprintf(q, 7, "\\u%04x", c); q += n; }
-        else { *q++ = (char)c; }
+        if (c == '"') {
+            *q++ = '\\';
+            *q++ = '"';
+        } else if (c == '\\') {
+            *q++ = '\\';
+            *q++ = '\\';
+        } else if (c == '\n') {
+            *q++ = '\\';
+            *q++ = 'n';
+        } else if (c == '\r') {
+            *q++ = '\\';
+            *q++ = 'r';
+        } else if (c == '\t') {
+            *q++ = '\\';
+            *q++ = 't';
+        } else if (c < 0x20) {
+            int n = snprintf(q, 7, "\\u%04x", c);
+            q += n;
+        } else {
+            *q++ = (char)c;
+        }
     }
     *q = '\0';
     return out;
 }
 
 static char* game_state_to_json(const GameState* gs, int tick) {
-    if (!gs) return strdup("{}");
+    if (!gs)
+        return strdup("{}");
     /* build JSON in a dynamic buffer */
     size_t cap = 1024;
     char* buf = malloc(cap);
-    if (!buf) return NULL;
+    if (!buf)
+        return NULL;
     size_t len = 0;
-    int n = snprintf(buf + len, cap - len, "{\"type\":\"state\",\"tick\":%d,\"w\":%d,\"h\":%d,\"players\":[",
-                     tick, gs->width, gs->height);
-    if (n < 0) { free(buf); return NULL; }
+    int n = snprintf(buf + len, cap - len, "{\"type\":\"state\",\"tick\":%d,\"w\":%d,\"h\":%d,\"players\":[", tick,
+                     gs->width, gs->height);
+    if (n < 0) {
+        free(buf);
+        return NULL;
+    }
     len += (size_t)n;
     for (int i = 0; i < gs->num_players; ++i) {
         const PlayerState* p = &gs->players[i];
-        if (!p->active) continue;
+        if (!p->active)
+            continue;
         /* head */
         int hx = p->body && p->length > 0 ? p->body[0].x : 0;
         int hy = p->body && p->length > 0 ? p->body[0].y : 0;
         char* escaped = NULL;
-        if (p->name[0]) escaped = escape_json_str(p->name);
-        if (!escaped) escaped = strdup("");
+        if (p->name[0])
+            escaped = escape_json_str(p->name);
+        if (!escaped)
+            escaped = strdup("");
         n = snprintf(buf + len, cap - len, "%s{\"id\":%d,\"name\":\"%s\",\"x\":%d,\"y\":%d,\"len\":%d,\"score\":%d}",
-                     (len > 0 && buf[len-1] != '[') ? "," : "", i, escaped, hx, hy, p->length, p->score);
+                     (len > 0 && buf[len - 1] != '[') ? "," : "", i, escaped, hx, hy, p->length, p->score);
         free(escaped);
-        if (n < 0) { free(buf); return NULL; }
+        if (n < 0) {
+            free(buf);
+            return NULL;
+        }
         len += (size_t)n;
         if (len + 256 > cap) {
             cap *= 2;
             char* nb = realloc(buf, cap);
-            if (!nb) { free(buf); return NULL; }
+            if (!nb) {
+                free(buf);
+                return NULL;
+            }
             buf = nb;
         }
     }
     n = snprintf(buf + len, cap - len, "]\",\"food\":[");
-    if (n < 0) { free(buf); return NULL; }
+    if (n < 0) {
+        free(buf);
+        return NULL;
+    }
     len += (size_t)n;
     for (int i = 0; i < gs->food_count; ++i) {
-        n = snprintf(buf + len, cap - len, "%s{\"x\":%d,\"y\":%d}", (i>0)?",":"", gs->food[i].x, gs->food[i].y);
-        if (n < 0) { free(buf); return NULL; }
+        n = snprintf(buf + len, cap - len, "%s{\"x\":%d,\"y\":%d}", (i > 0) ? "," : "", gs->food[i].x, gs->food[i].y);
+        if (n < 0) {
+            free(buf);
+            return NULL;
+        }
         len += (size_t)n;
         if (len + 128 > cap) {
             cap *= 2;
             char* nb = realloc(buf, cap);
-            if (!nb) { free(buf); return NULL; }
+            if (!nb) {
+                free(buf);
+                return NULL;
+            }
             buf = nb;
         }
     }
     n = snprintf(buf + len, cap - len, "]}\n");
-    if (n < 0) { free(buf); return NULL; }
+    if (n < 0) {
+        free(buf);
+        return NULL;
+    }
     len += (size_t)n;
     /* shrink to fit */
     char* out = realloc(buf, len + 1);
@@ -193,11 +249,13 @@ struct SnakeGame {
     Game* game;
     bool has_3d;
     bool headless;
+    bool autoplay;
 };
 
 /* Headless mode: print minimal game state to stdout */
 static void headless_print_state(const GameState* gs, int tick) {
-    if (!gs) return;
+    if (!gs)
+        return;
     printf("TICK=%05d", tick);
     for (int i = 0; i < gs->num_players && i < SNAKE_MAX_PLAYERS; ++i) {
         const PlayerState* p = &gs->players[i];
@@ -235,7 +293,8 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     game_config_set_num_players(s->cfg, game_config_get_num_players(config_in));
     /* Copy multiplayer settings */
     game_config_set_mp_enabled(s->cfg, game_config_get_mp_enabled(config_in));
-    game_config_set_mp_server(s->cfg, game_config_get_mp_server_host(config_in), game_config_get_mp_server_port(config_in));
+    game_config_set_mp_server(s->cfg, game_config_get_mp_server_host(config_in),
+                              game_config_get_mp_server_port(config_in));
     game_config_set_mp_identifier(s->cfg, game_config_get_mp_identifier(config_in));
     game_config_set_mp_session(s->cfg, game_config_get_mp_session(config_in));
     int sw = 0, sh = 0;
@@ -256,6 +315,12 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
         }
         s->game = game;
         s->has_3d = false;
+        /* Autoplay: default to ON in headless mode. Config can override:
+         * -1 = unset -> default ON in headless
+         *  0 = explicitly disabled -> OFF
+         *  1 = explicitly enabled -> ON */
+        int ap_cfg = game_config_get_autoplay(config_in);
+        s->autoplay = (ap_cfg < 0) ? true : (ap_cfg > 0);
         if (err_out)
             *err_out = 0;
         return s;
@@ -341,6 +406,8 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     render_draw(game_get_state(game), game_config_get_player_name(s->cfg), NULL, 0);
     s->game = game;
     s->has_3d = has_3d;
+    /* In normal mode, autoplay is OFF unless explicitly enabled in config (value > 0) */
+    s->autoplay = (game_config_get_autoplay(config_in) > 0);
     if (err_out)
         *err_out = 0;
     return s;
@@ -374,14 +441,16 @@ int snake_game_run(SnakeGame* s) {
         const char* host = game_config_get_mp_server_host(cfg);
         int port = game_config_get_mp_server_port(cfg);
         const char* ident = game_config_get_mp_identifier(cfg);
-        if (!ident) ident = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
+        if (!ident)
+            ident = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
         mpc = mpclient_create(host ? host : "127.0.0.1", (uint16_t)(port ? port : 9001), ident);
         if (mpc) {
             if (mpclient_connect_and_start(mpc) == 0) {
                 const char* forced = game_config_get_mp_session(cfg);
                 if (forced && forced[0]) {
                     (void)mpclient_join(mpc, forced, game_config_get_player_name(cfg));
-                    if (!s->headless) render_set_session_id(forced);
+                    if (!s->headless)
+                        render_set_session_id(forced);
                 } else {
                     mpclient_auto_join_or_host(mpc, game_config_get_player_name(cfg));
                 }
@@ -392,8 +461,18 @@ int snake_game_run(SnakeGame* s) {
     /* HEADLESS MODE: simplified game loop with no graphics/input */
     if (s->headless) {
         int tick = 0;
-        fprintf(stderr, "HEADLESS: game loop starting (tick_rate=%dms)\n", game_config_get_tick_rate_ms(cfg));
+        fprintf(stderr, "HEADLESS: game loop starting (tick_rate=%dms, autoplay=%s)\n",
+                game_config_get_tick_rate_ms(cfg), s->autoplay ? "ON" : "OFF");
         while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
+            /* Autoplay: turn right every 3rd tick to circle and avoid walls */
+            if (s->autoplay && (tick % 3) == 0) {
+                int np = game_get_num_players(game);
+                for (int i = 0; i < np; ++i) {
+                    InputState auto_in = {0};
+                    auto_in.turn_right = 1;
+                    (void)game_enqueue_input(game, i, &auto_in);
+                }
+            }
             GameEvents events = {0};
             game_step(game, &events);
             headless_print_state(game_get_state(game), tick);
@@ -420,7 +499,8 @@ int snake_game_run(SnakeGame* s) {
             const GameState* gs = game_get_state(game);
             int active = 0;
             for (int i = 0; i < gs->num_players; ++i)
-                if (gs->players[i].active) active++;
+                if (gs->players[i].active)
+                    active++;
             if (active == 0) {
                 fprintf(stderr, "HEADLESS: all players dead, restarting\n");
                 game_reset(game);
@@ -429,8 +509,14 @@ int snake_game_run(SnakeGame* s) {
             platform_sleep_ms((uint32_t)game_config_get_tick_rate_ms(cfg));
             tick++;
         }
-        if (mpc) { mpclient_stop(mpc); mpclient_destroy(mpc); }
-        if (game) { game_destroy(game); s->game = NULL; }
+        if (mpc) {
+            mpclient_stop(mpc);
+            mpclient_destroy(mpc);
+        }
+        if (game) {
+            game_destroy(game);
+            s->game = NULL;
+        }
         return 0;
     }
 
@@ -483,6 +569,14 @@ int snake_game_run(SnakeGame* s) {
             goto clean_done;
         for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i)
             (void)game_enqueue_input(game, i, &inputs[i]);
+        /* Autoplay: turn right every 3rd tick to circle and avoid walls */
+        if (s->autoplay && (tick % 3) == 0) {
+            for (int i = 0; i < num_players && i < SNAKE_MAX_PLAYERS; ++i) {
+                InputState auto_in = {0};
+                auto_in.turn_right = 1;
+                (void)game_enqueue_input(game, i, &auto_in);
+            }
+        }
         GameEvents events = {0};
         game_step(game, &events);
         if (has_3d)
@@ -660,7 +754,7 @@ int snake_game_run(SnakeGame* s) {
             if (has_3d)
                 render_3d_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count,
                                delta_s);
-            
+
             /* Draw remote multiplayer players over the local board */
             if (g_remote_player_count > 0) {
                 int remote_x[MAX_REMOTE_PLAYERS];
@@ -671,7 +765,8 @@ int snake_game_run(SnakeGame* s) {
                     remote_y[ri] = g_remote_players[ri].y;
                     snprintf(remote_names[ri], sizeof(remote_names[ri]), "%s", g_remote_players[ri].name);
                 }
-                render_draw_remote_players(game_get_state(game), remote_x, remote_y, remote_names, g_remote_player_count);
+                render_draw_remote_players(game_get_state(game), remote_x, remote_y, remote_names,
+                                           g_remote_player_count);
             }
 
             /* Poll incoming multiplayer messages and show them on HUD */
@@ -690,8 +785,8 @@ int snake_game_run(SnakeGame* s) {
                 /* Update displayed session id when it becomes available or changes */
                 char cur_sess[16] = {0};
                 if (mpclient_get_session(mpc, cur_sess, (int)sizeof(cur_sess)) && strcmp(prev_session, cur_sess) != 0) {
-                    strncpy(prev_session, cur_sess, sizeof(prev_session)-1);
-                    prev_session[sizeof(prev_session)-1] = '\0';
+                    strncpy(prev_session, cur_sess, sizeof(prev_session) - 1);
+                    prev_session[sizeof(prev_session) - 1] = '\0';
                     render_set_session_id(prev_session);
                 }
 

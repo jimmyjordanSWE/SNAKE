@@ -2,21 +2,21 @@
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
 src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 405f 406f 407f 409f 413f
 src/core/player.c: 12c 22f
-src/net/mpapi_client.c: 79f 100f 139m 157m 174f 181f 188f 194f 236c 368f 369f
+src/net/mpapi_client.c: 85f 107f 154m 177m 196f 203f 210f 216f 261c 417f 418f
 src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 254m 259f 265f
-src/persist/persist.c: 39c 50f 112c 187f 487c 545f 604r 639f 1061m 1062m 1076f 1077f
+src/persist/persist.c: 39c 50f 115c 193f 506c 564f 623r 658f 1089m 1090m 1104f 1105f
 src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 460c 461c 462m 464f 465f 466f 482f 483f 484f
 src/render/camera.c: 55c 64f 66f 231r
 src/render/display_3d.c: 11c 21f 50c 102f
 src/render/display_tty.c: 12m 17f 22f 32f
 src/render/projection.c: 12c 19f
 src/render/raycast.c: 12c 21f
-src/render/render_3d.c: 475c 525r 526r 593c 599c 644f 762f 764f 939f 943f 947f
-src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 333m 338f
-src/render/sprite.c: 35c 497f 505c 515f
+src/render/render_3d.c: 496c 552r 553r 614r 627r 962f 966f 970f 976f 981f
+src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 339m 344f
+src/render/sprite.c: 35c 493f 501c 511f
 src/render/texture.c: 26c 41m 59f 258f 276m 300f
-src/snakegame.c: 120m 141m 146f 159f 160f 164r 165f 170f 174f 178r 179f 184f 187r 217m 222f 358f 414f 705f 774f
-src/tools/render_bench.c: 43m 86f
+src/snakegame.c: 135m 172m 179f 197f 199f 205r 207f 215f 222f 228r 230f 238f 243r 275m 280f 425f 493f 800f 869f
+src/tools/render_bench.c: 36m 37m 38m 99f 100f 101f
 src/tools/sprite_bench.c: 45c 61f
 tests/unity/test_collision.c: 21c 24c 34f 35f
 tests/unity/test_net_integration.c: 36c 44f
@@ -28,4 +28,4 @@ tests/unity/test_render_minimap.c: 16c 21c 48f 49f
 tests/unity/test_texture_path.c: 14m 20f
 tests/unity/test_texture_path_extra.c: 21m 27f
 tests/unity/test_tty_path.c: 8m 14f
-# Mem: 69a, 106f (29 files)
+# Mem: 71a, 107f (29 files)

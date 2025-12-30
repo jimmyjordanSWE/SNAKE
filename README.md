@@ -43,10 +43,31 @@ make valgrind
 ## Running
 
 ```bash
-./snakegame
+./snakegame.out
 ```
 
-## Network logging 🔧
+## Headless Mode
+Run the game without graphics for automated testing or CI pipelines. Game state is printed to stdout each tick.
+
+```bash
+# Create a headless config
+echo "headless = true" > headless.cfg
+./snakegame.out headless.cfg
+```
+
+**Autoplay**: In headless mode, snakes automatically turn right every 3rd tick (going in circles) to avoid wall collisions. This is enabled by default for headless mode but can be disabled:
+
+```bash
+# Headless with autoplay disabled (snakes will crash into walls)
+echo -e "headless = true\nautoplay = false" > headless_noauto.cfg
+./snakegame.out headless_noauto.cfg
+
+# Normal mode with autoplay enabled (for visual testing)
+echo "autoplay = true" > autoplay.cfg
+./snakegame.out autoplay.cfg
+```
+
+## Network logging
 
 Enable capture of all network send/recv bytes in a log file. By default the log is written to `./net_io.log` in the current working directory. Set `SNAKE_NET_LOG` to change the path. Payloads are hex-dumped (up to 256 bytes) and truncated if larger.
 
@@ -134,14 +155,6 @@ To start the vendored server:
 make mpapi-start
 ```
 
-
-Note about VS Code / WSL2 terminals
-- On Windows (WSL2) the integrated terminal or task runner may hang or return a non-zero exit code even when `make` prints successful output. If you see `The terminal process "/bin/bash '-c', 'make'" terminated with exit code: 2` but the build output shows `ALL BUILDS OK`, use one of the following:
-  - Run `make quick` in the integrated terminal (new target that skips long analysis steps).
-  - Run `make` directly in an external terminal (outside VS Code) or a separate WSL terminal.
-  - If a task seems stuck, kill and restart the terminal (or use an external terminal) — some VS Code/WSL versions have known issues with long-running tasks.
-
-
 Edit `snake_cfg.txt` to customize:
 
 | Setting | Description | Default |
@@ -157,6 +170,8 @@ Edit `snake_cfg.txt` to customize:
 | `wall_texture`, `floor_texture` | Image paths | assets/*.png |
 | `wall_height_scale`, `tail_height_scale` | 3D scaling | 1.5, 0.5 |
 | `p{N}_left/p{N}_right/quit/restart/pause` | Key bindings | p1 uses Arrow keys by default; p1_left..p4_right override, ESC, r, p |
+| `headless` | Run without graphics (print state to stdout) | false |
+| `autoplay` | Snake turns right every 3rd tick (testing). ON by default in headless, OFF in normal mode | auto |
 
 ## Controls
 

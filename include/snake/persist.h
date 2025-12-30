@@ -147,6 +147,10 @@ const char* game_config_get_mp_session(const GameConfig* cfg);
 void game_config_set_headless(GameConfig* cfg, int v);
 int game_config_get_headless(const GameConfig* cfg);
 
+/* Autoplay mode: snake turns right every 3rd tick (for testing). Default on in headless. */
+void game_config_set_autoplay(GameConfig* cfg, int v);
+int game_config_get_autoplay(const GameConfig* cfg);
+
 bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);
 bool persist_config_has_unknown_keys(const char* filename);

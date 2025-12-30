@@ -201,9 +201,10 @@ static inline uint32_t blend_px(uint32_t dst, uint32_t src) {
     uint8_t sr = (uint8_t)((src >> 16) & 0xFFu), sg = (uint8_t)((src >> 8) & 0xFFu), sb = (uint8_t)(src & 0xFFu);
     uint8_t dr = (uint8_t)((dst >> 16) & 0xFFu), dg = (uint8_t)((dst >> 8) & 0xFFu), db = (uint8_t)(dst & 0xFFu);
     int inv = 255 - sa;
-    uint8_t rr = (uint8_t)((sr * sa + dr * inv) / 255);
-    uint8_t rg = (uint8_t)((sg * sa + dg * inv) / 255);
-    uint8_t rb = (uint8_t)((sb * sa + db * inv) / 255);
+    /* Fast approximation: (x + 128) >> 8 ≈ x / 255 */
+    uint8_t rr = (uint8_t)(((sr * sa + dr * inv) + 128) >> 8);
+    uint8_t rg = (uint8_t)(((sg * sa + dg * inv) + 128) >> 8);
+    uint8_t rb = (uint8_t)(((sb * sa + db * inv) + 128) >> 8);
     return (0xFFu << 24) | ((uint32_t)rr << 16) | ((uint32_t)rg << 8) | (uint32_t)rb;
 }
 
@@ -313,12 +314,17 @@ bool render_3d_sdl_present(SDL3DContext* ctx) {
     int tex_pitch = 0;
     if (SDL_LockTexture(ctx->texture, NULL, &tex_pixels, &tex_pitch) == 0) {
         if (ctx->texture_format == SDL_PIXELFORMAT_ARGB8888) {
-            uint8_t* dst = (uint8_t*)tex_pixels;
-            uint8_t* src = (uint8_t*)ctx->pixels;
             size_t row_bytes = (size_t)ctx->width * sizeof(uint32_t);
-            for (int y = 0; y < ctx->height; ++y) {
-                memcpy(dst, src + (size_t)y * row_bytes, row_bytes);
-                dst += tex_pitch;
+            /* Fast path: single memcpy when pitch matches */
+            if (tex_pitch == (int)row_bytes) {
+                memcpy(tex_pixels, ctx->pixels, row_bytes * (size_t)ctx->height);
+            } else {
+                uint8_t* dst = (uint8_t*)tex_pixels;
+                uint8_t* src = (uint8_t*)ctx->pixels;
+                for (int y = 0; y < ctx->height; ++y) {
+                    memcpy(dst, src + (size_t)y * row_bytes, row_bytes);
+                    dst += tex_pitch;
+                }
             }
         } else {
             SDL_ConvertPixels(ctx->width, ctx->height, SDL_PIXELFORMAT_ARGB8888, ctx->pixels,

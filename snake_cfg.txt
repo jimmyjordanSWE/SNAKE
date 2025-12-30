@@ -1,7 +1,7 @@
 # Snake Game Configuration
 board_width=18
 board_height=18
-tick_rate_ms=2500
+tick_rate_ms=250
 render_glyphs=utf8
 screen_width=1280
 screen_height=720
@@ -49,3 +49,11 @@ mp_server_port=9001
 mp_identifier=67bdb04f-6e7c-4d76-81a3-191f7d78dd45
 # Optional: force join a session on startup (e.g. ABC123). Leave empty to auto-host/join.
 mp_session=ABC111
+
+# Headless mode: run without graphics/input, print game state to stdout
+# headless=true
+
+# Autoplay: snake turns right every 3rd tick (testing mode).
+# In headless mode, autoplay defaults to ON unless explicitly disabled.
+# In normal mode, autoplay defaults to OFF unless explicitly enabled.
+# autoplay=true

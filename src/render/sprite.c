@@ -416,35 +416,31 @@ void sprite_draw(SpriteRenderer3D* sr, SDL3DContext* ctx, const float* column_de
                         if (dx * dx + dy2 <= r2) {
                             if (s->perp_distance < column_depths[xx]) {
                                 if (s->shaded) {
-                                    /* Faux sphere lighting */
+                                    /* Faux sphere lighting with fast approximations */
                                     float nx = (float)dx / (float)radius;
                                     float ny = (float)dy / (float)radius;
                                     float n2 = nx * nx + ny * ny;
                                     if (n2 > 1.0f)
                                         continue;
-                                    float nz = sqrtf(1.0f - n2);
-                                    /* Light: top-left-ish */
-                                    const float lx = -0.5f, ly = -0.5f, lz = 1.0f;
-                                    float lnorm = sqrtf(lx * lx + ly * ly + lz * lz);
-                                    float lnx = lx / lnorm, lny = ly / lnorm, lnz = lz / lnorm;
+                                    /* Use fast_inv_sqrt: nz = sqrt(1-n2) = 1/rsqrt(1-n2) */
+                                    float nz = (1.0f - n2) * fast_inv_sqrt(1.0f - n2);
+                                    /* Pre-computed lighting constants (light normalized) */
+                                    static const float lnx = -0.40825f, lny = -0.40825f, lnz = 0.81650f;
+                                    static const float hnx = -0.26726f, hny = -0.26726f, hnz = 0.92582f;
                                     float diffuse = nx * lnx + ny * lny + nz * lnz;
                                     if (diffuse < 0.0f)
                                         diffuse = 0.0f;
                                     const float ambient = 0.25f;
                                     const float spec_strength = 0.5f;
-                                    const float shininess = 24.0f;
-                                    /* Half-vector H since view=(0,0,1) */
-                                    float hx = lnx;
-                                    float hy = lny;
-                                    float hz = lnz + 1.0f;
-                                    float hnorm = sqrtf(hx * hx + hy * hy + hz * hz);
-                                    hx /= hnorm;
-                                    hy /= hnorm;
-                                    hz /= hnorm;
-                                    float spec = nx * hx + ny * hy + nz * hz;
+                                    /* Half-vector H pre-normalized; spec = (N·H)^24 */
+                                    float spec = nx * hnx + ny * hny + nz * hnz;
                                     if (spec < 0.0f)
                                         spec = 0.0f;
-                                    spec = powf(spec, shininess) * spec_strength;
+                                    /* Fast pow approximation: x^24 = (x^4)^6 = ((x^2)^2)^6 */
+                                    float sp2 = spec * spec;
+                                    float sp4 = sp2 * sp2;
+                                    float sp8 = sp4 * sp4;
+                                    spec = sp8 * sp8 * sp8 * spec_strength;
                                     float intensity = ambient + (1.0f - ambient) * diffuse + spec;
                                     if (intensity > 1.0f)
                                         intensity = 1.0f;

@@ -98,6 +98,12 @@ endif
 
 all: $(MAYBE_ANALYZE) debug
 
+# Quick build target suitable for use in IDE tasks (skips the potentially long analysis step).
+# Use `make quick` from an IDE integrated terminal to avoid background hangups caused by long-running analysis.
+.PHONY: quick
+quick:
+	@$(MAKE) CONFIG=debug-asan build
+
 build: $(MAYBE_ANALYZE) $(BIN)
 
 debug: $(MAYBE_ANALYZE)
@@ -206,6 +212,13 @@ llvm-context:
 	@./scripts/analyze_all.sh
 	@./.venv/bin/python3 ./scripts/structure.py > PROJECT_CONTEXT.txt
 	@echo "Context updated."
+
+.PHONY: vendor-mpapi mpapi-start
+vendor-mpapi:
+	@./scripts/vendor_mpapi.sh
+
+mpapi-start:
+	@./scripts/run_mpapi_server.sh
 
 -include $(DEP)
 

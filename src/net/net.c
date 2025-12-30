@@ -217,6 +217,8 @@ void net_disconnect(NetClient* client) {
     close(client->fd);
     free(client);
 }
+#include "net_log.h"
+
 bool net_send_input(NetClient* client, const InputState* input) {
     if (!client || !input)
         return false;
@@ -228,9 +230,13 @@ bool net_send_input(NetClient* client, const InputState* input) {
     ssize_t r = send(client->fd, &nsz, sizeof(nsz), 0);
     if (r != sizeof(nsz))
         return false;
+    /* log header */
+    net_log_send(client->fd, &nsz, sizeof(nsz), "net_send_input: header");
     r = send(client->fd, buf, sz, 0);
     if (r != (ssize_t)sz)
         return false;
+    /* log payload */
+    net_log_send(client->fd, buf, sz, "net_send_input: payload");
     return true;
 }
 bool net_recv_state(NetClient* client, GameState* out_game) {
@@ -240,6 +246,8 @@ bool net_recv_state(NetClient* client, GameState* out_game) {
     ssize_t r = recv(client->fd, &nsz, sizeof(nsz), MSG_WAITALL);
     if (r != sizeof(nsz))
         return false;
+    /* log header */
+    net_log_recv(client->fd, &nsz, sizeof(nsz), "net_recv_state: header");
     nsz = ntohl(nsz);
     if (nsz == 0 || nsz > 1000000)
         return false;
@@ -251,6 +259,8 @@ bool net_recv_state(NetClient* client, GameState* out_game) {
         free(buf);
         return false;
     }
+    /* log payload */
+    net_log_recv(client->fd, buf, nsz, "net_recv_state: payload");
     bool ok = net_unpack_game_state(buf, (size_t)nsz, out_game);
     free(buf);
     return ok;

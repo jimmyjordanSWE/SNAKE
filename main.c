@@ -14,6 +14,10 @@ int main(void) {
     } else {
         console_info("No config file '%s' found or failed to parse; using defaults\n", CONFIG_FILENAME);
     }
+    /* Initialize network logging early so the file is created by default */
+    extern void net_log_init(void);
+    net_log_init();
+
     int init_err = 0;
     SnakeGame* game = snake_game_new(config, &init_err);
     if (config)

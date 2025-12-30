@@ -9,11 +9,97 @@
 #include "render_3d.h"
 #include "tty.h"
 #include "types.h"
+#include "mpapi_client.h"
+#include "net_log.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* JSON helpers for lightweight serialization of GameState */
+static char* escape_json_str(const char* s) {
+    if (!s) return strdup("");
+    size_t need = 1;
+    for (const unsigned char* p = (const unsigned char*)s; *p; ++p) {
+        if (*p == '"' || *p == '\\' || *p == '\n' || *p == '\r' || *p == '\t')
+            need += 2; /* escape */
+        else if (*p < 0x20)
+            need += 6; /* \u00xx */
+        else
+            need += 1;
+    }
+    char* out = malloc(need);
+    if (!out) return NULL;
+    char* q = out;
+    for (const unsigned char* p = (const unsigned char*)s; *p; ++p) {
+        unsigned char c = *p;
+        if (c == '"') { *q++ = '\\'; *q++ = '"'; }
+        else if (c == '\\') { *q++ = '\\'; *q++ = '\\'; }
+        else if (c == '\n') { *q++ = '\\'; *q++ = 'n'; }
+        else if (c == '\r') { *q++ = '\\'; *q++ = 'r'; }
+        else if (c == '\t') { *q++ = '\\'; *q++ = 't'; }
+        else if (c < 0x20) { int n = snprintf(q, 7, "\\u%04x", c); q += n; }
+        else { *q++ = (char)c; }
+    }
+    *q = '\0';
+    return out;
+}
+
+static char* game_state_to_json(const GameState* gs, int tick) {
+    if (!gs) return strdup("{}");
+    /* build JSON in a dynamic buffer */
+    size_t cap = 1024;
+    char* buf = malloc(cap);
+    if (!buf) return NULL;
+    size_t len = 0;
+    int n = snprintf(buf + len, cap - len, "{\"type\":\"state\",\"tick\":%d,\"w\":%d,\"h\":%d,\"players\":[",
+                     tick, gs->width, gs->height);
+    if (n < 0) { free(buf); return NULL; }
+    len += (size_t)n;
+    for (int i = 0; i < gs->num_players; ++i) {
+        const PlayerState* p = &gs->players[i];
+        if (!p->active) continue;
+        /* head */
+        int hx = p->body && p->length > 0 ? p->body[0].x : 0;
+        int hy = p->body && p->length > 0 ? p->body[0].y : 0;
+        char* escaped = NULL;
+        if (p->name[0]) escaped = escape_json_str(p->name);
+        if (!escaped) escaped = strdup("");
+        n = snprintf(buf + len, cap - len, "%s{\"id\":%d,\"name\":\"%s\",\"x\":%d,\"y\":%d,\"len\":%d,\"score\":%d}",
+                     (len > 0 && buf[len-1] != '[') ? "," : "", i, escaped, hx, hy, p->length, p->score);
+        free(escaped);
+        if (n < 0) { free(buf); return NULL; }
+        len += (size_t)n;
+        if (len + 256 > cap) {
+            cap *= 2;
+            char* nb = realloc(buf, cap);
+            if (!nb) { free(buf); return NULL; }
+            buf = nb;
+        }
+    }
+    n = snprintf(buf + len, cap - len, "]\",\"food\":[");
+    if (n < 0) { free(buf); return NULL; }
+    len += (size_t)n;
+    for (int i = 0; i < gs->food_count; ++i) {
+        n = snprintf(buf + len, cap - len, "%s{\"x\":%d,\"y\":%d}", (i>0)?",":"", gs->food[i].x, gs->food[i].y);
+        if (n < 0) { free(buf); return NULL; }
+        len += (size_t)n;
+        if (len + 128 > cap) {
+            cap *= 2;
+            char* nb = realloc(buf, cap);
+            if (!nb) { free(buf); return NULL; }
+            buf = nb;
+        }
+    }
+    n = snprintf(buf + len, cap - len, "]}\n");
+    if (n < 0) { free(buf); return NULL; }
+    len += (size_t)n;
+    /* shrink to fit */
+    char* out = realloc(buf, len + 1);
+    return out ? out : buf;
+}
+
 struct SnakeGame {
     GameConfig* cfg;
     Game* game;
@@ -155,6 +241,29 @@ int snake_game_run(SnakeGame* s) {
     GameConfig* cfg = s->cfg;
     int bw = 0, bh = 0;
     game_config_get_board_size(cfg, &bw, &bh);
+
+    /* Multiplayer client (optional) */
+    mpclient* mpc = NULL;
+    if (game_config_get_mp_enabled(cfg)) {
+        const char* host = game_config_get_mp_server_host(cfg);
+        int port = game_config_get_mp_server_port(cfg);
+        const char* ident = game_config_get_mp_identifier(cfg);
+        if (!ident) ident = "67bdb04f-6e7c-4d76-81a3-191f7d78dd45";
+        mpc = mpclient_create(host ? host : "127.0.0.1", (uint16_t)(port ? port : 9001), ident);
+        if (mpc) {
+            if (mpclient_connect_and_start(mpc) == 0) {
+                const char* forced = game_config_get_mp_session(cfg);
+                if (forced && forced[0]) {
+                    /* attempt to join the configured session */
+                    (void)mpclient_join(mpc, forced, game_config_get_player_name(cfg));
+                    /* show session id immediately */
+                    render_set_session_id(forced);
+                } else {
+                    mpclient_auto_join_or_host(mpc, game_config_get_player_name(cfg));
+                }
+            }
+        }
+    }
     const int board_width = bw;
     const int board_height = bh;
     bool has_3d = s->has_3d;
@@ -162,6 +271,10 @@ int snake_game_run(SnakeGame* s) {
     HighScore** highscores = NULL;
     int highscore_count = persist_read_scores(".snake_scores", &highscores);
     render_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count);
+
+    /* Track session id and reflect in HUD when it appears/changes */
+    char prev_session[16] = {0};
+
     while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
         if (platform_was_resized()) {
             int new_w = 0, new_h = 0;
@@ -376,6 +489,34 @@ int snake_game_run(SnakeGame* s) {
             if (has_3d)
                 render_3d_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count,
                                delta_s);
+
+            /* Poll incoming multiplayer messages and show them on HUD */
+            if (mpc) {
+                char mpbuf[256];
+                while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
+                    render_push_mp_message(mpbuf);
+                }
+
+                /* Update displayed session id when it becomes available or changes */
+                char cur_sess[16] = {0};
+                if (mpclient_get_session(mpc, cur_sess, (int)sizeof(cur_sess)) && strcmp(prev_session, cur_sess) != 0) {
+                    strncpy(prev_session, cur_sess, sizeof(prev_session)-1);
+                    prev_session[sizeof(prev_session)-1] = '\0';
+                    render_set_session_id(prev_session);
+                }
+
+                /* Send current game state as a 'game' message (JSON object) */
+                if (mpc && mpclient_has_session(mpc)) {
+                    const GameState* gs = game_get_state(game);
+                    char* state_json = game_state_to_json(gs, tick);
+                    if (state_json) {
+                        net_log_info("sending game state: tick=%d len=%zu", tick, strlen(state_json));
+                        (void)mpclient_send_game(mpc, state_json);
+                        free(state_json);
+                    }
+                }
+            }
+
             platform_sleep_ms(1);
         }
         tick++;
@@ -414,6 +555,14 @@ clean_done:
         game_destroy(game);
         s->game = NULL;
     }
+
+    /* Cleanup multiplayer client if active */
+    if (mpc) {
+        mpclient_stop(mpc);
+        mpclient_destroy(mpc);
+        mpc = NULL;
+    }
+
     input_shutdown();
     render_shutdown();
     if (has_3d)

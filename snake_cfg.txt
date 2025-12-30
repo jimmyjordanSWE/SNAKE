@@ -41,3 +41,11 @@ p4_right=p
 key_quit=ESC
 key_restart=r
 key_pause=p
+
+# Multiplayer (mpapi)
+mp_enabled=true
+mp_server_host=127.0.0.1
+mp_server_port=9001
+mp_identifier=67bdb04f-6e7c-4d76-81a3-191f7d78dd45
+# Optional: force join a session on startup (e.g. ABC123). Leave empty to auto-host/join.
+mp_session=ABC111

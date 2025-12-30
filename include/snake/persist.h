@@ -125,6 +125,24 @@ void game_config_set_enable_external_3d_view(GameConfig* cfg, int v);
 int game_config_get_enable_external_3d_view(const GameConfig* cfg);
 void game_config_set_active_player(GameConfig* cfg, int v);
 int game_config_get_active_player(const GameConfig* cfg);
+
+/* Multiplayer configuration */
+#define PERSIST_MP_IDENTIFIER_MAX 37
+#define PERSIST_MP_HOST_MAX 128
+#define PERSIST_MP_SESSION_MAX 16
+
+void game_config_set_mp_enabled(GameConfig* cfg, int v);
+int game_config_get_mp_enabled(const GameConfig* cfg);
+void game_config_set_mp_server(GameConfig* cfg, const char* host, int port);
+const char* game_config_get_mp_server_host(const GameConfig* cfg);
+int game_config_get_mp_server_port(const GameConfig* cfg);
+void game_config_set_mp_identifier(GameConfig* cfg, const char* id);
+const char* game_config_get_mp_identifier(const GameConfig* cfg);
+
+/* Optional: force-join a specific session (e.g. set in config) */
+void game_config_set_mp_session(GameConfig* cfg, const char* session);
+const char* game_config_get_mp_session(const GameConfig* cfg);
+
 bool persist_load_config(const char* filename, GameConfig** out_config);
 bool persist_write_config(const char* filename, const GameConfig* config);
 bool persist_config_has_unknown_keys(const char* filename);

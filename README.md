@@ -46,7 +46,52 @@ make valgrind
 ./snakegame
 ```
 
+## Network logging 🔧
+
+Enable capture of all network send/recv bytes in a log file. By default the log is written to `./net_io.log` in the current working directory. Set `SNAKE_NET_LOG` to change the path. Payloads are hex-dumped (up to 256 bytes) and truncated if larger.
+
+Examples:
+
+```bash
+# write to ./net_io.log (default)
+./snakegame
+
+# write to a custom path
+SNAKE_NET_LOG=/tmp/snake_net.log ./snakegame
+```
+
+
 ## Configuration
+
+Edit `snake_cfg.txt` to customize:
+
+Multiplayer (mpapi):
+- `mp_enabled` = true|false
+- `mp_server_host` = host (default mpapi.se)
+- `mp_server_port` = tcp port (default 9001)
+- `mp_identifier` = application identifier (must match server identifier)
+- `mp_session` = optional session code to force-join (e.g. ABC123). Leave empty to auto-host/join.
+
+To run a local test server (requires node):
+
+    scripts/run_mpapi_server.sh [HTTP_PORT] [TCP_PORT]
+
+To vendor a local copy of the mpapi server (so you don't need network access), run:
+
+    make vendor-mpapi
+
+To start the vendored server:
+
+    make mpapi-start
+
+Then set `mp_enabled=true` in `snake_cfg.txt` and run two instances of the game to test client-to-client messages.
+
+Note about VS Code / WSL2 terminals
+- On Windows (WSL2) the integrated terminal or task runner may hang or return a non-zero exit code even when `make` prints successful output. If you see `The terminal process "/bin/bash '-c', 'make'" terminated with exit code: 2` but the build output shows `ALL BUILDS OK`, use one of the following:
+  - Run `make quick` in the integrated terminal (new target that skips long analysis steps).
+  - Run `make` directly in an external terminal (outside VS Code) or a separate WSL terminal.
+  - If a task seems stuck, kill and restart the terminal (or use an external terminal) — some VS Code/WSL versions have known issues with long-running tasks.
+
 
 Edit `snake_cfg.txt` to customize:
 

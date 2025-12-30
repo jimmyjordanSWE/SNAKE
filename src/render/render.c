@@ -24,6 +24,13 @@ static DisplayScore last_scores[PERSIST_MAX_SCORES];
 #define SESSION_MAX_SCORES 32
 static DisplayScore g_session_scores[SESSION_MAX_SCORES];
 static int g_session_score_count = 0;
+
+/* Multiplayer HUD messages */
+static char g_mp_messages[SESSION_MAX_SCORES][81];
+static int g_mp_msg_count = 0;
+
+/* Current session id to display in HUD */
+static char g_session_id[16] = {0};
 void render_set_glyphs(RenderGlyphs glyphs) {
     if (glyphs != RENDER_GLYPHS_ASCII)
         glyphs = RENDER_GLYPHS_UTF8;
@@ -395,7 +402,43 @@ void render_draw(const GameState* game, const char* player_name, HighScore** sco
     }
     if (display_height > field_y + field_height + 1)
         draw_string(1, field_y + field_height + 1, "Q: Quit", DISPLAY_COLOR_WHITE);
+
+    /* Draw last multiplayer messages, if any */
+    int mp_y = field_y + field_height + 2;
+    for (int i = 0; i < g_mp_msg_count && (mp_y + i) < display_height; ++i) {
+        draw_string(1, mp_y + i, g_mp_messages[i], DISPLAY_COLOR_CYAN);
+    }
+
+    /* Draw session id at the bottom-left if present */
+    if (g_session_id[0] && display_height > 0) {
+        int y = display_height - 1;
+        char label[64];
+        snprintf(label, sizeof(label), "Session: %s", g_session_id);
+        draw_string(1, y, label, DISPLAY_COLOR_CYAN);
+    }
+
     display_present(g_display);
+}
+
+void render_push_mp_message(const char* msg) {
+    if (!msg) return;
+    /* shift older down safely (memmove handles overlap) */
+    for (int i = (SESSION_MAX_SCORES - 1); i > 0; --i) {
+        memmove(g_mp_messages[i], g_mp_messages[i-1], sizeof(g_mp_messages[0]));
+        g_mp_messages[i][sizeof(g_mp_messages[0]) - 1] = '\0';
+    }
+    snprintf(g_mp_messages[0], sizeof(g_mp_messages[0]), "%.*s", (int)sizeof(g_mp_messages[0]) - 1, msg);
+    if (g_mp_msg_count < SESSION_MAX_SCORES) g_mp_msg_count++;
+    invalidate_front_buffer(g_display);
+}
+
+void render_set_session_id(const char* session) {
+    if (!session || !session[0]) {
+        g_session_id[0] = '\0';
+    } else {
+        snprintf(g_session_id, sizeof(g_session_id), "%s", session);
+    }
+    invalidate_front_buffer(g_display);
 }
 void render_draw_startup_screen(char* player_name_out, int max_len) {
     if (!g_display || !player_name_out || max_len <= 0)

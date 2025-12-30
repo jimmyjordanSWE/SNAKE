@@ -89,6 +89,30 @@ TEST(test_persist_config) {
     TEST_ASSERT_TRUE(cfg != NULL);
     game_config_destroy(cfg);
     (void)ok;
+
+    /* Check multiplayer settings parsing */
+    char tmpname[] = "/tmp/snake_mp_cfg.XXXXXX";
+    int fd = mkstemp(tmpname);
+    if (fd >= 0) {
+        FILE* f = fdopen(fd, "w");
+        if (f) {
+            fputs("mp_enabled=true\nmp_server_host=mpapi.se\nmp_server_port=9001\nmp_identifier=abcdefg-12345-67890-12345-abcdef123456\nmp_session=ABC123\n", f);
+            fclose(f);
+            GameConfig* cfg2 = NULL;
+            int ok2 = persist_load_config(tmpname, &cfg2);
+            TEST_ASSERT_TRUE(ok2 == 1);
+            TEST_ASSERT_TRUE(game_config_get_mp_enabled(cfg2) == 1);
+            TEST_ASSERT_EQUAL_STRING("mpapi.se", game_config_get_mp_server_host(cfg2));
+            TEST_ASSERT_EQUAL_INT(9001, game_config_get_mp_server_port(cfg2));
+            TEST_ASSERT_EQUAL_STRING("abcdefg-12345-67890-12345-abcdef123456", game_config_get_mp_identifier(cfg2));
+            TEST_ASSERT_EQUAL_STRING("ABC123", game_config_get_mp_session(cfg2));
+            game_config_destroy(cfg2);
+            unlink(tmpname);
+        } else {
+            close(fd);
+            unlink(tmpname);
+        }
+    }
 }
 
 

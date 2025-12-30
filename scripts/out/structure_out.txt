@@ -96,6 +96,19 @@ include
    t InputState
   math_fast.h
    f fast_inv_sqrt(x)
+  mpapi_client.h
+   f mpclient_
+    auto_join_or_host(*c,*name)
+    connect_and_start(*c)
+    destroy(*c)
+    get_session(*c,*out,maxlen)
+    has_session(*c)
+    join(*c,*sessionId,*name)
+    poll_message(*c,*out,maxlen)
+    send_game(*c,*data_json)
+    stop(*c)
+   s mpclient
+   t mpclient
   net.h
    f net_
     disconnect(*client)
@@ -110,6 +123,14 @@ include
      input(*buf,buf_size,*out)
    s NetClient
    t NetClient
+  net_log.h
+   f net_log_
+    close(_)
+    error(*fmt)
+    info(*fmt)
+    init(_)
+    recv(fd,*buf,len,*note)
+    send(fd,*buf,len,*note)
   persist.h
    f game_config_
     destroy(*cfg)
@@ -127,6 +148,9 @@ include
       food(*cfg)
       length(*cfg)
       players(*cfg)
+     mp_
+      enabled(*cfg)
+      server_port(*cfg)
      num_players(*cfg)
      player_
       color(*cfg,player_idx)
@@ -158,6 +182,11 @@ include
       food(*cfg,v)
       length(*cfg,v)
       players(*cfg,n)
+     mp_
+      enabled(*cfg,v)
+      identifier(*cfg,*id)
+      server(*cfg,*host,port)
+      session(*cfg,*session)
      num_players(*cfg,n)
      player_
       color(*cfg,player_idx,color)
@@ -233,7 +262,10 @@ include
     init(min_width,min_height)
     note_session_score(*name,score)
     prompt_for_highscore_name(*player_name_out,max_len,score)
-    set_glyphs(glyphs)
+    push_mp_message(*msg)
+    set_
+     glyphs(glyphs)
+     session_id(*session)
     shutdown(_)
    t RenderGlyphs
   render_3d.h
@@ -568,6 +600,24 @@ src
    f restore_terminal(_)
    s termios
  net
+  mpapi_client.c
+   f connect_to_server(*host,port)
+   f enqueue_msg(*c,*s)
+   f mpclient_
+    auto_join_or_host(*c,*name)
+    connect_and_start(*c)
+    destroy(*c)
+    get_session(*c,*out,maxlen)
+    has_session(*c)
+    join(*c,*sessionId,*name)
+    poll_message(*c,*out,maxlen)
+    send_game(*c,*data_json)
+    stop(*c)
+   f process_line(*c,*line)
+   f send_
+    all(fd,*buf,len)
+    command(*c,*cmd,*session,*data_json)
+   s mpclient{server_host,server_port,identifier,sockfd,recv_thread,running,lock,*MSG_QUEUE_SIZE,head,tail,session}
   net.c
    f net_
     disconnect(*client)
@@ -581,6 +631,18 @@ src
      game_state(*buf,buf_size,*out)
      input(*buf,buf_size,*out)
    s NetClient{fd}
+  net_log.c
+   f hex_dump_to_file(*f,*data,len)
+   f log_io(*dir,fd,*buf,len,*note)
+   f net_log_
+    close(_)
+    error(*fmt)
+    info(*fmt)
+    init(_)
+    recv(fd,*buf,len,*note)
+    send(fd,*buf,len,*note)
+   f open_log_if_needed(_)
+   f timestr(*buf,buflen)
  persist
   persist.c
    f clamp_int(v,lo,hi)
@@ -601,6 +663,9 @@ src
       food(*cfg)
       length(*cfg)
       players(*cfg)
+     mp_
+      enabled(*cfg)
+      server_port(*cfg)
      num_players(*cfg)
      player_
       color(*cfg,player_idx)
@@ -632,6 +697,11 @@ src
       food(*cfg,v)
       length(*cfg,v)
       players(*cfg,n)
+     mp_
+      enabled(*cfg,v)
+      identifier(*cfg,*id)
+      server(*cfg,*host,port)
+      session(*cfg,*session)
      num_players(*cfg,n)
      player_
       color(*cfg,player_idx,color)
@@ -666,7 +736,7 @@ src
     write_
      config(*filename,*config)
      scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS}
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS,mp_enabled,PERSIST_MP_HOST_MAX,mp_server_port,PERSIST_MP_IDENTIFIER_MAX,PERSIST_MP_SESSION_MAX}
    s HighScore{PERSIST_NAME_MAX,score}
  platform
   platform.c
@@ -841,7 +911,10 @@ src
     init(min_width,min_height)
     note_session_score(*name,score)
     prompt_for_highscore_name(*player_name_out,max_len,score)
-    set_glyphs(glyphs)
+    push_mp_message(*msg)
+    set_
+     glyphs(glyphs)
+     session_id(*session)
     shutdown(_)
    s <anon>
     {PERSIST_NAME_MAX,score}

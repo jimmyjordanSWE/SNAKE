@@ -97,6 +97,13 @@ struct GameConfig {
     /* Per-player metadata */
     char player_name_arr[SNAKE_MAX_PLAYERS][PERSIST_PLAYER_NAME_MAX];
     uint32_t player_color_arr[SNAKE_MAX_PLAYERS];
+
+    /* Multiplayer config */
+    int mp_enabled; /* 0 = disabled, 1 = enabled */
+    char mp_server_host[PERSIST_MP_HOST_MAX];
+    int mp_server_port;
+    char mp_identifier[PERSIST_MP_IDENTIFIER_MAX];
+    char mp_session[PERSIST_MP_SESSION_MAX];
 };
 GameConfig* game_config_create(void) {
     GameConfig* c = calloc(1, sizeof *c);
@@ -135,6 +142,15 @@ GameConfig* game_config_create(void) {
     c->key_quit = PERSIST_CONFIG_DEFAULT_KEY_QUIT;
     c->key_restart = PERSIST_CONFIG_DEFAULT_KEY_RESTART;
     c->key_pause = PERSIST_CONFIG_DEFAULT_KEY_PAUSE;
+
+    /* Multiplayer defaults */
+    c->mp_enabled = 0;
+    snprintf(c->mp_server_host, PERSIST_MP_HOST_MAX, "%s", "mpapi.se");
+    c->mp_server_port = 9001; /* matches mpapi default TCP port */
+    /* Default identifier used by mpapi example frontend */
+    snprintf(c->mp_identifier, PERSIST_MP_IDENTIFIER_MAX, "%s", "67bdb04f-6e7c-4d76-81a3-191f7d78dd45");
+    /* Optional default session (empty = none) */
+    c->mp_session[0] = '\0';
     /* default per-player bindings to match input defaults; use centralized macros */
     if (SNAKE_MAX_PLAYERS >= 1) {
         c->key_left_arr[0] = PERSIST_CONFIG_DEFAULT_KEY_LEFT;
@@ -409,6 +425,45 @@ void game_config_set_active_player(GameConfig* cfg, int v) {
 }
 int game_config_get_active_player(const GameConfig* cfg) {
     return cfg ? cfg->active_player : 0;
+}
+
+/* Multiplayer accessors */
+void game_config_set_mp_enabled(GameConfig* cfg, int v) {
+    if (!cfg)
+        return;
+    cfg->mp_enabled = v ? 1 : 0;
+}
+int game_config_get_mp_enabled(const GameConfig* cfg) {
+    return cfg ? cfg->mp_enabled : 0;
+}
+void game_config_set_mp_server(GameConfig* cfg, const char* host, int port) {
+    if (!cfg || !host)
+        return;
+    snprintf(cfg->mp_server_host, PERSIST_MP_HOST_MAX, "%s", host);
+    cfg->mp_server_port = port;
+}
+const char* game_config_get_mp_server_host(const GameConfig* cfg) {
+    return cfg ? cfg->mp_server_host : NULL;
+}
+int game_config_get_mp_server_port(const GameConfig* cfg) {
+    return cfg ? cfg->mp_server_port : 0;
+}
+void game_config_set_mp_identifier(GameConfig* cfg, const char* id) {
+    if (!cfg || !id)
+        return;
+    snprintf(cfg->mp_identifier, PERSIST_MP_IDENTIFIER_MAX, "%s", id);
+}
+const char* game_config_get_mp_identifier(const GameConfig* cfg) {
+    return cfg ? cfg->mp_identifier : NULL;
+}
+
+void game_config_set_mp_session(GameConfig* cfg, const char* session) {
+    if (!cfg) return;
+    if (!session) { cfg->mp_session[0] = '\0'; return; }
+    snprintf(cfg->mp_session, PERSIST_MP_SESSION_MAX, "%s", session);
+}
+const char* game_config_get_mp_session(const GameConfig* cfg) {
+    return cfg ? cfg->mp_session : NULL;
 }
 int persist_read_scores(const char* filename, HighScore*** out_scores) {
     if (filename == NULL || out_scores == NULL)
@@ -821,6 +876,35 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
                 continue;
             config->max_food = (int)v;
             continue;
+        } else if (strcmp(key, "mp_enabled") == 0) {
+            for (char* p = value; *p; p++)
+                *p = (char)tolower((unsigned char)*p);
+            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+                config->mp_enabled = 1;
+            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+                config->mp_enabled = 0;
+            continue;
+        } else if (strcmp(key, "mp_server_host") == 0) {
+            snprintf(config->mp_server_host, PERSIST_MP_HOST_MAX, "%s", value);
+            continue;
+        } else if (strcmp(key, "mp_server_port") == 0) {
+            errno = 0;
+            long v = strtol(value, &endptr, 10);
+            if (errno != 0 || endptr == value)
+                continue;
+            if (v < 1 || v > 65535) continue;
+            config->mp_server_port = (int)v;
+            continue;
+        } else if (strcmp(key, "mp_identifier") == 0) {
+            /* accept any non-empty string up to the max */
+            if (value && value[0])
+                snprintf(config->mp_identifier, PERSIST_MP_IDENTIFIER_MAX, "%s", value);
+            continue;
+        } else if (strcmp(key, "mp_session") == 0 || strcmp(key, "mp_session_id") == 0) {
+            /* session code (e.g. ABC123) */
+            if (value && value[0])
+                snprintf(config->mp_session, PERSIST_MP_SESSION_MAX, "%s", value);
+            continue;
         }
         errno = 0;
         long parsed_value = strtol(value, &endptr, 10);
@@ -897,6 +981,18 @@ bool persist_write_config(const char* filename, const GameConfig* config) {
     if (fprintf(fp, "floor_texture=%s\n", config->floor_texture) < 0)
         goto write_fail;
     if (fprintf(fp, "key_left=%c\n", config->key_left) < 0)
+        goto write_fail;
+
+    /* Multiplayer settings */
+    if (fprintf(fp, "mp_enabled=%s\n", (config->mp_enabled ? "true" : "false")) < 0)
+        goto write_fail;
+    if (fprintf(fp, "mp_server_host=%s\n", config->mp_server_host) < 0)
+        goto write_fail;
+    if (fprintf(fp, "mp_server_port=%d\n", config->mp_server_port) < 0)
+        goto write_fail;
+    if (fprintf(fp, "mp_identifier=%s\n", config->mp_identifier) < 0)
+        goto write_fail;
+    if (fprintf(fp, "mp_session=%s\n", config->mp_session) < 0)
         goto write_fail;
     if (fprintf(fp, "key_right=%c\n", config->key_right) < 0)
         goto write_fail;

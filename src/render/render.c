@@ -440,6 +440,46 @@ void render_set_session_id(const char* session) {
     }
     invalidate_front_buffer(g_display);
 }
+
+void render_draw_remote_players(const GameState* game, const int* x, const int* y, const void* names_ptr, int count) {
+    if (!g_display || !game || count <= 0) return;
+    const char (*names)[32] = (const char (*)[32])names_ptr;
+    
+    int display_width = 0, display_height = 0;
+    display_get_size(g_display, &display_width, &display_height);
+    
+    int field_width = game->width + 2;
+    int field_height = game->height + 2;
+    int field_x = (display_width - field_width) / 2;
+    if (field_x < 1) field_x = 1;
+    int field_y = (display_height - field_height) / 2;
+    if (field_y < 2) field_y = 2;
+    
+    /* Draw each remote player head as a colored marker */
+    for (int i = 0; i < count; i++) {
+        int px = field_x + 1 + x[i];
+        int py = field_y + 1 + y[i];
+        if (px > 0 && px < display_width && py > 0 && py < display_height) {
+            /* Use magenta/cyan for remote players to distinguish from local */
+            uint16_t color = (i % 2 == 0) ? DISPLAY_COLOR_BRIGHT_MAGENTA : DISPLAY_COLOR_BRIGHT_CYAN;
+            display_put_char(g_display, px, py, DISPLAY_CHAR_CIRCLE, color, DISPLAY_COLOR_BLACK);
+        }
+    }
+    
+    /* Draw remote player scores on the right side, below local scores */
+    int score_y = field_y + game->num_players * 2 + 2;
+    for (int i = 0; i < count && score_y < display_height - 1; i++) {
+        char label[64];
+        snprintf(label, sizeof(label), "[MP] %.15s", names[i][0] ? names[i] : "?");
+        int sx = field_x + field_width + 2;
+        uint16_t color = (i % 2 == 0) ? DISPLAY_COLOR_BRIGHT_MAGENTA : DISPLAY_COLOR_BRIGHT_CYAN;
+        draw_string(sx, score_y, label, color);
+        score_y++;
+    }
+    
+    display_present(g_display);
+}
+
 void render_draw_startup_screen(char* player_name_out, int max_len) {
     if (!g_display || !player_name_out || max_len <= 0)
         return;

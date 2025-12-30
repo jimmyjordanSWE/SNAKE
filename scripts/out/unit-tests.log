@@ -56,6 +56,7 @@ persist: cwd=/home/jimmy/SNAKE
 persist: cwd=/home/jimmy/SNAKE
 persist: cwd=/home/jimmy/SNAKE
 persist: cwd=/home/jimmy/SNAKE
+FAIL: tests/unity/test_persist_config.c:107: expected "abcdefg-12345-67890-12345-abcdef123456" but was "abcdefg-12345-67890-12345-abcdef1234"
 RUN: test_env
 PASS: test_env
 RUN: test_input
@@ -85,33 +86,3 @@ PASS: test_game_multi
 RUN: test_persist
 PASS: test_persist
 RUN: test_persist_config
-PASS: test_persist_config
-RUN: test_persist_long_lines
-PASS: test_persist_long_lines
-RUN: test_persist_truncation
-PASS: test_persist_truncation
-RUN: test_stb_artifacts
-PASS: test_stb_artifacts
-RUN: test_stb_chunk_size_limit
-PASS: test_stb_chunk_size_limit
-RUN: test_stb_image_fuzz
-PASS: test_stb_image_fuzz
-RUN: test_stb_leak_plte
-PASS: test_stb_leak_plte
-RUN: test_tty_buffer_cap
-PASS: test_tty_buffer_cap
-RUN: test_tty_open
-PASS: test_tty_open
-RUN: test_tty_path
-PASS: test_tty_path
-RUN: test_tty_calc_resize_small
-PASS: test_tty_calc_resize_small
-RUN: test_tty_calc_resize_invalid_sizes
-PASS: test_tty_calc_resize_invalid_sizes
-RUN: test_tty_calc_resize_pixel_overflow
-PASS: test_tty_calc_resize_pixel_overflow
-RUN: test_tty_calc_resize_writebuf_overflow
-PASS: test_tty_calc_resize_writebuf_overflow
-RUN: test_tty_oom
-PASS: test_tty_oom
-ALL TESTS PASSED (29)

@@ -20,5 +20,8 @@ void render_push_mp_message(const char* msg);
 /* Set the current MP session id (displayed in HUD); pass NULL or empty to clear */
 void render_set_session_id(const char* session);
 
+/* Draw remote players received from multiplayer (x,y head positions) */
+void render_draw_remote_players(const GameState* game, const int* x, const int* y, const void* names, int count);
+
 void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
 void render_draw_winner_overlay(const GameState* game, int winner, int score);

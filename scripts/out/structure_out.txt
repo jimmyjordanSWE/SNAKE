@@ -140,6 +140,7 @@ include
      enable_external_3d_view(*cfg)
      floor_texture_scale(*cfg)
      fov_degrees(*cfg)
+     headless(*cfg)
      key_
       pause(*cfg)
       quit(*cfg)
@@ -174,6 +175,7 @@ include
       texture(*cfg,*path)
       texture_scale(*cfg,v)
      fov_degrees(*cfg,fov)
+     headless(*cfg,v)
      key_
       pause(*cfg,c)
       quit(*cfg,c)
@@ -257,6 +259,7 @@ include
     draw(*game,*player_name,*scores,score_count)
     draw_
      death_overlay(*game,anim_frame,show_prompt)
+     remote_players(*game,*x,*y,*names,count)
      startup_screen(*player_name_out,max_len)
      winner_overlay(*game,winner,score)
     init(min_width,min_height)
@@ -493,7 +496,7 @@ include
     copy_and_null(*dst,dst_size,*src,len)
     snprintf(*buf,buf_size,*fmt)
 main.c
- f main(_)
+ f main(argc,*argv)
 src
  console
   console.c
@@ -617,7 +620,7 @@ src
    f send_
     all(fd,*buf,len)
     command(*c,*cmd,*session,*data_json)
-   s mpclient{server_host,server_port,identifier,sockfd,recv_thread,running,lock,*MSG_QUEUE_SIZE,head,tail,session}
+   s mpclient{server_host,server_port,identifier,sockfd,recv_thread,thread_started,running,lock,*MSG_QUEUE_SIZE,head,tail,session}
   net.c
    f net_
     disconnect(*client)
@@ -655,6 +658,7 @@ src
      enable_external_3d_view(*cfg)
      floor_texture_scale(*cfg)
      fov_degrees(*cfg)
+     headless(*cfg)
      key_
       pause(*cfg)
       quit(*cfg)
@@ -689,6 +693,7 @@ src
       texture(*cfg,*path)
       texture_scale(*cfg,v)
      fov_degrees(*cfg,fov)
+     headless(*cfg,v)
      key_
       pause(*cfg,c)
       quit(*cfg,c)
@@ -736,7 +741,7 @@ src
     write_
      config(*filename,*config)
      scores(*filename,*scores,count)
-   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS,mp_enabled,PERSIST_MP_HOST_MAX,mp_server_port,PERSIST_MP_IDENTIFIER_MAX,PERSIST_MP_SESSION_MAX}
+   s GameConfig{board_width,tick_rate_ms,render_glyphs,screen_width,enable_external_3d_view,seed,fov_degrees,show_sprite_debug,active_player,num_players,PERSIST_PLAYER_NAME_MAX,max_players,max_length,max_food,wall_height_scale,tail_height_scale,wall_texture_scale,floor_texture_scale,PERSIST_TEXTURE_PATH_MAX,PERSIST_TEXTURE_PATH_MAX,key_left,key_right,key_quit,key_restart,key_pause,SNAKE_MAX_PLAYERS,SNAKE_MAX_PLAYERS,PERSIST_PLAYER_NAME_MAX,SNAKE_MAX_PLAYERS,mp_enabled,PERSIST_MP_HOST_MAX,mp_server_port,PERSIST_MP_IDENTIFIER_MAX,PERSIST_MP_SESSION_MAX,headless}
    s HighScore{PERSIST_NAME_MAX,score}
  platform
   platform.c
@@ -906,6 +911,7 @@ src
     draw(*game,*player_name,*scores,score_count)
     draw_
      death_overlay(*game,anim_frame,show_prompt)
+     remote_players(*game,*x,*y,*names_ptr,count)
      startup_screen(*player_name_out,max_len)
      winner_overlay(*game,winner,score)
     init(min_width,min_height)
@@ -1032,10 +1038,18 @@ src
   wall_perspective.c
    f render_3d_compute_wall_u(interp_cam_x,interp_cam_y,ray_angle,yy,horizon,screen_height,pd,is_vertical,wall_world_height,*out_rowDist)
  snakegame.c
+  f headless_print_state(*gs,tick)
+  f parse_
+   json_
+    int(*json,*key)
+    str(*json,*key,*out,maxlen)
+   remote_game_state(*json)
   f snake_game_
    free(*s)
    run(*s)
-  s SnakeGame{*cfg,*game,has_3d}
+  s <anon>{x,length,score,name,active}
+  s SnakeGame{*cfg,*game,has_3d,headless}
+  t RemotePlayer
  tools
   render_bench.c
    f main(_)

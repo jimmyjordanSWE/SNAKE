@@ -72,19 +72,68 @@ Multiplayer (mpapi):
 - `mp_identifier` = application identifier (must match server identifier)
 - `mp_session` = optional session code to force-join (e.g. ABC123). Leave empty to auto-host/join.
 
-To run a local test server (requires node):
+## Local Multiplayer Testing (N Players)
 
-    scripts/run_mpapi_server.sh [HTTP_PORT] [TCP_PORT]
+Test multiplayer with multiple clients on localhost using the mpapi server.
 
-To vendor a local copy of the mpapi server (so you don't need network access), run:
+### Step 1: Start the Server
 
-    make vendor-mpapi
+```bash
+# Start the mpapi server (requires Node.js)
+make mpapi-start
+# Wait for: "mpapi TCP server listening on port: 9001"
+```
+
+### Step 2: Start the Host (Player 1)
+
+Create `mp_host.cfg`:
+```
+mp_enabled = 1
+mp_server_host = 127.0.0.1
+mp_server_port = 9001
+mp_identifier = 67bdb04f-6e7c-4d76-81a3-191f7d78dd45
+player_name = Player1
+```
+
+Run: `./snakegame.out mp_host.cfg`
+
+**Note the Session ID** displayed at the bottom of the screen (e.g., `ABC123`).
+
+### Step 3: Start Additional Players
+
+Create `mp_join.cfg` (edit `mp_session` to match the Session ID from Step 2):
+```
+mp_enabled = 1
+mp_server_host = 127.0.0.1
+mp_server_port = 9001
+mp_identifier = 67bdb04f-6e7c-4d76-81a3-191f7d78dd45
+mp_session = ABC123
+player_name = Player2
+```
+
+Run in separate terminals: `./snakegame.out mp_join.cfg`
+
+Repeat for additional players (Player3, Player4, etc.).
+
+### What You'll See
+
+- Each client displays the Session ID at the bottom
+- Remote players appear as **magenta/cyan circles** on your board
+- Remote player names shown in side panel with `[MP]` prefix
+- Game states are exchanged in real-time
+
+### Server Options
+
+To vendor a local copy of the mpapi server:
+```bash
+make vendor-mpapi
+```
 
 To start the vendored server:
+```bash
+make mpapi-start
+```
 
-    make mpapi-start
-
-Then set `mp_enabled=true` in `snake_cfg.txt` and run two instances of the game to test client-to-client messages.
 
 Note about VS Code / WSL2 terminals
 - On Windows (WSL2) the integrated terminal or task runner may hang or return a non-zero exit code even when `make` prints successful output. If you see `The terminal process "/bin/bash '-c', 'make'" terminated with exit code: 2` but the build output shows `ALL BUILDS OK`, use one of the following:

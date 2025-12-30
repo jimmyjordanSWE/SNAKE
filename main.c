@@ -6,13 +6,17 @@
 #include <stdlib.h>
 #include <string.h>
 #define CONFIG_FILENAME "snake_cfg.txt"
-int main(void) {
+int main(int argc, char** argv) {
+    const char* config_file = CONFIG_FILENAME;
+    if (argc > 1 && argv[1] && argv[1][0] != '\0') {
+        config_file = argv[1];
+    }
     GameConfig* config = NULL;
-    bool loaded = persist_load_config(CONFIG_FILENAME, &config);
+    bool loaded = persist_load_config(config_file, &config);
     if (loaded) {
-        console_info("Loaded configuration from %s\n", CONFIG_FILENAME);
+        console_info("Loaded configuration from %s\n", config_file);
     } else {
-        console_info("No config file '%s' found or failed to parse; using defaults\n", CONFIG_FILENAME);
+        console_info("No config file '%s' found or failed to parse; using defaults\n", config_file);
     }
     /* Initialize network logging early so the file is created by default */
     extern void net_log_init(void);

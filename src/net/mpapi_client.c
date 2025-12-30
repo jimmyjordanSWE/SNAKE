@@ -20,6 +20,7 @@ struct mpclient {
     char identifier[37];
     int sockfd;
     pthread_t recv_thread;
+    int thread_started; /* 1 if thread was created, 0 otherwise */
     int running;
     pthread_mutex_t lock;
     /* simple ring buffer of strings (malloc'd) */
@@ -264,6 +265,7 @@ int mpclient_connect_and_start(mpclient* c) {
         c->sockfd = -1;
         return -1;
     }
+    c->thread_started = 1;
     return 0;
 }
 
@@ -352,7 +354,10 @@ void mpclient_stop(mpclient* c) {
         close(c->sockfd);
         c->sockfd = -1;
     }
-    pthread_join(c->recv_thread, NULL);
+    if (c->thread_started) {
+        pthread_join(c->recv_thread, NULL);
+        c->thread_started = 0;
+    }
 }
 
 void mpclient_destroy(mpclient* c) {

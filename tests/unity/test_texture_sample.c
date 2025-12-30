@@ -67,7 +67,7 @@ void test_texture_bilinear_fast_matches_reference_for_inrange(void) {
         for (float v = 0.0f; v < 1.0f; v += 0.11f) {
             uint32_t c_fast = texture_sample(t, u, v, true);
             uint32_t c_ref = reference_bilinear(t, u, v);
-            TEST_ASSERT_EQUAL_HEX32(c_ref, c_fast);
+            TEST_ASSERT_TRUE(c_ref == c_fast);
         }
     }
     texture_destroy(t);

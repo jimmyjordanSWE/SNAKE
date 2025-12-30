@@ -104,6 +104,9 @@ struct GameConfig {
     int mp_server_port;
     char mp_identifier[PERSIST_MP_IDENTIFIER_MAX];
     char mp_session[PERSIST_MP_SESSION_MAX];
+
+    /* Headless mode: no TTY/SDL graphics */
+    int headless;
 };
 GameConfig* game_config_create(void) {
     GameConfig* c = calloc(1, sizeof *c);
@@ -464,6 +467,14 @@ void game_config_set_mp_session(GameConfig* cfg, const char* session) {
 }
 const char* game_config_get_mp_session(const GameConfig* cfg) {
     return cfg ? cfg->mp_session : NULL;
+}
+
+void game_config_set_headless(GameConfig* cfg, int v) {
+    if (!cfg) return;
+    cfg->headless = v ? 1 : 0;
+}
+int game_config_get_headless(const GameConfig* cfg) {
+    return cfg ? cfg->headless : 0;
 }
 int persist_read_scores(const char* filename, HighScore*** out_scores) {
     if (filename == NULL || out_scores == NULL)
@@ -904,6 +915,14 @@ bool persist_load_config(const char* filename, GameConfig** out_config) {
             /* session code (e.g. ABC123) */
             if (value && value[0])
                 snprintf(config->mp_session, PERSIST_MP_SESSION_MAX, "%s", value);
+            continue;
+        } else if (strcmp(key, "headless") == 0) {
+            for (char* p = value; *p; p++)
+                *p = (char)tolower((unsigned char)*p);
+            if (strcmp(value, "true") == 0 || strcmp(value, "yes") == 0 || strcmp(value, "1") == 0)
+                config->headless = 1;
+            else if (strcmp(value, "false") == 0 || strcmp(value, "no") == 0 || strcmp(value, "0") == 0)
+                config->headless = 0;
             continue;
         }
         errno = 0;

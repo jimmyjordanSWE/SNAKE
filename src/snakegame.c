@@ -16,8 +16,96 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+
+/* Remote player data received from other clients */
+#define MAX_REMOTE_PLAYERS 8
+typedef struct {
+    int x, y;
+    int length;
+    int score;
+    char name[32];
+    bool active;
+} RemotePlayer;
+static RemotePlayer g_remote_players[MAX_REMOTE_PLAYERS];
+static int g_remote_player_count = 0;
+
+/* Simple JSON field extraction (reusable) */
+static int parse_json_int(const char* json, const char* key) {
+    char needle[64];
+    snprintf(needle, sizeof(needle), "\"%s\"", key);
+    const char* p = strstr(json, needle);
+    if (!p) return 0;
+    p = strchr(p, ':');
+    if (!p) return 0;
+    p++;
+    while (*p && isspace((unsigned char)*p)) p++;
+    return atoi(p);
+}
+
+static void parse_json_str(const char* json, const char* key, char* out, int maxlen) {
+    out[0] = '\0';
+    char needle[64];
+    snprintf(needle, sizeof(needle), "\"%s\"", key);
+    const char* p = strstr(json, needle);
+    if (!p) return;
+    p = strchr(p, ':');
+    if (!p) return;
+    p++;
+    while (*p && isspace((unsigned char)*p)) p++;
+    if (*p != '"') return;
+    p++;
+    int i = 0;
+    while (*p && *p != '"' && i < maxlen - 1) {
+        if (*p == '\\' && p[1]) { p++; }
+        out[i++] = *p++;
+    }
+    out[i] = '\0';
+}
+
+/* Parse incoming game state JSON from another client */
+static void parse_remote_game_state(const char* json) {
+    if (!json || !strstr(json, "\"type\":\"state\"")) return;
+    
+    /* Find players array */
+    const char* players = strstr(json, "\"players\":[");
+    if (!players) return;
+    players = strchr(players, '[');
+    if (!players) return;
+    players++;
+    
+    g_remote_player_count = 0;
+    
+    /* Parse each player object */
+    while (*players && g_remote_player_count < MAX_REMOTE_PLAYERS) {
+        const char* obj_start = strchr(players, '{');
+        if (!obj_start) break;
+        const char* obj_end = strchr(obj_start, '}');
+        if (!obj_end) break;
+        
+        /* Extract a single player object */
+        int len = (int)(obj_end - obj_start + 1);
+        if (len > 0 && len < 512) {
+            char obj[512];
+            memcpy(obj, obj_start, (size_t)len);
+            obj[len] = '\0';
+            
+            RemotePlayer* rp = &g_remote_players[g_remote_player_count];
+            rp->x = parse_json_int(obj, "x");
+            rp->y = parse_json_int(obj, "y");
+            rp->length = parse_json_int(obj, "len");
+            rp->score = parse_json_int(obj, "score");
+            parse_json_str(obj, "name", rp->name, (int)sizeof(rp->name));
+            rp->active = true;
+            g_remote_player_count++;
+        }
+        
+        players = obj_end + 1;
+    }
+}
 
 /* JSON helpers for lightweight serialization of GameState */
+
 static char* escape_json_str(const char* s) {
     if (!s) return strdup("");
     size_t need = 1;
@@ -104,7 +192,22 @@ struct SnakeGame {
     GameConfig* cfg;
     Game* game;
     bool has_3d;
+    bool headless;
 };
+
+/* Headless mode: print minimal game state to stdout */
+static void headless_print_state(const GameState* gs, int tick) {
+    if (!gs) return;
+    printf("TICK=%05d", tick);
+    for (int i = 0; i < gs->num_players && i < SNAKE_MAX_PLAYERS; ++i) {
+        const PlayerState* p = &gs->players[i];
+        int hx = (p->body && p->length > 0) ? p->body[0].x : 0;
+        int hy = (p->body && p->length > 0) ? p->body[0].y : 0;
+        printf(" | P%d:(%02d,%02d) s=%d l=%d%s", i, hx, hy, p->score, p->length, p->active ? "" : " DEAD");
+    }
+    printf("\n");
+    (void)fflush(stdout);
+}
 SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     int err = 0;
     if (err_out)
@@ -119,6 +222,7 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
         free(s);
         return NULL;
     }
+    s->headless = (game_config_get_headless(config_in) != 0);
     int bw = 0, bh = 0;
     game_config_get_board_size(config_in, &bw, &bh);
     game_config_set_board_size(s->cfg, bw, bh);
@@ -129,14 +233,37 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     game_config_set_player_name(s->cfg, game_config_get_player_name(config_in));
     game_config_set_seed(s->cfg, game_config_get_seed(config_in));
     game_config_set_num_players(s->cfg, game_config_get_num_players(config_in));
+    /* Copy multiplayer settings */
+    game_config_set_mp_enabled(s->cfg, game_config_get_mp_enabled(config_in));
+    game_config_set_mp_server(s->cfg, game_config_get_mp_server_host(config_in), game_config_get_mp_server_port(config_in));
+    game_config_set_mp_identifier(s->cfg, game_config_get_mp_identifier(config_in));
+    game_config_set_mp_session(s->cfg, game_config_get_mp_session(config_in));
     int sw = 0, sh = 0;
     game_config_get_screen_size(config_in, &sw, &sh);
     game_config_set_screen_size(s->cfg, sw, sh);
-    render_set_glyphs((game_config_get_render_glyphs(config_in) == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
-    /* Set input bindings from config (global + per-player). */
-    input_set_bindings_from_config(config_in);
     const int board_width = bw;
     const int board_height = bh;
+    bool has_3d = false;
+
+    /* Headless mode: skip all graphics and input initialization */
+    if (s->headless) {
+        fprintf(stderr, "HEADLESS MODE: game running without graphics\n");
+        Game* game = game_create(config_in, game_config_get_seed(config_in));
+        if (!game) {
+            fprintf(stderr, "Failed to create game\n");
+            err = 3;
+            goto out_err;
+        }
+        s->game = game;
+        s->has_3d = false;
+        if (err_out)
+            *err_out = 0;
+        return s;
+    }
+
+    /* Normal mode: full graphics initialization */
+    render_set_glyphs((game_config_get_render_glyphs(config_in) == 1) ? RENDER_GLYPHS_ASCII : RENDER_GLYPHS_UTF8);
+    input_set_bindings_from_config(config_in);
     platform_winch_init();
     int term_w = 0, term_h = 0;
     while (1) {
@@ -190,7 +317,6 @@ SnakeGame* snake_game_new(const GameConfig* config_in, int* err_out) {
     if (game_config_get_floor_texture(config_in) && game_config_get_floor_texture(config_in)[0])
         snprintf(config_3d.floor_texture_path, (int)sizeof(config_3d.floor_texture_path), "%s",
                  game_config_get_floor_texture(config_in));
-    bool has_3d = false;
     if (game_config_get_enable_external_3d_view(config_in)) {
         has_3d = render_3d_init(game_get_state(game), &config_3d);
         if (!has_3d)
@@ -254,16 +380,61 @@ int snake_game_run(SnakeGame* s) {
             if (mpclient_connect_and_start(mpc) == 0) {
                 const char* forced = game_config_get_mp_session(cfg);
                 if (forced && forced[0]) {
-                    /* attempt to join the configured session */
                     (void)mpclient_join(mpc, forced, game_config_get_player_name(cfg));
-                    /* show session id immediately */
-                    render_set_session_id(forced);
+                    if (!s->headless) render_set_session_id(forced);
                 } else {
                     mpclient_auto_join_or_host(mpc, game_config_get_player_name(cfg));
                 }
             }
         }
     }
+
+    /* HEADLESS MODE: simplified game loop with no graphics/input */
+    if (s->headless) {
+        int tick = 0;
+        fprintf(stderr, "HEADLESS: game loop starting (tick_rate=%dms)\n", game_config_get_tick_rate_ms(cfg));
+        while (game_get_status(game) != GAME_STATUS_GAME_OVER) {
+            GameEvents events = {0};
+            game_step(game, &events);
+            headless_print_state(game_get_state(game), tick);
+
+            /* Handle multiplayer message exchange */
+            if (mpc) {
+                char mpbuf[1024];
+                while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
+                    if (strstr(mpbuf, "\"type\":\"state\"")) {
+                        parse_remote_game_state(mpbuf);
+                    }
+                }
+                /* Send current game state */
+                if (mpclient_has_session(mpc)) {
+                    char* state_json = game_state_to_json(game_get_state(game), tick);
+                    if (state_json) {
+                        (void)mpclient_send_game(mpc, state_json);
+                        free(state_json);
+                    }
+                }
+            }
+
+            /* Auto-restart if all players dead */
+            const GameState* gs = game_get_state(game);
+            int active = 0;
+            for (int i = 0; i < gs->num_players; ++i)
+                if (gs->players[i].active) active++;
+            if (active == 0) {
+                fprintf(stderr, "HEADLESS: all players dead, restarting\n");
+                game_reset(game);
+            }
+
+            platform_sleep_ms((uint32_t)game_config_get_tick_rate_ms(cfg));
+            tick++;
+        }
+        if (mpc) { mpclient_stop(mpc); mpclient_destroy(mpc); }
+        if (game) { game_destroy(game); s->game = NULL; }
+        return 0;
+    }
+
+    /* NORMAL MODE: full graphics game loop */
     const int board_width = bw;
     const int board_height = bh;
     bool has_3d = s->has_3d;
@@ -489,12 +660,31 @@ int snake_game_run(SnakeGame* s) {
             if (has_3d)
                 render_3d_draw(game_get_state(game), game_config_get_player_name(cfg), highscores, highscore_count,
                                delta_s);
+            
+            /* Draw remote multiplayer players over the local board */
+            if (g_remote_player_count > 0) {
+                int remote_x[MAX_REMOTE_PLAYERS];
+                int remote_y[MAX_REMOTE_PLAYERS];
+                char remote_names[MAX_REMOTE_PLAYERS][32];
+                for (int ri = 0; ri < g_remote_player_count && ri < MAX_REMOTE_PLAYERS; ri++) {
+                    remote_x[ri] = g_remote_players[ri].x;
+                    remote_y[ri] = g_remote_players[ri].y;
+                    snprintf(remote_names[ri], sizeof(remote_names[ri]), "%s", g_remote_players[ri].name);
+                }
+                render_draw_remote_players(game_get_state(game), remote_x, remote_y, remote_names, g_remote_player_count);
+            }
 
             /* Poll incoming multiplayer messages and show them on HUD */
             if (mpc) {
-                char mpbuf[256];
+                char mpbuf[1024];
                 while (mpclient_poll_message(mpc, mpbuf, (int)sizeof(mpbuf))) {
-                    render_push_mp_message(mpbuf);
+                    /* Parse as game state if it looks like one, otherwise show as message */
+                    if (strstr(mpbuf, "\"type\":\"state\"")) {
+                        parse_remote_game_state(mpbuf);
+                        net_log_info("parsed remote state: %d players", g_remote_player_count);
+                    } else {
+                        render_push_mp_message(mpbuf);
+                    }
                 }
 
                 /* Update displayed session id when it becomes available or changes */

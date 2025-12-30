@@ -153,6 +153,7 @@ Tree(main):
           opposite_dir
           player_move
           spawn_player (see above)
+      headless_print_state
       highscore_get_score
       input_poll
         input_poll_from_buf
@@ -199,6 +200,9 @@ Tree(main):
         send_command (see above)
       mpclient_stop
       net_log_info (see above)
+      parse_remote_game_state
+        parse_json_int
+        parse_json_str
       persist_append_score
         highscore_get_score
         highscore_set_name
@@ -362,6 +366,11 @@ Tree(main):
         fill_rect
           display_get_size (see above)
           display_put_char (see above)
+      render_draw_remote_players
+        display_get_size (see above)
+        display_present (see above)
+        display_put_char (see above)
+        draw_string (see above)
       render_draw_winner_overlay
         display_get_size (see above)
         display_present (see above)

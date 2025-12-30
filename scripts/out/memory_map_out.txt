@@ -2,9 +2,9 @@
 src/core/collision.c: 59m 60m 61m 63f 64f 65f 150f 151f 152f
 src/core/game.c: 28m 44f 352c 356m 358f 364m 365m 366m 368f 369f 370f 390f 391f 405f 406f 407f 409f 413f
 src/core/player.c: 12c 22f
-src/net/mpapi_client.c: 78f 99f 138m 156m 173f 180f 187f 193f 235c 363f 364f
+src/net/mpapi_client.c: 79f 100f 139m 157m 174f 181f 188f 194f 236c 368f 369f
 src/net/net.c: 120m 128m 159f 163f 174f 180f 206m 218f 254m 259f 265f
-src/persist/persist.c: 39c 50f 109c 184f 476c 534f 593r 628f 1042m 1043m 1057f 1058f
+src/persist/persist.c: 39c 50f 112c 187f 487c 545f 604r 639f 1061m 1062m 1076f 1077f
 src/platform/tty.c: 132m 189c 190c 204m 229f 230f 231f 239f 266f 267f 268f 270f 460c 461c 462m 464f 465f 466f 482f 483f 484f
 src/render/camera.c: 55c 64f 66f 231r
 src/render/display_3d.c: 11c 21f 50c 102f
@@ -15,7 +15,7 @@ src/render/render_3d.c: 475c 525r 526r 593c 599c 644f 762f 764f 939f 943f 947f
 src/render/render_3d_sdl.c: 47c 51f 60f 87m 130m 141f 169f 333m 338f
 src/render/sprite.c: 35c 497f 505c 515f
 src/render/texture.c: 26c 41m 59f 258f 276m 300f
-src/snakegame.c: 32m 53m 58f 71f 72f 76r 77f 82f 86f 90r 91f 96f 99r 114m 119f 232f 515f 584f
+src/snakegame.c: 120m 141m 146f 159f 160f 164r 165f 170f 174f 178r 179f 184f 187r 217m 222f 358f 414f 705f 774f
 src/tools/render_bench.c: 43m 86f
 src/tools/sprite_bench.c: 45c 61f
 tests/unity/test_collision.c: 21c 24c 34f 35f
@@ -28,4 +28,4 @@ tests/unity/test_render_minimap.c: 16c 21c 48f 49f
 tests/unity/test_texture_path.c: 14m 20f
 tests/unity/test_texture_path_extra.c: 21m 27f
 tests/unity/test_tty_path.c: 8m 14f
-# Mem: 69a, 105f (29 files)
+# Mem: 69a, 106f (29 files)

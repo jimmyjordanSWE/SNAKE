@@ -34,3 +34,5 @@ int game_player_current_score(const Game* g, int player_index);
 bool game_player_died_this_tick(const Game* g, int player_index);
 int game_player_score_at_death(const Game* g, int player_index);
 void game_reset(Game* g);
+int game_add_remote_player(Game* g, const char* name, uint32_t color);
+void game_set_food_sync_only(Game* g, bool enable);

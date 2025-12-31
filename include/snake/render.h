@@ -1,11 +1,14 @@
 #pragma once
 #include "game.h"
 #include "persist.h"
+#include "types.h"
 #include <stdbool.h>
+
 typedef enum {
     RENDER_GLYPHS_UTF8= 0,
     RENDER_GLYPHS_ASCII= 1,
 } RenderGlyphs;
+
 void render_set_glyphs(RenderGlyphs glyphs);
 bool render_init(int min_width, int min_height);
 void render_shutdown(void);
@@ -20,8 +23,7 @@ void render_push_mp_message(const char* msg);
 /* Set the current MP session id (displayed in HUD); pass NULL or empty to clear */
 void render_set_session_id(const char* session);
 
-/* Draw remote players received from multiplayer (x,y head positions) */
-void render_draw_remote_players(const GameState* game, const int* x, const int* y, const void* names, int count);
+/* Draw remote snakes using the canonical SnakeBody representation (Obsolete: Integrated into GameState) */
 
 void render_draw_death_overlay(const GameState* game, int anim_frame, bool show_prompt);
 void render_draw_winner_overlay(const GameState* game, int winner, int score);

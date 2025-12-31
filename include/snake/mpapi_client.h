@@ -15,6 +15,11 @@ int mpclient_auto_join_or_host(mpclient* c, const char* name);
 /* Join a specific session id (e.g. from config). Returns 0 on success. */
 int mpclient_join(mpclient* c, const char* sessionId, const char* name);
 
+/* Returns non-zero if client has an active session id assigned (host or joined). */
+int mpclient_has_session(mpclient* c);
+/* Returns non-zero if client is currently hosting a session. */
+int mpclient_is_host(mpclient* c);
+
 /* Retrieve current session id into out (null-terminated). Returns 1 if set, 0 if none. */
 int mpclient_get_session(mpclient* c, char* out, int maxlen);
 /* Send arbitrary JSON string as "data" in a game message. Returns 0 on success. */

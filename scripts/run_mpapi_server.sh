@@ -28,6 +28,11 @@ fi
 cd "$REPO_DIR"
 PORT=${1:-8080}
 TCP_PORT=${2:-9001}
+
+echo "Ensuring ports $PORT and $TCP_PORT are free..."
+fuser -k "$PORT/tcp" >/dev/null 2>&1 || true
+fuser -k "$TCP_PORT/tcp" >/dev/null 2>&1 || true
+
 export HTTP_PORT=$PORT
 export HTTPS_PORT=0
 export FORCE_HTTPS=false

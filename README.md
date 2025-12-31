@@ -78,6 +78,22 @@ echo "autoplay = true" > autoplay.cfg
 ./snakegame.out autoplay.cfg
 ```
 
+### Headless Output Format
+
+In headless mode, the game state is printed to stdout in the following format:
+
+```text
+TICK=00346 | P0:(06,12) s=120 l=7 | P1:(10,15) s=40 l=4 DEAD
+```
+
+- **TICK**: The current game tick (frame).
+- **P<n>**: Player index (e.g., P0 for Player 1).
+- **(x,y)**: Coordinates of the snake's head on the board.
+- **s**: Current score.
+- **l**: Current length of the snake.
+- **DEAD**: Indicates the player is no longer active (active state is false).
+
+
 ## Network Logging
 
 Capture all network send/recv traffic in a log file. By default, logs are written to `logs/net_io.log`. Set `SNAKE_NET_LOG` to override the path. Payloads are hex-dumped (up to 256 bytes) and truncated if larger.
@@ -115,6 +131,8 @@ mp_enabled = 1
 mp_server_host = 127.0.0.1
 mp_server_port = 9001
 player_name = Player1
+autoplay = true
+seed = 1
 ```
 
 Run: `./snakegame.out mp_host.cfg`
@@ -130,6 +148,8 @@ mp_server_host = 127.0.0.1
 mp_server_port = 9001
 mp_session = ABC123
 player_name = Player2
+autoplay = true
+seed = 2
 ```
 
 Run: `./snakegame.out mp_join.cfg`

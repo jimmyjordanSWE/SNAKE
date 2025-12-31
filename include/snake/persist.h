@@ -146,6 +146,9 @@ const char* game_config_get_mp_identifier(const GameConfig* cfg);
 void game_config_set_mp_session(GameConfig* cfg, const char* session);
 const char* game_config_get_mp_session(const GameConfig* cfg);
 
+/* mp_is_host: hint for whether to spawn food locally (host) or sync from server (client) */
+int game_config_get_mp_is_host(const GameConfig* cfg);
+
 /* Headless mode: run without TTY/SDL graphics, print state to stdout */
 void game_config_set_headless(GameConfig* cfg, int v);
 int game_config_get_headless(const GameConfig* cfg);

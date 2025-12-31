@@ -235,6 +235,11 @@ vendor-mpapi:
 mpapi-start:
 	@./scripts/run_mpapi_server.sh
 
+mpapi-stop:
+	@echo "Stopping mpapi server..."
+	@fuser -k 8080/tcp 9001/tcp >/dev/null 2>&1 || true
+	@echo "OK"
+
 compile_commands.json:
 	@echo "Generating compile_commands.json..."
 	@$(VENV_PYTHON) scripts/gen_compile_commands.py compile_commands.json "$$(which $(CC))" "$(CPPFLAGS) $(CFLAGS)" $(SRC)

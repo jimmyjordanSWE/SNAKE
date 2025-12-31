@@ -137,7 +137,7 @@ Module Data Usage:
 ## Adding New Context Generators
 
 1. Create `scripts/new_extractor.py` using tree-sitter
-2. Add to `scripts` array in `analyze_all.sh`
+2. Add the script to the `analyze` target in `Makefile`
 3. Output goes to `scripts/out/new_extractor_out.txt`
 
 ## Setup

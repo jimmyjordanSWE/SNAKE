@@ -113,22 +113,22 @@ pl->active= true;
                                  * state)", player_idx, name); */
 }
 pl->score= parse_json_int(obj, "score");
+/* Parse direction */
+int dir_val= parse_json_int(obj, "dir");
+if(dir_val >= 0 && dir_val <= 3) pl->current_dir= (SnakeDir)dir_val;
 /* Update body */
 const char* body_arr= strstr(obj, "\"body\":[");
 if(body_arr) {
 body_arr= strchr(body_arr, '[');
 if(body_arr) {
 body_arr++;
-/* int old_len= pl->length; */
-pl->length= 0;
-/* Save old head for interpolation */
-if(pl->length > 0) {
-pl->prev_head.x= (float)pl->body[0].x + 0.5f;
-pl->prev_head.y= (float)pl->body[0].y + 0.5f;
-}
-while(*body_arr && *body_arr != ']' && pl->length < SNAKE_BODY_MAX_LEN) {
-const char* seg= strchr(body_arr, '{');
-if(!seg || (strchr(body_arr, ']') && seg > strchr(body_arr, ']'))) break;
+/* First, parse new positions into temporary storage */
+SnakePoint new_body[SNAKE_BODY_MAX_LEN];
+int new_length= 0;
+const char* scan= body_arr;
+while(*scan && *scan != ']' && new_length < SNAKE_BODY_MAX_LEN) {
+const char* seg= strchr(scan, '{');
+if(!seg || (strchr(scan, ']') && seg > strchr(scan, ']'))) break;
 const char* seg_end= strchr(seg, '}');
 if(!seg_end) break;
 int seg_len= (int)(seg_end - seg + 1);
@@ -136,22 +136,42 @@ if(seg_len > 0 && seg_len < 128) {
 char seg_buf[128];
 memcpy(seg_buf, seg, (size_t)seg_len);
 seg_buf[seg_len]= '\0';
-pl->body[pl->length].x= parse_json_int(seg_buf, "x");
-pl->body[pl->length].y= parse_json_int(seg_buf, "y");
-/* Update prev_segment for interpolation */
-pl->prev_segment[pl->length].x= (float)pl->body[pl->length].x + 0.5f;
-pl->prev_segment[pl->length].y= (float)pl->body[pl->length].y + 0.5f;
-pl->length++;
+new_body[new_length].x= parse_json_int(seg_buf, "x");
+new_body[new_length].y= parse_json_int(seg_buf, "y");
+new_length++;
 }
-body_arr= seg_end + 1;
+scan= seg_end + 1;
 }
+/* Only update prev positions if the head actually moved */
+bool head_moved= (new_length > 0 && pl->length > 0 && (new_body[0].x != pl->body[0].x || new_body[0].y != pl->body[0].y));
+bool first_update= (pl->length == 0 && new_length > 0);
+if(head_moved) {
+/* Save current to prev for interpolation */
+pl->prev_head.x= (float)pl->body[0].x + 0.5f;
+pl->prev_head.y= (float)pl->body[0].y + 0.5f;
+for(int bi= 0; bi < pl->length && bi < SNAKE_BODY_MAX_LEN; bi++) {
+pl->prev_segment[bi].x= (float)pl->body[bi].x + 0.5f;
+pl->prev_segment[bi].y= (float)pl->body[bi].y + 0.5f;
+}
+pl->interp_time= 0.0f; /* Reset interpolation timer for this player */
+}
+/* Copy new positions to body */
+for(int bi= 0; bi < new_length; bi++) {
+pl->body[bi]= new_body[bi];
+/* Init prev for new segments or first update */
+if(first_update || bi >= pl->length) {
+pl->prev_segment[bi].x= (float)new_body[bi].x + 0.5f;
+pl->prev_segment[bi].y= (float)new_body[bi].y + 0.5f;
+}
+}
+pl->length= new_length;
 pl->active= (pl->length > 0);
 if(pl->active && pl->length > 0) {
 net_log_info("parse: Player %d '%s' updated. Len=%d Head=(%d,%d)", player_idx, name, pl->length, pl->body[0].x, pl->body[0].y);
 } else {
 net_log_info("parse: Player %d '%s' inactive or empty body", player_idx, name);
 }
-if(pl->length > 0 && pl->prev_head.x == 0.0f) {
+if(first_update && pl->length > 0) {
 pl->prev_head.x= (float)pl->body[0].x + 0.5f;
 pl->prev_head.y= (float)pl->body[0].y + 0.5f;
 }
@@ -258,7 +278,7 @@ int hy= p->length > 0 ? p->body[0].y : 0;
 char* escaped= NULL;
 if(p->name[0]) escaped= escape_json_str(p->name);
 if(!escaped) escaped= strdup("");
-n= snprintf(buf + len, cap - len, "%s{\"id\":%d,\"name\":\"%s\",\"x\":%d,\"y\":%d,\"len\":%d,\"score\":%d,\"color\":%d,\"body\":[", (len > 0 && buf[len - 1] != '[') ? "," : "", i, escaped, hx, hy, p->length, p->score, (int)p->color);
+n= snprintf(buf + len, cap - len, "%s{\"id\":%d,\"name\":\"%s\",\"x\":%d,\"y\":%d,\"len\":%d,\"score\":%d,\"color\":%d,\"dir\":%d,\"body\":[", (len > 0 && buf[len - 1] != '[') ? "," : "", i, escaped, hx, hy, p->length, p->score, (int)p->color, (int)p->current_dir);
 free(escaped);
 if(n < 0) {
 free(buf);

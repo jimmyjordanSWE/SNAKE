@@ -22,6 +22,7 @@ bool eliminated;
 /* Interpolation state for smooth 3D rendering (not used for game logic) */
 SnakePointF prev_head;
 SnakePointF prev_segment[SNAKE_BODY_MAX_LEN];
+float interp_time; /* Per-player interpolation timer, resets on position change */
 bool is_remote;
 };
 

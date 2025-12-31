@@ -154,13 +154,17 @@ render_3d_sdl_draw_filled_circle(r->display, fx, fy, radius, food_col);
 for(int p= 0; p < gs->num_players; p++) {
 const PlayerState* pl= &gs->players[p];
 if(!pl->active || pl->length <= 0) continue;
+/* Calculate per-player interpolation: local uses camera, remote uses own timer */
+float tick_interval= camera_get_update_interval(r->camera);
+float p_interp= (p == r->config.active_player) ? interp_t : (tick_interval > 0.0f ? pl->interp_time / tick_interval : 1.0f);
+if(p_interp > 1.0f) p_interp= 1.0f;
 /* Use player-configured color (0 means fallback). Tail is a darker shaded variant. */
 uint32_t pcol= pl->color ? pl->color : render_3d_sdl_color(0, 128, 0, 255);
 uint32_t tail_col_local= render_3d_shade_color(pcol, 60);
 for(int bi= 1; bi < pl->length; bi++) {
 float seg_x_f, seg_y_f;
-seg_x_f= pl->prev_segment[bi].x + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment[bi].x) * interp_t;
-seg_y_f= pl->prev_segment[bi].y + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment[bi].y) * interp_t;
+seg_x_f= pl->prev_segment[bi].x + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment[bi].x) * p_interp;
+seg_y_f= pl->prev_segment[bi].y + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment[bi].y) * p_interp;
 int tx= x0 + (int)(seg_x_f * (float)cell_px + 0.5f);
 int ty= y0 + (int)(seg_y_f * (float)cell_px + 0.5f);
 int bw= cell_px > 2 ? (cell_px * 3 / 4) : 1;
@@ -169,8 +173,8 @@ if(radius <= 0) radius= 1;
 render_3d_sdl_draw_filled_circle(r->display, tx, ty, radius, tail_col_local);
 (void)bi;
 }
-float head_x= pl->prev_head.x + (((float)pl->body[0].x + 0.5f) - pl->prev_head.x) * interp_t;
-float head_y= pl->prev_head.y + (((float)pl->body[0].y + 0.5f) - pl->prev_head.y) * interp_t;
+float head_x= pl->prev_head.x + (((float)pl->body[0].x + 0.5f) - pl->prev_head.x) * p_interp;
+float head_y= pl->prev_head.y + (((float)pl->body[0].y + 0.5f) - pl->prev_head.y) * p_interp;
 int hx= x0 + (int)(head_x * (float)cell_px + 0.5f);
 int hy= y0 + (int)(head_y * (float)cell_px + 0.5f);
 int hr= cell_px > 2 ? (cell_px / 2) : 1;
@@ -736,19 +740,32 @@ if(g_render_3d.sprite_renderer) {
 sprite_clear(g_render_3d.sprite_renderer);
 for(int i= 0; i < gs->food_count; i++) sprite_add_color_shaded(g_render_3d.sprite_renderer, (float)gs->food[i].x + 0.5f, (float)gs->food[i].y + 0.5f, 0.25f, -0.5f, true, -1, 0, render_3d_sdl_color(255, 0, 0, 255));
 for(int p= 0; p < gs->num_players; p++) {
-const PlayerState* pl= &gs->players[p];
+PlayerState* pl= (PlayerState*)&gs->players[p]; /* non-const for interp_time update */
 if(!pl->active || pl->length == 0 || p == g_render_3d.config.active_player) continue;
-float hx= pl->prev_head.x + (((float)pl->body[0].x + 0.5f) - pl->prev_head.x) * f_interp;
-float hy= pl->prev_head.y + (((float)pl->body[0].y + 0.5f) - pl->prev_head.y) * f_interp;
+/* Update per-player interpolation timer */
+float tick_interval= camera_get_update_interval(g_render_3d.camera);
+pl->interp_time+= c_dt;
+if(pl->interp_time > tick_interval) pl->interp_time= tick_interval;
+float p_interp= tick_interval > 0.0f ? pl->interp_time / tick_interval : 1.0f;
+if(p_interp > 1.0f) p_interp= 1.0f;
+/* Interpolate from prev to current using per-player timer */
+float hx= pl->prev_head.x + (((float)pl->body[0].x + 0.5f) - pl->prev_head.x) * p_interp;
+float hy= pl->prev_head.y + (((float)pl->body[0].y + 0.5f) - pl->prev_head.y) * p_interp;
 sprite_add_color_shaded(g_render_3d.sprite_renderer, hx, hy, 1.0f, 0.0f, true, -1, 0, pl->color ? pl->color : render_3d_sdl_color(0, 128, 0, 255));
 }
 for(int p= 0; p < gs->num_players; p++) {
 const PlayerState* pl= &gs->players[p];
 if(!pl->active || pl->length <= 1) continue;
 uint32_t bc= pl->color ? render_3d_shade_color(pl->color, 60) : render_3d_sdl_color(0, 128, 0, 255);
+/* Calculate per-player interpolation fraction */
+float tick_interval= camera_get_update_interval(g_render_3d.camera);
+float p_interp= tick_interval > 0.0f ? pl->interp_time / tick_interval : 1.0f;
+if(p_interp > 1.0f) p_interp= 1.0f;
+/* Local player uses camera interp; remote players use their own timer */
+float s_interp= (p == g_render_3d.config.active_player) ? f_interp : p_interp;
 for(int bi= 1; bi < pl->length; bi++) {
-float sx= pl->prev_segment[bi].x + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment[bi].x) * f_interp;
-float sy= pl->prev_segment[bi].y + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment[bi].y) * f_interp;
+float sx= pl->prev_segment[bi].x + (((float)pl->body[bi].x + 0.5f) - pl->prev_segment[bi].x) * s_interp;
+float sy= pl->prev_segment[bi].y + (((float)pl->body[bi].y + 0.5f) - pl->prev_segment[bi].y) * s_interp;
 sprite_add_color(g_render_3d.sprite_renderer, sx, sy, g_render_3d.config.tail_height_scale, 0.0f, true, -1, 0, bc);
 }
 }

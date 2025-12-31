@@ -2,7 +2,18 @@
 
 A C99 snake game implementation featuring dual rendering modes: pseudo-3D raycasting via SDL2 and a terminal-based ASCII interface.
 
-Developed and tested on WSL2 under Windows 11. 
+Developed and tested on WSL2 under Windows 11.
+
+https://github.com/user-attachments/assets/local_MP%20over_server.mp4
+
+## Game Modes
+
+| Mode | Description |
+|------|-------------|
+| **Single Player** | Classic snake gameplay. Default mode (`./snakegame.out`). |
+| **Local Co-op** | Up to 4 players on one keyboard using separate key bindings (see `snake.cfg`). |
+| **Networked Multiplayer** | Host or join sessions via the `mpapi` server. See [Local Multiplayer Testing](#local-multiplayer-testing-n-players). |
+| **Headless** | No graphics; state serialized to stdout. Ideal for CI/automated testing. See [Headless Mode](#headless-mode). |
 
 ## Features
 

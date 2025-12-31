@@ -2,6 +2,8 @@
 
 A C99 snake game implementation featuring dual rendering modes: pseudo-3D raycasting via SDL2 and a terminal-based ASCII interface.
 
+Developed and tested on WSL2 under Windows 11. 
+
 ## Features
 
 - **Pseudo-3D Raycasting Engine** — Wolfenstein-style first-person view using SDL2.

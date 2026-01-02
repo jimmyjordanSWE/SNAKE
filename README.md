@@ -5,8 +5,7 @@ A C99 snake game implementation featuring dual rendering modes: pseudo-3D raycas
 Developed and tested on WSL2 under Windows 11.
 
 ## Demo Video
-
-https://github.com/jimmyjordanSWE/SNAKE/blob/main/Local%20Mp%20Over%20Server_compress.mp4
+https://github.com/user-attachments/assets/7726a4a7-04eb-4566-af14-d3e1093299d8
 
 ## Game Modes
 
